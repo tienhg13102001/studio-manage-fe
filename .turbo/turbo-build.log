@@ -1,0 +1,13 @@
+yarn run v1.22.22
+$ tsc && vite build
+vite v5.4.21 building for production...
+transforming...
+✓ 110 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB │ gzip:  0.30 kB
+dist/assets/logo-BI6TviZk.webp   61.98 kB
+dist/assets/index-CyuFpEuZ.css   20.92 kB │ gzip:  4.25 kB
+dist/assets/index-COnG8btV.js   283.98 kB │ gzip: 88.64 kB
+✓ built in 726ms
+Done in 4.18s.
