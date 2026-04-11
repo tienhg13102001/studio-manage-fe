@@ -8,6 +8,7 @@ import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
 import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
+import PackagesPage from '../pages/PackagesPage';
 
 export interface NavItem {
   to: string;
@@ -60,6 +61,13 @@ export const navItems: NavItem[] = [
     ],
   },
   { to: '/schedules', label: 'Lịch chụp', icon: '📅', component: SchedulesPage },
+  {
+    to: '/packages',
+    label: 'Gói chụp',
+    icon: '📦',
+    allowedRoles: [0, 1, 2, 4],
+    component: PackagesPage,
+  },
   {
     to: '/finance',
     label: 'Thu chi',

@@ -3,11 +3,12 @@ import { useForm } from 'react-hook-form';
 import { scheduleService } from '../services/scheduleService';
 import { customerService } from '../services/customerService';
 import { userService } from '../services/userService';
+import { packageService } from '../services/packageService';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-toastify';
 import { formatDate } from '../utils/format';
-import type { Schedule, Customer, User } from '../types';
+import type { Schedule, Customer, User, Package } from '../types';
 import { ROLE_LABELS } from '../types';
 
 const statusLabel: Record<string, string> = {
@@ -35,6 +36,7 @@ const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', custo
 
 interface ScheduleFormValues {
   customerId: string;
+  packageId?: string;
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -48,6 +50,7 @@ interface ScheduleFormValues {
 const SchedulesPage = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [photographers, setPhotographers] = useState<User[]>([]);
   const [salesUsers, setSalesUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,7 @@ const SchedulesPage = () => {
   useEffect(() => {
     load();
     customerService.getAll({ limit: 200 }).then((r) => setCustomers(r.data));
+    packageService.getAll().then(setPackages);
     userService.getPhotographers().then(setPhotographers);
     userService.getSales().then(setSalesUsers);
   }, []);
@@ -101,6 +105,7 @@ const SchedulesPage = () => {
     setSupportIds(supIds);
     reset({
       customerId: typeof s.customerId === 'object' ? (s.customerId as Customer)._id : s.customerId,
+      packageId: typeof s.packageId === 'object' ? (s.packageId as Package)._id : (s.packageId ?? ''),
       shootDate: s.shootDate.slice(0, 10),
       startTime: s.startTime,
       endTime: s.endTime,
@@ -231,6 +236,7 @@ const SchedulesPage = () => {
                 <tr>
                   <th className="text-left px-4 py-3">Ngày chụp</th>
                   <th className="text-left px-4 py-3">Lớp</th>
+                  <th className="text-left px-4 py-3">Gói chụp</th>
                   <th className="text-left px-4 py-3">Ghi chú</th>
                   <th className="text-left px-4 py-3">Giờ</th>
                   <th className="text-left px-4 py-3">Địa điểm</th>
@@ -249,6 +255,11 @@ const SchedulesPage = () => {
                     <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 font-medium">{formatDate(s.shootDate)}</td>
                       <td className="px-4 py-3 text-primary-600">{customer?.className ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {typeof s.packageId === 'object'
+                          ? (s.packageId as Package)?.name
+                          : (s.packageId ?? '—')}
+                      </td>
                       <td className="px-4 py-3 max-w-[14rem]">
                         <span
                           className="inline-block bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 max-w-full whitespace-pre-line"
@@ -413,6 +424,17 @@ const SchedulesPage = () => {
                 {customers.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.className} – {c.school}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Gói chụp</label>
+              <select {...register('packageId')} className="input">
+                <option value="">-- Không chọn gói --</option>
+                {packages.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} – {p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
                   </option>
                 ))}
               </select>
