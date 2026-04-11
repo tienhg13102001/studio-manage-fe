@@ -7,15 +7,17 @@ import SchedulesPage from '../pages/SchedulesPage';
 import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
 import UsersPage from '../pages/UsersPage';
+import CustomerSizePage from '../pages/CustomerSizePage';
 
 export interface NavItem {
   to: string;
   label: string;
   icon: string;
   allowedRoles?: UserRole[];
-  component: ComponentType;
+  component?: ComponentType;
   index?: boolean;
   hidden?: boolean;
+  children?: NavItem[];
 }
 
 export const navItems: NavItem[] = [
@@ -32,15 +34,30 @@ export const navItems: NavItem[] = [
     label: 'Khách hàng',
     icon: '🏫',
     allowedRoles: [0, 1, 2, 4],
-    component: CustomersPage,
-  },
-  {
-    to: '/customers/:id',
-    label: 'Chi tiết khách hàng',
-    icon: '',
-    allowedRoles: [0, 1, 2, 4],
-    component: CustomerDetailPage,
-    hidden: true,
+    children: [
+      {
+        to: '',
+        label: 'Danh sách lớp học',
+        icon: '📋',
+        allowedRoles: [0, 1, 2, 4],
+        component: CustomersPage,
+      },
+      {
+        to: '/size',
+        label: 'Thông tin học sinh',
+        icon: '📏',
+        allowedRoles: [0, 1, 2, 4],
+        component: CustomerSizePage,
+      },
+      {
+        to: '/:id',
+        label: 'Chi tiết khách hàng',
+        icon: '',
+        allowedRoles: [0, 1, 2, 4],
+        component: CustomerDetailPage,
+        hidden: true,
+      },
+    ],
   },
   { to: '/schedules', label: 'Lịch chụp', icon: '📅', component: SchedulesPage },
   {

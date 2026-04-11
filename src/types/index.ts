@@ -78,3 +78,14 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
 }
+
+export interface Student {
+  _id: string;
+  customerId: string;
+  name: string;
+  gender: 'male' | 'female';
+  height?: number;
+  weight?: number;
+  notes?: string;
+  createdAt?: string;
+}

@@ -4,6 +4,8 @@ import { scheduleService } from '../services/scheduleService';
 import { customerService } from '../services/customerService';
 import { userService } from '../services/userService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import { formatDate } from '../utils/format';
 import type { Schedule, Customer, User } from '../types';
 import { ROLE_LABELS } from '../types';
@@ -106,10 +108,7 @@ const SchedulesPage = () => {
       status: s.status,
       notes: s.notes,
       leadPhotographer: leadId,
-      bookedBy:
-        typeof s.bookedBy === 'object'
-          ? (s.bookedBy as User)._id
-          : (s.bookedBy ?? ''),
+      bookedBy: typeof s.bookedBy === 'object' ? (s.bookedBy as User)._id : (s.bookedBy ?? ''),
     });
     setModalOpen(true);
   };
@@ -121,19 +120,35 @@ const SchedulesPage = () => {
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
     };
-    if (editing) {
-      await scheduleService.update(editing._id, payload);
-    } else {
-      await scheduleService.create(payload);
+    try {
+      if (editing) {
+        await scheduleService.update(editing._id, payload);
+        toast.success('Cập nhật lịch chụp thành công!');
+      } else {
+        await scheduleService.create(payload);
+        toast.success('Thêm lịch chụp thành công!');
+      }
+      setModalOpen(false);
+      load();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    load();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xoá lịch này?')) return;
-    await scheduleService.remove(id);
-    load();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => setConfirmId(id);
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await scheduleService.remove(confirmId);
+      toast.success('Đã xoá lịch chụp.');
+      load();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   const handleDownloadContract = async (s: Schedule) => {
@@ -499,6 +514,12 @@ const SchedulesPage = () => {
           </div>
         </form>
       </Modal>
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá lịch chụp này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 };

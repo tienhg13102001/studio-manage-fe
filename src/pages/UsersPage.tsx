@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { userService } from '../services/userService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_LABELS } from '../types';
 import type { User, UserRole } from '../types';
@@ -26,6 +28,7 @@ const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([2]);
   const {
     register,
@@ -62,23 +65,39 @@ const UsersPage = () => {
       roles: selectedRoles,
       ...(data.password ? {} : { password: undefined }),
     };
-    if (editing) {
-      await userService.update(editing._id, payload);
-    } else {
-      await userService.create(payload);
+    try {
+      if (editing) {
+        await userService.update(editing._id, payload);
+        toast.success('Cập nhật người dùng thành công!');
+      } else {
+        await userService.create(payload);
+        toast.success('Thêm người dùng thành công!');
+      }
+      setModalOpen(false);
+      load();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    load();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (id === me?._id) {
-      alert('Không thể xoá tài khoản đang đăng nhập.');
+      toast.error('Không thể xoá tài khoản đang đăng nhập.');
       return;
     }
-    if (!confirm('Xoá tài khoản này?')) return;
-    await userService.remove(id);
-    load();
+    setConfirmId(id);
+  };
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await userService.remove(confirmId);
+      toast.success('Đã xoá tài khoản.');
+      load();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   return (
@@ -263,6 +282,12 @@ const UsersPage = () => {
           </div>
         </form>
       </Modal>
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá tài khoản này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 };

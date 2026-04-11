@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { categoryService } from '../services/categoryService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import type { Category } from '../types';
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -33,19 +36,33 @@ const CategoriesPage = () => {
   };
 
   const onSubmit = async (data: Partial<Category>) => {
-    if (editing) {
-      await categoryService.update(editing._id, data);
-    } else {
-      await categoryService.create(data);
+    try {
+      if (editing) {
+        await categoryService.update(editing._id, data);
+        toast.success('Cập nhật danh mục thành công!');
+      } else {
+        await categoryService.create(data);
+        toast.success('Thêm danh mục thành công!');
+      }
+      setModalOpen(false);
+      load();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    load();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xoá danh mục này?')) return;
-    await categoryService.remove(id);
-    load();
+  const handleDelete = (id: string) => setConfirmId(id);
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await categoryService.remove(confirmId);
+      toast.success('Đã xoá danh mục.');
+      load();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   const income = categories.filter((c) => c.type === 'income');
@@ -131,6 +148,12 @@ const CategoriesPage = () => {
           </div>
         </form>
       </Modal>
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá danh mục này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 };
