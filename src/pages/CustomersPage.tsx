@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { customerService } from '../services/customerService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import type { Customer } from '../types';
 
 type FormValues = Omit<Customer, '_id' | 'createdAt'>;
@@ -13,6 +15,7 @@ const CustomersPage = () => {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -52,19 +55,33 @@ const CustomersPage = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (editing) {
-      await customerService.update(editing._id, data);
-    } else {
-      await customerService.create(data);
+    try {
+      if (editing) {
+        await customerService.update(editing._id, data);
+        toast.success('Cập nhật lớp thành công!');
+      } else {
+        await customerService.create(data);
+        toast.success('Thêm lớp thành công!');
+      }
+      setModalOpen(false);
+      load();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    load();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xoá lớp này?')) return;
-    await customerService.remove(id);
-    load();
+  const handleDelete = (id: string) => setConfirmId(id);
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await customerService.remove(confirmId);
+      toast.success('Đã xoá lớp.');
+      load();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   return (
@@ -199,6 +216,12 @@ const CustomersPage = () => {
         </>
       )}
 
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá lớp này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

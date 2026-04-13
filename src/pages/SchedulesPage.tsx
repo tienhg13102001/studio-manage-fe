@@ -3,9 +3,12 @@ import { useForm } from 'react-hook-form';
 import { scheduleService } from '../services/scheduleService';
 import { customerService } from '../services/customerService';
 import { userService } from '../services/userService';
+import { packageService } from '../services/packageService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import { formatDate } from '../utils/format';
-import type { Schedule, Customer, User } from '../types';
+import type { Schedule, Customer, User, Package } from '../types';
 import { ROLE_LABELS } from '../types';
 
 const statusLabel: Record<string, string> = {
@@ -33,6 +36,7 @@ const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', custo
 
 interface ScheduleFormValues {
   customerId: string;
+  packageId?: string;
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -46,6 +50,7 @@ interface ScheduleFormValues {
 const SchedulesPage = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [photographers, setPhotographers] = useState<User[]>([]);
   const [salesUsers, setSalesUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +81,7 @@ const SchedulesPage = () => {
   useEffect(() => {
     load();
     customerService.getAll({ limit: 200 }).then((r) => setCustomers(r.data));
+    packageService.getAll().then(setPackages);
     userService.getPhotographers().then(setPhotographers);
     userService.getSales().then(setSalesUsers);
   }, []);
@@ -99,6 +105,7 @@ const SchedulesPage = () => {
     setSupportIds(supIds);
     reset({
       customerId: typeof s.customerId === 'object' ? (s.customerId as Customer)._id : s.customerId,
+      packageId: typeof s.packageId === 'object' ? (s.packageId as Package)._id : (s.packageId ?? ''),
       shootDate: s.shootDate.slice(0, 10),
       startTime: s.startTime,
       endTime: s.endTime,
@@ -106,10 +113,7 @@ const SchedulesPage = () => {
       status: s.status,
       notes: s.notes,
       leadPhotographer: leadId,
-      bookedBy:
-        typeof s.bookedBy === 'object'
-          ? (s.bookedBy as User)._id
-          : (s.bookedBy ?? ''),
+      bookedBy: typeof s.bookedBy === 'object' ? (s.bookedBy as User)._id : (s.bookedBy ?? ''),
     });
     setModalOpen(true);
   };
@@ -121,19 +125,35 @@ const SchedulesPage = () => {
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
     };
-    if (editing) {
-      await scheduleService.update(editing._id, payload);
-    } else {
-      await scheduleService.create(payload);
+    try {
+      if (editing) {
+        await scheduleService.update(editing._id, payload);
+        toast.success('Cập nhật lịch chụp thành công!');
+      } else {
+        await scheduleService.create(payload);
+        toast.success('Thêm lịch chụp thành công!');
+      }
+      setModalOpen(false);
+      load();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    load();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xoá lịch này?')) return;
-    await scheduleService.remove(id);
-    load();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => setConfirmId(id);
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await scheduleService.remove(confirmId);
+      toast.success('Đã xoá lịch chụp.');
+      load();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   const handleDownloadContract = async (s: Schedule) => {
@@ -216,6 +236,7 @@ const SchedulesPage = () => {
                 <tr>
                   <th className="text-left px-4 py-3">Ngày chụp</th>
                   <th className="text-left px-4 py-3">Lớp</th>
+                  <th className="text-left px-4 py-3">Gói chụp</th>
                   <th className="text-left px-4 py-3">Ghi chú</th>
                   <th className="text-left px-4 py-3">Giờ</th>
                   <th className="text-left px-4 py-3">Địa điểm</th>
@@ -234,6 +255,11 @@ const SchedulesPage = () => {
                     <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 font-medium">{formatDate(s.shootDate)}</td>
                       <td className="px-4 py-3 text-primary-600">{customer?.className ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {typeof s.packageId === 'object'
+                          ? (s.packageId as Package)?.name
+                          : (s.packageId ?? '—')}
+                      </td>
                       <td className="px-4 py-3 max-w-[14rem]">
                         <span
                           className="inline-block bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 max-w-full whitespace-pre-line"
@@ -402,6 +428,17 @@ const SchedulesPage = () => {
                 ))}
               </select>
             </div>
+            <div className="sm:col-span-2">
+              <label className="label">Gói chụp</label>
+              <select {...register('packageId')} className="input">
+                <option value="">-- Không chọn gói --</option>
+                {packages.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} – {p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="label">Ngày chụp *</label>
               <input {...register('shootDate', { required: true })} type="date" className="input" />
@@ -499,6 +536,12 @@ const SchedulesPage = () => {
           </div>
         </form>
       </Modal>
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá lịch chụp này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 };

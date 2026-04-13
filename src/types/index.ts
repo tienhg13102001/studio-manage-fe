@@ -30,9 +30,24 @@ export interface Customer {
   createdAt?: string;
 }
 
+export interface Package {
+  _id: string;
+  name: string;
+  pricePerMember: number;
+  duration?: 'full_day' | 'half_day' | 'two_thirds_day';
+  costume?: string;
+  crewRatio?: string;
+  editingScope?: 'full' | 'partial';
+  deliveryDays?: number;
+  studentsPerCrew?: number;
+  description?: string;
+  createdAt?: string;
+}
+
 export interface Schedule {
   _id: string;
   customerId: string | Customer;
+  packageId?: string | Package;
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -77,4 +92,15 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface Student {
+  _id: string;
+  customerId: string;
+  name: string;
+  gender: 'male' | 'female';
+  height?: number;
+  weight?: number;
+  notes?: string;
+  createdAt?: string;
 }

@@ -4,6 +4,8 @@ import { transactionService } from '../services/transactionService';
 import { customerService } from '../services/customerService';
 import { categoryService } from '../services/categoryService';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'react-toastify';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Transaction, Customer, Category, TransactionSummaryRow } from '../types';
 
@@ -94,21 +96,37 @@ const FinancePage = () => {
 
   const onSubmit = async (data: Partial<Transaction>) => {
     const payload = { ...data, customerId: data.customerId || null };
-    if (editing) {
-      await transactionService.update(editing._id, payload);
-    } else {
-      await transactionService.create(payload);
+    try {
+      if (editing) {
+        await transactionService.update(editing._id, payload);
+        toast.success('Cập nhật giao dịch thành công!');
+      } else {
+        await transactionService.create(payload);
+        toast.success('Thêm giao dịch thành công!');
+      }
+      setModalOpen(false);
+      loadList();
+      loadSummary();
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
-    setModalOpen(false);
-    loadList();
-    loadSummary();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xoá giao dịch này?')) return;
-    await transactionService.remove(id);
-    loadList();
-    loadSummary();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => setConfirmId(id);
+
+  const doDelete = async () => {
+    if (!confirmId) return;
+    try {
+      await transactionService.remove(confirmId);
+      toast.success('Đã xoá giao dịch.');
+      loadList();
+      loadSummary();
+    } catch {
+      toast.error('Xoá thất bại, vui lòng thử lại.');
+    }
+    setConfirmId(null);
   };
 
   const applyFilter = () => {
@@ -533,6 +551,12 @@ const FinancePage = () => {
           </div>
         </form>
       </Modal>
+      <ConfirmModal
+        isOpen={!!confirmId}
+        message="Bạn có chắc muốn xoá giao dịch này?"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 };

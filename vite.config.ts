@@ -7,7 +7,7 @@ export default defineConfig({
     port: 4001,
     proxy: {
       '/api': {
-        target: 'https://studio-manage-be.onrender.com',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
     },

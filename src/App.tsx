@@ -1,11 +1,55 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/LoginPage';
-import { navItems, superadminItems } from './config/navItems';
+import { navItems, superadminItems, type NavItem } from './config/navItems';
+import type { UserRole } from './types';
+import StudentFormPage from './pages/StudentFormPage';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const allRoutes = [...navItems, ...superadminItems];
+function wrapProtected(element: JSX.Element, allowedRoles?: UserRole[]) {
+  return allowedRoles ? (
+    <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>
+  ) : (
+    element
+  );
+}
+
+function renderRouteItem(item: NavItem) {
+  if (item.children) {
+    return (
+      <Route
+        key={item.to}
+        path={item.to.slice(1)}
+        element={wrapProtected(<Outlet />, item.allowedRoles)}
+      >
+        {item.children.map((child) => {
+          if (!child.component) return null;
+          const Element = child.component;
+          const element = wrapProtected(<Element />, child.allowedRoles);
+          const childPath = child.to.startsWith('/') ? child.to.slice(1) : child.to;
+          return childPath === '' ? (
+            <Route key="index" index element={element} />
+          ) : (
+            <Route key={child.to} path={childPath} element={element} />
+          );
+        })}
+      </Route>
+    );
+  }
+
+  if (!item.component) return null;
+  const Element = item.component;
+  const element = wrapProtected(<Element />, item.allowedRoles);
+
+  return item.index ? (
+    <Route key={item.to} index element={element} />
+  ) : (
+    <Route key={item.to} path={item.to.slice(1)} element={element} />
+  );
+}
 
 function App() {
   return (
@@ -13,6 +57,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/form/:customerId" element={<StudentFormPage />} />
           <Route
             path="/"
             element={
@@ -21,25 +66,11 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {allRoutes.map((item) => {
-              const Element = item.component;
-              const element = item.allowedRoles ? (
-                <ProtectedRoute allowedRoles={item.allowedRoles}>
-                  <Element />
-                </ProtectedRoute>
-              ) : (
-                <Element />
-              );
-
-              return item.index ? (
-                <Route key={item.to} index element={element} />
-              ) : (
-                <Route key={item.to} path={item.to.slice(1)} element={element} />
-              );
-            })}
+            {[...navItems, ...superadminItems].map(renderRouteItem)}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </BrowserRouter>
     </AuthProvider>
   );
