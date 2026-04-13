@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import ExcelJS from 'exceljs';
+import ConfirmModal from '../components/ConfirmModal';
+import Modal from '../components/Modal';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
-import { toast } from 'react-toastify';
 import type { Customer, Student } from '../types';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customerId'>;
@@ -54,6 +55,78 @@ const CustomerSizePage = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleExportExcel = async () => {
+    if (!selectedCustomer || students.length === 0) return;
+
+    const className = `${selectedCustomer.className}${selectedCustomer.school ? ' - ' + selectedCustomer.school : ''}`;
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Học sinh');
+
+    // Column widths
+    ws.columns = [
+      { width: 6 },
+      { width: 26 },
+      { width: 12 },
+      { width: 16 },
+      { width: 15 },
+      { width: 32 },
+    ];
+
+    // Row 1: Tên lớp
+    ws.addRow([`Lớp: ${className}`]);
+    ws.getRow(1).font = { bold: true, size: 13 };
+
+    // Row 2: Sĩ số
+    ws.addRow([`Sĩ số: ${students.length} học sinh`]);
+    ws.getRow(2).font = { italic: true, size: 11 };
+
+    // Row 3: trống
+    ws.addRow([]);
+
+    // Row 4: Header
+    const headerRow = ws.addRow(['STT', 'Họ tên', 'Giới tính', 'Chiều cao (cm)', 'Cân nặng (kg)', 'Ghi chú']);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' },
+      };
+    });
+
+    // Data rows
+    const border: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin' }, left: { style: 'thin' },
+      bottom: { style: 'thin' }, right: { style: 'thin' },
+    };
+    students.forEach((s, i) => {
+      const row = ws.addRow([
+        i + 1,
+        s.name,
+        GENDER_LABEL[s.gender],
+        s.height ?? '',
+        s.weight ?? '',
+        s.notes ?? '',
+      ]);
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.border = border;
+        if (colNum === 1 || colNum === 3 || colNum === 4 || colNum === 5)
+          cell.alignment = { horizontal: 'center' };
+      });
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Bảng Size - ${className}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const openCreate = () => {
@@ -128,6 +201,13 @@ const CustomerSizePage = () => {
           title={publicUrl}
         >
           {copied ? '✅ Đã copy!' : '🔗 Copy link nhập liệu'}
+        </button>
+        <button
+          onClick={handleExportExcel}
+          disabled={!selectedId || students.length === 0}
+          className={`btn-secondary text-sm shrink-0 ${!selectedId || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+        >
+          📅 Xuất Excel
         </button>
       </div>
 
