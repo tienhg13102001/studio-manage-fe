@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { scheduleService } from '../services/scheduleService';
 import { customerService } from '../services/customerService';
@@ -58,6 +58,12 @@ const SchedulesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Schedule | null>(null);
   const [supportIds, setSupportIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [calendarDate, setCalendarDate] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -168,13 +174,54 @@ const SchedulesPage = () => {
     load(defaultFilter);
   };
 
+  // Calendar helpers
+  const calendarDays = useMemo(() => {
+    const { year, month } = calendarDate;
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days: (string | null)[] = Array(firstDay).fill(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+    }
+    return days;
+  }, [calendarDate]);
+
+  const schedulesByDay = useMemo(() => {
+    const map: Record<string, Schedule[]> = {};
+    schedules.forEach((s) => {
+      const key = s.shootDate.slice(0, 10);
+      if (!map[key]) map[key] = [];
+      map[key].push(s);
+    });
+    return map;
+  }, [schedules]);
+
+  const MONTH_VN = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+  const DOW_VN = ['CN','T2','T3','T4','T5','T6','T7'];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Lịch chụp</h2>
-        <button onClick={openCreate} className="btn-primary">
-          + Thêm lịch
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              ☰ Bảng
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${viewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              ◫ Lịch
+            </button>
+          </div>
+          <button onClick={openCreate} className="btn-primary">
+            + Thêm lịch
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -227,6 +274,139 @@ const SchedulesPage = () => {
 
       {loading ? (
         <p className="text-gray-500">Đang tải…</p>
+      ) : viewMode === 'calendar' ? (
+        /* ── Calendar View ── */
+        <div className="card p-4">
+          {/* Month navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() =>
+                setCalendarDate(({ year, month }) =>
+                  month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 },
+                )
+              }
+              className="btn-secondary px-3 py-1 text-sm"
+            >
+              ‹
+            </button>
+            <span className="font-semibold text-gray-800 text-lg">
+              {MONTH_VN[calendarDate.month]} {calendarDate.year}
+            </span>
+            <button
+              onClick={() =>
+                setCalendarDate(({ year, month }) =>
+                  month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 },
+                )
+              }
+              className="btn-secondary px-3 py-1 text-sm"
+            >
+              ›
+            </button>
+          </div>
+
+          {/* Day-of-week headers */}
+          <div className="grid grid-cols-7 mb-1">
+            {DOW_VN.map((d) => (
+              <div key={d} className="text-center text-xs font-semibold text-gray-500 py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+            {calendarDays.map((day, i) => {
+              const daySchedules = day ? (schedulesByDay[day] ?? []) : [];
+              const isToday = day === new Date().toISOString().slice(0, 10);
+              const isSelected = day === selectedDay;
+              return (
+                <div
+                  key={i}
+                  onClick={() => day && setSelectedDay(isSelected ? null : day)}
+                  className={`bg-white min-h-[5rem] p-1.5 cursor-pointer transition-colors ${
+                    !day ? 'bg-gray-50 cursor-default' : 'hover:bg-primary-50'
+                  } ${isSelected ? 'ring-2 ring-inset ring-primary-400' : ''}`}
+                >
+                  {day && (
+                    <>
+                      <div
+                        className={`text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
+                          isToday ? 'bg-primary-600 text-white' : 'text-gray-700'
+                        }`}
+                      >
+                        {parseInt(day.slice(8))}
+                      </div>
+                      <div className="space-y-0.5">
+                        {daySchedules.slice(0, 3).map((s) => {
+                          const customer =
+                            typeof s.customerId === 'object' ? (s.customerId as Customer) : null;
+                          return (
+                            <div
+                              key={s._id}
+                              className={`text-xs truncate rounded px-1 py-0.5 ${statusColor[s.status]} leading-tight`}
+                              title={customer?.className ?? ''}
+                            >
+                              {customer?.className ?? '—'}
+                            </div>
+                          );
+                        })}
+                        {daySchedules.length > 3 && (
+                          <div className="text-xs text-gray-400 pl-1">
+                            +{daySchedules.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Selected day detail */}
+          {selectedDay && (schedulesByDay[selectedDay] ?? []).length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Lịch ngày {parseInt(selectedDay.slice(8))}/{parseInt(selectedDay.slice(5, 7))}/{selectedDay.slice(0, 4)}
+              </h3>
+              <div className="space-y-2">
+                {(schedulesByDay[selectedDay] ?? []).map((s) => {
+                  const customer =
+                    typeof s.customerId === 'object' ? (s.customerId as Customer) : null;
+                  const leadName =
+                    typeof s.leadPhotographer === 'object'
+                      ? ((s.leadPhotographer as User)?.name ?? (s.leadPhotographer as User)?.username)
+                      : (s.leadPhotographer ?? null);
+                  return (
+                    <div key={s._id} className="flex items-start justify-between rounded-lg border border-gray-100 p-3 hover:bg-gray-50">
+                      <div className="space-y-0.5">
+                        <div className="font-medium text-sm text-gray-900">{customer?.className ?? '—'}</div>
+                        {(s.startTime || s.endTime) && (
+                          <div className="text-xs text-gray-500">
+                            ⏰ {s.startTime}{s.endTime ? ` – ${s.endTime}` : ''}
+                          </div>
+                        )}
+                        {s.location && <div className="text-xs text-gray-500">📍 {s.location}</div>}
+                        {leadName && <div className="text-xs text-gray-500">Leader: {leadName}</div>}
+                        {s.notes && <div className="text-xs text-yellow-700 bg-yellow-50 rounded px-1 py-0.5 mt-1">{s.notes}</div>}
+                      </div>
+                      <div className="flex flex-col items-end gap-2 ml-3">
+                        <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => openEdit(s)} className="text-blue-600 hover:underline text-xs">Sửa</button>
+                          <button onClick={() => handleDelete(s._id)} className="text-red-600 hover:underline text-xs">Xoá</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {selectedDay && (schedulesByDay[selectedDay] ?? []).length === 0 && (
+            <div className="mt-4 border-t pt-4 text-center text-gray-400 text-sm">Không có lịch ngày này</div>
+          )}
+        </div>
       ) : (
         <>
           {/* Desktop table */}

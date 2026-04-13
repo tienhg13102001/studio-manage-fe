@@ -3,11 +3,13 @@ import { useForm } from 'react-hook-form';
 import { transactionService } from '../services/transactionService';
 import { customerService } from '../services/customerService';
 import { categoryService } from '../services/categoryService';
+import { userService } from '../services/userService';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-toastify';
 import { formatDate, formatCurrency } from '../utils/format';
-import type { Transaction, Customer, Category, TransactionSummaryRow } from '../types';
+import type { Transaction, Customer, Category, TransactionSummaryRow, User } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface FilterState {
   type: string;
@@ -26,9 +28,13 @@ const defaultFilter: FilterState = {
 };
 
 const FinancePage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [summary, setSummary] = useState<TransactionSummaryRow[]>([]);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [tab, setTab] = useState<'list' | 'summary'>('list');
@@ -72,6 +78,9 @@ const FinancePage = () => {
         setCategories(cat);
       },
     );
+    if (isAdmin) {
+      userService.getAll().then(setUsers);
+    }
   }, []);
 
   const openCreate = () => {
@@ -90,6 +99,10 @@ const FinancePage = () => {
           : (t.customerId ?? ''),
       categoryId: typeof t.categoryId === 'object' ? (t.categoryId as Category)._id : t.categoryId,
       date: t.date.slice(0, 10),
+      createdBy:
+        typeof t.createdBy === 'object' && t.createdBy
+          ? (t.createdBy as User)._id
+          : (t.createdBy ?? ''),
     });
     setModalOpen(true);
   };
@@ -247,6 +260,7 @@ const FinancePage = () => {
                     <th className="text-left px-4 py-3">Danh mục</th>
                     <th className="text-left px-4 py-3">Lớp</th>
                     <th className="text-left px-4 py-3">Mô tả</th>
+                    <th className="text-left px-4 py-3">Người thực hiện</th>
                     <th className="text-right px-4 py-3">Số tiền</th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -271,6 +285,11 @@ const FinancePage = () => {
                           : '—'}
                       </td>
                       <td className="px-4 py-3 text-gray-600">{t.description}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {t.createdBy && typeof t.createdBy === 'object'
+                          ? ((t.createdBy as User).name ?? (t.createdBy as User).username)
+                          : '—'}
+                      </td>
                       <td
                         className={`px-4 py-3 text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
                       >
@@ -295,7 +314,7 @@ const FinancePage = () => {
                   ))}
                   {transactions.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                         Chưa có dữ liệu
                       </td>
                     </tr>
@@ -321,6 +340,11 @@ const FinancePage = () => {
                       )}
                       {t.description && (
                         <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
+                      )}
+                      {t.createdBy && typeof t.createdBy === 'object' && (
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          👤 {(t.createdBy as User).name ?? (t.createdBy as User).username}
+                        </div>
                       )}
                     </div>
                     <div className="text-right">
@@ -536,6 +560,19 @@ const FinancePage = () => {
                 ))}
               </select>
             </div>
+            {isAdmin && (
+              <div className="sm:col-span-2">
+                <label className="label">Người thực hiện</label>
+                <select {...register('createdBy')} className="input">
+                  <option value="">-- Mặc định (tôi) --</option>
+                  {users.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name ?? u.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="sm:col-span-2">
               <label className="label">Mô tả</label>
               <textarea {...register('description')} className="input" rows={2} />

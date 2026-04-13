@@ -76,6 +76,7 @@ export interface Transaction {
   categoryId: string | Category;
   description?: string;
   date: string;
+  createdBy?: string | User;
   createdAt?: string;
 }
 
