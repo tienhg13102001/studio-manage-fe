@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const getInitialOpen = () => {
     const open: Record<string, boolean> = {};
-    navItems.forEach((item) => {
+    [...navItems, ...superadminItems].forEach((item) => {
       if (item.children?.some((child) => location.pathname.startsWith(item.to + child.to))) {
         open[item.to] = true;
       }

@@ -75,21 +75,29 @@ export const navItems: NavItem[] = [
     allowedRoles: [0, 1, 2, 4],
     component: FinancePage,
   },
-  {
-    to: '/settings/categories',
-    label: 'Danh mục',
-    icon: '🏷️',
-    allowedRoles: [0, 1, 2, 4],
-    component: CategoriesPage,
-  },
 ];
 
 export const superadminItems: NavItem[] = [
   {
-    to: '/settings/users',
-    label: 'Người dùng',
-    icon: '👥',
-    allowedRoles: [0],
-    component: UsersPage,
+    to: '/settings',
+    label: 'Cài đặt',
+    icon: '⚙️',
+    allowedRoles: [0, 1],
+    children: [
+      {
+        to: '/users',
+        label: 'Người dùng',
+        icon: '👥',
+        allowedRoles: [0, 1],
+        component: UsersPage,
+      },
+      {
+        to: '/categories',
+        label: 'Danh mục thu/chi',
+        icon: '🏷️',
+        allowedRoles: [0, 1],
+        component: CategoriesPage,
+      },
+    ],
   },
 ];

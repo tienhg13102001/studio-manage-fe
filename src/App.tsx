@@ -70,7 +70,7 @@ function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+        <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
       </BrowserRouter>
     </AuthProvider>
   );

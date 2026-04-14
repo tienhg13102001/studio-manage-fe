@@ -235,12 +235,18 @@ const CustomerSizePage = () => {
         const weight = rawWeight !== null && rawWeight !== '' ? Number(rawWeight) : undefined;
         const notes = row.getCell(6).value ? String(row.getCell(6).value).trim() : undefined;
 
+        const parsedHeight = height !== undefined && !isNaN(height) && height > 0 ? height : undefined;
+        const parsedWeight = weight !== undefined && !isNaN(weight) && weight > 0 ? weight : undefined;
+
+        const missing = [!parsedHeight && 'chiều cao', !parsedWeight && 'cân nặng'].filter(Boolean).join(', ');
+
         rows.push({
           name,
           gender,
-          height: height !== undefined && isNaN(height) ? undefined : height,
-          weight: weight !== undefined && isNaN(weight) ? undefined : weight,
+          height: parsedHeight,
+          weight: parsedWeight,
           notes,
+          error: missing ? `Thiếu ${missing}` : undefined,
         });
       });
 
