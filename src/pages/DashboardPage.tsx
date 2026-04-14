@@ -20,6 +20,7 @@ import {
 } from '../utils/scheduleConstants';
 import { ScheduleCalendar } from '../components/organisms';
 import { useAuth } from '../context/AuthContext';
+import { PageLoader } from '../components/atoms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDashboardStats } from '../store/slices/dashboardSlice';
 import { fetchUsers } from '../store/slices/usersSlice';
@@ -70,7 +71,7 @@ const DashboardPage = () => {
     [stats?.upcomingSchedules],
   );
 
-  if (loading || !stats) return <div className="text-gray-500">Đang tải…</div>;
+  if (loading || !stats) return <PageLoader />;
 
   const { thisMonth, monthly, customerCount, scheduleCount, showSchedules, upcomingSchedules } =
     stats!;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
+import { PageLoader } from '../components/atoms';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
@@ -77,7 +78,7 @@ const StudentFormPage = () => {
   if (!classInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400">Đang tải…</p>
+        <PageLoader />
       </div>
     );
   }

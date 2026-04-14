@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchTransactions, fetchTransactionSummary } from '../store/slices/transactionsSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
+import { TableSkeleton } from '../components/atoms';
 import { fetchUsers } from '../store/slices/usersSlice';
 
 interface FilterState {
@@ -233,7 +234,7 @@ const FinancePage = () => {
 
       {tab === 'list' &&
         (loading ? (
-          <p className="text-gray-500">Đang tải…</p>
+          <TableSkeleton cols={8} />
         ) : (
           <>
             {/* Desktop table */}

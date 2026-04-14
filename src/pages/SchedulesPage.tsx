@@ -6,6 +6,7 @@ import { scheduleService } from '../services/scheduleService';
 import type { Customer, Package, Schedule, User } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
+import { TableSkeleton } from '../components/atoms';
 import {
   SCHEDULE_STATUS_COLOR as statusColor,
   SCHEDULE_STATUS_LABEL as statusLabel,
@@ -250,7 +251,7 @@ const SchedulesPage = () => {
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Đang tải…</p>
+        <TableSkeleton cols={11} />
       ) : viewMode === 'calendar' ? (
         <div className="card p-4">
           <ScheduleCalendar

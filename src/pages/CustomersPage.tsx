@@ -5,6 +5,7 @@ import { customerService } from '../services/customerService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
+import { TableSkeleton } from '../components/atoms';
 import { toast } from 'react-toastify';
 import type { Customer } from '../types';
 
@@ -115,7 +116,7 @@ const CustomersPage = () => {
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Đang tải…</p>
+        <TableSkeleton cols={6} />
       ) : (
         <>
           {/* Desktop table */}

@@ -5,6 +5,7 @@ import { scheduleService } from '../services/scheduleService';
 import { transactionService } from '../services/transactionService';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Customer, Schedule, Transaction, User } from '../types';
+import { PageLoader } from '../components/atoms';
 
 const statusLabel: Record<string, string> = {
   pending: 'Chờ xác nhận',
@@ -39,7 +40,7 @@ const CustomerDetailPage = () => {
     });
   }, [id]);
 
-  if (!customer) return <div className="text-gray-500">Đang tải…</div>;
+  if (!customer) return <PageLoader />;
 
   const totalIncome = transactions
     .filter((t) => t.type === 'income')

@@ -4,6 +4,7 @@ import { packageService } from '../services/packageService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
+import { TableSkeleton } from '../components/atoms';
 import { toast } from 'react-toastify';
 import type { Package } from '../types';
 
@@ -110,7 +111,7 @@ const PackagesPage = () => {
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Đang tải…</p>
+        <TableSkeleton cols={8} />
       ) : (
         <>
           {/* Desktop table */}

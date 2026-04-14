@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import ExcelJS from 'exceljs';
 import { ConfirmModal, Modal } from '../components/organisms';
+import { TableSkeleton } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import type { Customer, Student } from '../types';
@@ -446,7 +447,7 @@ const CustomerSizePage = () => {
           </div>
 
           {loadingStudents ? (
-            <p className="text-gray-400 text-sm">Đang tải…</p>
+            <TableSkeleton cols={7} rows={4} />
           ) : (
             (() => {
               const displayedStudents = showDupOnly
