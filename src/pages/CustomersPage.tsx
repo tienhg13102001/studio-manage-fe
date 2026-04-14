@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { customerService } from '../services/customerService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
+import { ConfirmModal, Modal } from '../components/organisms';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchCustomers } from '../store/slices/customersSlice';
 import { toast } from 'react-toastify';
 import type { Customer } from '../types';
 
 type FormValues = Omit<Customer, '_id' | 'createdAt'>;
 
 const CustomersPage = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { list: customers, loading } = useAppSelector((s) => s.customers);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
@@ -23,16 +24,9 @@ const CustomersPage = () => {
     formState: { isSubmitting },
   } = useForm<FormValues>();
 
-  const load = async (q?: string) => {
-    setLoading(true);
-    const res = await customerService.getAll(q ? { search: q } : {});
-    setCustomers(res.data);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    load();
-  }, []);
+    dispatch(fetchCustomers({}));
+  }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
@@ -64,7 +58,7 @@ const CustomersPage = () => {
         toast.success('Thêm lớp thành công!');
       }
       setModalOpen(false);
-      load();
+      dispatch(fetchCustomers({}));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -77,7 +71,7 @@ const CustomersPage = () => {
     try {
       await customerService.remove(confirmId);
       toast.success('Đã xoá lớp.');
-      load();
+      dispatch(fetchCustomers({}));
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -99,9 +93,12 @@ const CustomersPage = () => {
           placeholder="Tìm kiếm lớp, trường…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && load(search)}
+          onKeyDown={(e) => e.key === 'Enter' && dispatch(fetchCustomers(search ? { search } : {}))}
         />
-        <button className="btn-secondary" onClick={() => load(search)}>
+        <button
+          className="btn-secondary"
+          onClick={() => dispatch(fetchCustomers(search ? { search } : {}))}
+        >
           Tìm
         </button>
         {search && (
@@ -109,7 +106,7 @@ const CustomersPage = () => {
             className="btn-secondary"
             onClick={() => {
               setSearch('');
-              load();
+              dispatch(fetchCustomers({}));
             }}
           >
             Xoá bộ lọc

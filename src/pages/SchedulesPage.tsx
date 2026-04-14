@@ -1,17 +1,20 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { scheduleService } from '../services/scheduleService';
-import { customerService } from '../services/customerService';
-import { userService } from '../services/userService';
-import { packageService } from '../services/packageService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
-import ScheduleCalendar from '../components/ScheduleCalendar';
 import { toast } from 'react-toastify';
-import { formatDate } from '../utils/format';
-import { SCHEDULE_STATUS_LABEL as statusLabel, SCHEDULE_STATUS_COLOR as statusColor } from '../utils/scheduleConstants';
-import type { Schedule, Customer, User, Package } from '../types';
+import { ConfirmModal, Modal, ScheduleCalendar } from '../components/organisms';
+import { scheduleService } from '../services/scheduleService';
+import type { Customer, Package, Schedule, User } from '../types';
 import { ROLE_LABELS } from '../types';
+import { formatDate } from '../utils/format';
+import {
+  SCHEDULE_STATUS_COLOR as statusColor,
+  SCHEDULE_STATUS_LABEL as statusLabel,
+} from '../utils/scheduleConstants';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchSchedules } from '../store/slices/schedulesSlice';
+import { fetchCustomers } from '../store/slices/customersSlice';
+import { fetchPackages } from '../store/slices/packagesSlice';
+import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
 
 interface FilterState {
   status: string;
@@ -36,12 +39,11 @@ interface ScheduleFormValues {
 }
 
 const SchedulesPage = () => {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [photographers, setPhotographers] = useState<User[]>([]);
-  const [salesUsers, setSalesUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { list: schedules, loading } = useAppSelector((s) => s.schedules);
+  const { list: customers } = useAppSelector((s) => s.customers);
+  const { list: packages } = useAppSelector((s) => s.packages);
+  const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Schedule | null>(null);
@@ -55,25 +57,22 @@ const SchedulesPage = () => {
     watch,
   } = useForm<ScheduleFormValues>();
 
-  const load = async (f = filter) => {
-    setLoading(true);
+  const buildFilterParams = (f: FilterState): Record<string, string> => {
     const params: Record<string, string> = {};
     if (f.status) params.status = f.status;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
     if (f.customerId) params.customerId = f.customerId;
-    const res = await scheduleService.getAll(params);
-    setSchedules(res.data);
-    setLoading(false);
+    return params;
   };
 
   useEffect(() => {
-    load();
-    customerService.getAll({ limit: 200 }).then((r) => setCustomers(r.data));
-    packageService.getAll().then(setPackages);
-    userService.getPhotographers().then(setPhotographers);
-    userService.getSales().then(setSalesUsers);
-  }, []);
+    dispatch(fetchSchedules({}));
+    dispatch(fetchCustomers({ limit: 200 }));
+    dispatch(fetchPackages());
+    dispatch(fetchPhotographers());
+    dispatch(fetchSales());
+  }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
@@ -94,7 +93,8 @@ const SchedulesPage = () => {
     setSupportIds(supIds);
     reset({
       customerId: typeof s.customerId === 'object' ? (s.customerId as Customer)._id : s.customerId,
-      packageId: typeof s.packageId === 'object' ? (s.packageId as Package)._id : (s.packageId ?? ''),
+      packageId:
+        typeof s.packageId === 'object' ? (s.packageId as Package)._id : (s.packageId ?? ''),
       shootDate: s.shootDate.slice(0, 10),
       startTime: s.startTime,
       endTime: s.endTime,
@@ -123,7 +123,7 @@ const SchedulesPage = () => {
         toast.success('Thêm lịch chụp thành công!');
       }
       setModalOpen(false);
-      load();
+      dispatch(fetchSchedules(buildFilterParams(filter)));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -138,7 +138,7 @@ const SchedulesPage = () => {
     try {
       await scheduleService.remove(confirmId);
       toast.success('Đã xoá lịch chụp.');
-      load();
+      dispatch(fetchSchedules(buildFilterParams(filter)));
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -151,10 +151,10 @@ const SchedulesPage = () => {
     await scheduleService.downloadContract(s._id, filename);
   };
 
-  const applyFilter = () => load(filter);
+  const applyFilter = () => dispatch(fetchSchedules(buildFilterParams(filter)));
   const resetFilter = () => {
     setFilter(defaultFilter);
-    load(defaultFilter);
+    dispatch(fetchSchedules({}));
   };
 
   const calendarItems = useMemo(
@@ -167,8 +167,7 @@ const SchedulesPage = () => {
         location: s.location,
         status: s.status,
         notes: s.notes,
-        className:
-          typeof s.customerId === 'object' ? (s.customerId as Customer).className : '—',
+        className: typeof s.customerId === 'object' ? (s.customerId as Customer).className : '—',
         leadName:
           typeof s.leadPhotographer === 'object'
             ? ((s.leadPhotographer as User).name ?? (s.leadPhotographer as User).username)

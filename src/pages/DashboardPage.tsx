@@ -11,13 +11,18 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { dashboardService, type DashboardStats, type UpcomingSchedule } from '../services/dashboardService';
-import { userService } from '../services/userService';
+import type { UpcomingSchedule } from '../services/dashboardService';
 import { formatCurrency, formatDate } from '../utils/format';
-import { shortLabel, SCHEDULE_STATUS_LABEL, SCHEDULE_STATUS_COLOR } from '../utils/scheduleConstants';
-import ScheduleCalendar from '../components/ScheduleCalendar';
+import {
+  shortLabel,
+  SCHEDULE_STATUS_LABEL,
+  SCHEDULE_STATUS_COLOR,
+} from '../utils/scheduleConstants';
+import { ScheduleCalendar } from '../components/organisms';
 import { useAuth } from '../context/AuthContext';
-import type { User } from '../types';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchDashboardStats } from '../store/slices/dashboardSlice';
+import { fetchUsers } from '../store/slices/usersSlice';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -25,32 +30,27 @@ const DashboardPage = () => {
   const showTotalCustomers = user?.roles.some((r) => r === 0 || r === 1 || r === 2) ?? false;
   const showFinance = user?.roles.some((r) => r === 0 || r === 1 || r === 2) ?? false;
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const dispatch = useAppDispatch();
+  const { stats, loading } = useAppSelector((s) => s.dashboard);
+  const { list: users } = useAppSelector((s) => s.users);
   const [scheduleViewMode, setScheduleViewMode] = useState<'table' | 'calendar'>('table');
-  const [users, setUsers] = useState<User[]>([]);
   const [filterUserId, setFilterUserId] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  const load = async (uid = filterUserId) => {
-    setLoading(true);
-    const data = await dashboardService.getStats(uid ? { userId: uid } : undefined);
-    setStats(data);
-    setLoading(false);
-  };
 
   useEffect(() => {
-    load();
-    if (isAdmin) userService.getAll().then(setUsers);
-  }, []);
+    dispatch(fetchDashboardStats(undefined));
+    if (isAdmin) dispatch(fetchUsers());
+  }, [dispatch, isAdmin]);
 
   const handleFilterChange = (uid: string) => {
     setFilterUserId(uid);
-    load(uid);
+    dispatch(fetchDashboardStats(uid ? { userId: uid } : undefined));
   };
 
   const displayName = user?.name ?? user?.username ?? '';
   const selectedUserName = filterUserId
-    ? (users.find((u) => u._id === filterUserId)?.name ?? users.find((u) => u._id === filterUserId)?.username ?? '')
+    ? (users.find((u) => u._id === filterUserId)?.name ??
+      users.find((u) => u._id === filterUserId)?.username ??
+      '')
     : '';
 
   const calendarItems = useMemo(
@@ -70,9 +70,10 @@ const DashboardPage = () => {
     [stats?.upcomingSchedules],
   );
 
-  if (loading) return <div className="text-gray-500">Đang tải…</div>;
+  if (loading || !stats) return <div className="text-gray-500">Đang tải…</div>;
 
-  const { thisMonth, monthly, customerCount, scheduleCount, showSchedules, upcomingSchedules } = stats!;
+  const { thisMonth, monthly, customerCount, scheduleCount, showSchedules, upcomingSchedules } =
+    stats!;
 
   const STATUS_LABEL = SCHEDULE_STATUS_LABEL;
   const STATUS_COLOR = SCHEDULE_STATUS_COLOR;
@@ -126,18 +127,23 @@ const DashboardPage = () => {
     <div className="space-y-6">
       {/* Greeting */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          Xin chào, {displayName}!
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900">Xin chào, {displayName}!</h2>
         <p className="text-sm text-gray-500 mt-0.5">
-          {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {new Date().toLocaleDateString('vi-VN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
         </p>
       </div>
 
       {/* Admin filter */}
       {isAdmin && (
         <div className="card flex items-center gap-3 py-3">
-          <span className="text-sm text-gray-600 font-medium whitespace-nowrap">Xem theo người:</span>
+          <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+            Xem theo người:
+          </span>
           <select
             className="input flex-1 max-w-xs"
             value={filterUserId}
@@ -158,45 +164,71 @@ const DashboardPage = () => {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {cards.filter((c) => c.show).map((c) => (
-          <Link key={c.label} to={c.link} className="card hover:shadow-md transition-shadow">
-            <p className="text-sm text-gray-500">{c.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${c.color}`}>{c.value}</p>
-          </Link>
-        ))}
+        {cards
+          .filter((c) => c.show)
+          .map((c) => (
+            <Link key={c.label} to={c.link} className="card hover:shadow-md transition-shadow">
+              <p className="text-sm text-gray-500">{c.label}</p>
+              <p className={`text-2xl font-bold mt-1 ${c.color}`}>{c.value}</p>
+            </Link>
+          ))}
       </div>
 
       {/* Monthly chart */}
       {showFinance && (
-      <div className="card">
-        <h3 className="text-base font-semibold text-gray-700 mb-4">Thu chi 6 tháng gần đây</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis
-              tick={{ fontSize: 11 }}
-              tickFormatter={(v) => {
-                const abs = Math.abs(v);
-                const fmtd = abs >= 1_000_000 ? `${(abs / 1_000_000).toFixed(0)}M` : abs >= 1000 ? `${(abs / 1000).toFixed(0)}K` : String(abs);
-                return v < 0 ? `-${fmtd}` : fmtd;
-              }}
-            />
-            <ReferenceLine y={0} stroke="#d1d5db" strokeWidth={1.5} />
-            <Tooltip
-              formatter={(value, name) => [
-                formatCurrency(Math.abs(Number(value ?? 0))),
-                name,
-              ]}
-              labelStyle={{ fontWeight: 600 }}
-            />
-            <Legend />
-            <Line type="monotone" dataKey="Thu" stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="Chi" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="Lợi nhuận" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+        <div className="card">
+          <h3 className="text-base font-semibold text-gray-700 mb-4">Thu chi 6 tháng gần đây</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v) => {
+                  const abs = Math.abs(v);
+                  const fmtd =
+                    abs >= 1_000_000
+                      ? `${(abs / 1_000_000).toFixed(0)}M`
+                      : abs >= 1000
+                        ? `${(abs / 1000).toFixed(0)}K`
+                        : String(abs);
+                  return v < 0 ? `-${fmtd}` : fmtd;
+                }}
+              />
+              <ReferenceLine y={0} stroke="#d1d5db" strokeWidth={1.5} />
+              <Tooltip
+                formatter={(value, name) => [formatCurrency(Math.abs(Number(value ?? 0))), name]}
+                labelStyle={{ fontWeight: 600 }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="Thu"
+                stroke="#22c55e"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="Chi"
+                stroke="#ef4444"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="Lợi nhuận"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                strokeDasharray="5 3"
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
 
       {/* Upcoming schedules */}
@@ -219,7 +251,9 @@ const DashboardPage = () => {
                   ◫ Lịch
                 </button>
               </div>
-              <Link to="/schedules" className="text-sm text-blue-600 hover:underline">Xem tất cả →</Link>
+              <Link to="/schedules" className="text-sm text-blue-600 hover:underline">
+                Xem tất cả →
+              </Link>
             </div>
           </div>
           {scheduleViewMode === 'calendar' ? (
@@ -246,12 +280,15 @@ const DashboardPage = () => {
                       <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-3 py-2 font-medium">{formatDate(s.shootDate)}</td>
                         <td className="px-3 py-2 text-gray-500">
-                          {s.startTime ?? '—'}{s.endTime ? ` – ${s.endTime}` : ''}
+                          {s.startTime ?? '—'}
+                          {s.endTime ? ` – ${s.endTime}` : ''}
                         </td>
                         <td className="px-3 py-2">
                           {s.customerId?.className ?? '—'}
                           {s.customerId?.school && (
-                            <span className="text-xs text-gray-400 ml-1">({s.customerId.school})</span>
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({s.customerId.school})
+                            </span>
                           )}
                         </td>
                         <td className="px-3 py-2 text-gray-500">{s.location ?? '—'}</td>
@@ -279,7 +316,8 @@ const DashboardPage = () => {
                         <div className="font-medium text-sm">{formatDate(s.shootDate)}</div>
                         {(s.startTime || s.endTime) && (
                           <div className="text-xs text-gray-500">
-                            {s.startTime}{s.endTime ? ` – ${s.endTime}` : ''}
+                            {s.startTime}
+                            {s.endTime ? ` – ${s.endTime}` : ''}
                           </div>
                         )}
                         <div className="text-sm mt-0.5">{s.customerId?.className ?? '—'}</div>
@@ -301,4 +339,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-

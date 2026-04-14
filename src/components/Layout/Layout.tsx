@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Logo from '../Logo';
+import { Logo } from '../atoms';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

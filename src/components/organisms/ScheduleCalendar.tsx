@@ -1,5 +1,10 @@
 import { useState, useMemo } from 'react';
-import { MONTH_VN, DOW_VN, SCHEDULE_STATUS_LABEL, SCHEDULE_STATUS_COLOR } from '../utils/scheduleConstants';
+import {
+  MONTH_VN,
+  DOW_VN,
+  SCHEDULE_STATUS_LABEL,
+  SCHEDULE_STATUS_COLOR,
+} from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
   _id: string;
@@ -29,7 +34,6 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
 
   const calendarDays = useMemo(() => {
     const { year, month } = calendarDate;
-    // Monday-first grid: shift so Mon=0, Sun=6
     const rawFirstDay = new Date(year, month, 1).getDay();
     const firstDay = (rawFirstDay + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -126,7 +130,9 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                       </div>
                     ))}
                     {dayItems.length > maxBadges && (
-                      <div className="text-xs text-gray-400 pl-1">+{dayItems.length - maxBadges}</div>
+                      <div className="text-xs text-gray-400 pl-1">
+                        +{dayItems.length - maxBadges}
+                      </div>
                     )}
                   </div>
                 </>

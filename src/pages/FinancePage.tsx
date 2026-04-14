@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { transactionService } from '../services/transactionService';
-import { customerService } from '../services/customerService';
-import { categoryService } from '../services/categoryService';
-import { userService } from '../services/userService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
+import { ConfirmModal, Modal } from '../components/organisms';
 import { toast } from 'react-toastify';
 import { formatDate, formatCurrency } from '../utils/format';
-import type { Transaction, Customer, Category, TransactionSummaryRow, User } from '../types';
+import type { Transaction, Customer, Category, User } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchTransactions, fetchTransactionSummary } from '../store/slices/transactionsSlice';
+import { fetchCustomers } from '../store/slices/customersSlice';
+import { fetchCategories } from '../store/slices/categoriesSlice';
+import { fetchUsers } from '../store/slices/usersSlice';
 
 interface FilterState {
   type: string;
@@ -31,14 +32,13 @@ const FinancePage = () => {
   const { user } = useAuth();
   const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [summary, setSummary] = useState<TransactionSummaryRow[]>([]);
+  const dispatch = useAppDispatch();
+  const { list: transactions, summary, loading } = useAppSelector((s) => s.transactions);
+  const { list: customers } = useAppSelector((s) => s.customers);
+  const { list: categories } = useAppSelector((s) => s.categories);
+  const { list: users } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [tab, setTab] = useState<'list' | 'summary'>('list');
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const {
@@ -51,37 +51,23 @@ const FinancePage = () => {
 
   const selectedType = watch('type');
 
-  const loadList = async (f = filter) => {
-    setLoading(true);
+  const buildListParams = (f: FilterState): Record<string, string> => {
     const params: Record<string, string> = {};
     if (f.type) params.type = f.type;
     if (f.customerId) params.customerId = f.customerId;
     if (f.categoryId) params.categoryId = f.categoryId;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
-    const res = await transactionService.getAll(params);
-    setTransactions(res.data);
-    setLoading(false);
-  };
-
-  const loadSummary = async (f = filter) => {
-    const rows = await transactionService.getSummary({ dateFrom: f.dateFrom, dateTo: f.dateTo });
-    setSummary(rows);
+    return params;
   };
 
   useEffect(() => {
-    loadList();
-    loadSummary();
-    Promise.all([customerService.getAll({ limit: 200 }), categoryService.getAll()]).then(
-      ([c, cat]) => {
-        setCustomers(c.data);
-        setCategories(cat);
-      },
-    );
-    if (isAdmin) {
-      userService.getAll().then(setUsers);
-    }
-  }, []);
+    dispatch(fetchTransactions({}));
+    dispatch(fetchTransactionSummary());
+    dispatch(fetchCustomers({ limit: 200 }));
+    dispatch(fetchCategories());
+    if (isAdmin) dispatch(fetchUsers());
+  }, [dispatch, isAdmin]);
 
   const openCreate = () => {
     setEditing(null);
@@ -118,8 +104,8 @@ const FinancePage = () => {
         toast.success('Thêm giao dịch thành công!');
       }
       setModalOpen(false);
-      loadList();
-      loadSummary();
+      dispatch(fetchTransactions(buildListParams(filter)));
+      dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -134,8 +120,8 @@ const FinancePage = () => {
     try {
       await transactionService.remove(confirmId);
       toast.success('Đã xoá giao dịch.');
-      loadList();
-      loadSummary();
+      dispatch(fetchTransactions(buildListParams(filter)));
+      dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -143,13 +129,13 @@ const FinancePage = () => {
   };
 
   const applyFilter = () => {
-    loadList(filter);
-    loadSummary(filter);
+    dispatch(fetchTransactions(buildListParams(filter)));
+    dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
   };
   const resetFilter = () => {
     setFilter(defaultFilter);
-    loadList(defaultFilter);
-    loadSummary(defaultFilter);
+    dispatch(fetchTransactions({}));
+    dispatch(fetchTransactionSummary());
   };
 
   const filteredCategories = categories.filter((c) => !selectedType || c.type === selectedType);

@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import ExcelJS from 'exceljs';
-import ConfirmModal from '../components/ConfirmModal';
-import Modal from '../components/Modal';
+import { ConfirmModal, Modal } from '../components/organisms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import type { Customer, Student } from '../types';
@@ -11,10 +10,14 @@ import type { Customer, Student } from '../types';
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customerId'>;
 
 const GENDER_LABEL: Record<string, string> = { male: 'Nam', female: 'Nữ' };
-const GENDER_FROM_LABEL: Record<string, string> = { nam: 'male', nữ: 'female', male: 'male', female: 'female' };
+const GENDER_FROM_LABEL: Record<string, string> = {
+  nam: 'male',
+  nữ: 'female',
+  male: 'male',
+  female: 'female',
+};
 
-const normalizeName = (name: string) =>
-  name.toLowerCase().trim().replace(/\s+/g, ' ');
+const normalizeName = (name: string) => name.toLowerCase().trim().replace(/\s+/g, ' ');
 
 interface ImportRow {
   name: string;
@@ -123,21 +126,32 @@ const CustomerSizePage = () => {
     ws.addRow([]);
 
     // Row 4: Header
-    const headerRow = ws.addRow(['STT', 'Họ tên', 'Giới tính', 'Chiều cao (cm)', 'Cân nặng (kg)', 'Ghi chú']);
+    const headerRow = ws.addRow([
+      'STT',
+      'Họ tên',
+      'Giới tính',
+      'Chiều cao (cm)',
+      'Cân nặng (kg)',
+      'Ghi chú',
+    ]);
     headerRow.font = { bold: true };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
     headerRow.eachCell((cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
       cell.border = {
-        top: { style: 'thin' }, left: { style: 'thin' },
-        bottom: { style: 'thin' }, right: { style: 'thin' },
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
       };
     });
 
     // Data rows
     const border: Partial<ExcelJS.Borders> = {
-      top: { style: 'thin' }, left: { style: 'thin' },
-      bottom: { style: 'thin' }, right: { style: 'thin' },
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' },
     };
     students.forEach((s, i) => {
       const row = ws.addRow([
@@ -156,7 +170,9 @@ const CustomerSizePage = () => {
     });
 
     const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -205,14 +221,21 @@ const CustomerSizePage = () => {
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.load(buffer);
       const ws = wb.worksheets[0];
-      if (!ws) { toast.error('Không đọc được file Excel.'); return; }
+      if (!ws) {
+        toast.error('Không đọc được file Excel.');
+        return;
+      }
 
       // Find the header row index (the row containing "họ tên" or "stt")
       let headerRowNum = -1;
       ws.eachRow((row, rowNum) => {
         if (headerRowNum !== -1) return;
-        const c1 = String(row.getCell(1).value ?? '').trim().toLowerCase();
-        const c2 = String(row.getCell(2).value ?? '').trim().toLowerCase();
+        const c1 = String(row.getCell(1).value ?? '')
+          .trim()
+          .toLowerCase();
+        const c2 = String(row.getCell(2).value ?? '')
+          .trim()
+          .toLowerCase();
         if (c1 === 'stt' || c2 === 'họ tên' || c2 === 'ho ten') {
           headerRowNum = rowNum;
         }
@@ -226,7 +249,9 @@ const CustomerSizePage = () => {
         const name = String(row.getCell(2).value ?? '').trim();
         if (!name) return;
 
-        const genderRaw = String(row.getCell(3).value ?? '').trim().toLowerCase();
+        const genderRaw = String(row.getCell(3).value ?? '')
+          .trim()
+          .toLowerCase();
         const gender = (GENDER_FROM_LABEL[genderRaw] ?? 'male') as 'male' | 'female';
 
         const rawHeight = row.getCell(4).value;
@@ -235,10 +260,14 @@ const CustomerSizePage = () => {
         const weight = rawWeight !== null && rawWeight !== '' ? Number(rawWeight) : undefined;
         const notes = row.getCell(6).value ? String(row.getCell(6).value).trim() : undefined;
 
-        const parsedHeight = height !== undefined && !isNaN(height) && height > 0 ? height : undefined;
-        const parsedWeight = weight !== undefined && !isNaN(weight) && weight > 0 ? weight : undefined;
+        const parsedHeight =
+          height !== undefined && !isNaN(height) && height > 0 ? height : undefined;
+        const parsedWeight =
+          weight !== undefined && !isNaN(weight) && weight > 0 ? weight : undefined;
 
-        const missing = [!parsedHeight && 'chiều cao', !parsedWeight && 'cân nặng'].filter(Boolean).join(', ');
+        const missing = [!parsedHeight && 'chiều cao', !parsedWeight && 'cân nặng']
+          .filter(Boolean)
+          .join(', ');
 
         rows.push({
           name,
@@ -250,7 +279,10 @@ const CustomerSizePage = () => {
         });
       });
 
-      if (rows.length === 0) { toast.error('Không tìm thấy dữ liệu học sinh trong file.'); return; }
+      if (rows.length === 0) {
+        toast.error('Không tìm thấy dữ liệu học sinh trong file.');
+        return;
+      }
 
       // Duplicate detection
       const existingByNorm = new Map(students.map((s) => [normalizeName(s.name), s.name]));
@@ -383,7 +415,15 @@ const CustomerSizePage = () => {
               Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span>{' '}
               — {students.length} học sinh
               {duplicateNorms.size > 0 && (
-                <span className="ml-2 text-yellow-600 font-medium">⚠ {[...duplicateNorms].reduce((acc, norm) => acc + students.filter(s => normalizeName(s.name) === norm).length, 0)} trùng tên</span>
+                <span className="ml-2 text-yellow-600 font-medium">
+                  ⚠{' '}
+                  {[...duplicateNorms].reduce(
+                    (acc, norm) =>
+                      acc + students.filter((s) => normalizeName(s.name) === norm).length,
+                    0,
+                  )}{' '}
+                  trùng tên
+                </span>
               )}
             </p>
             <div className="flex items-center gap-2">
@@ -407,123 +447,157 @@ const CustomerSizePage = () => {
 
           {loadingStudents ? (
             <p className="text-gray-400 text-sm">Đang tải…</p>
-          ) : (() => {
-            const displayedStudents = showDupOnly
-              ? students.filter((s) => duplicateNorms.has(normalizeName(s.name)))
-              : students;
-            return (
-            <>
-              {/* Desktop table */}
-              <div className="hidden md:block card p-0 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600 border-b">
-                    <tr>
-                      <th className="text-left px-4 py-3">#</th>
-                      <th className="text-left px-4 py-3">Họ tên</th>
-                      <th className="text-left px-4 py-3">Giới tính</th>
-                      <th className="text-right px-4 py-3">Chiều cao (cm)</th>
-                      <th className="text-right px-4 py-3">Cân nặng (kg)</th>
-                      <th className="text-left px-4 py-3">Ghi chú</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
+          ) : (
+            (() => {
+              const displayedStudents = showDupOnly
+                ? students.filter((s) => duplicateNorms.has(normalizeName(s.name)))
+                : students;
+              return (
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden md:block card p-0 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-600 border-b">
+                        <tr>
+                          <th className="text-left px-4 py-3">#</th>
+                          <th className="text-left px-4 py-3">Họ tên</th>
+                          <th className="text-left px-4 py-3">Giới tính</th>
+                          <th className="text-right px-4 py-3">Chiều cao (cm)</th>
+                          <th className="text-right px-4 py-3">Cân nặng (kg)</th>
+                          <th className="text-left px-4 py-3">Ghi chú</th>
+                          <th className="px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayedStudents.map((s, i) => {
+                          const isDup = duplicateNorms.has(normalizeName(s.name));
+                          return (
+                            <tr
+                              key={s._id}
+                              className={`border-b last:border-0 ${isDup ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
+                            >
+                              <td className="px-4 py-3 text-gray-400">{i + 1}</td>
+                              <td className="px-4 py-3 font-medium">
+                                {s.name}
+                                {isDup && (
+                                  <span className="ml-1.5 text-yellow-600 text-xs">
+                                    ⚠ trùng tên
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-gray-600">{GENDER_LABEL[s.gender]}</td>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {s.height ?? '—'}
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {s.weight ?? '—'}
+                              </td>
+                              <td className="px-4 py-3 text-gray-400 text-xs">{s.notes}</td>
+                              <td className="px-4 py-3 text-right space-x-2">
+                                <button
+                                  onClick={() => openEdit(s)}
+                                  className="text-blue-600 hover:underline text-xs"
+                                >
+                                  Sửa
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(s._id)}
+                                  className="text-red-600 hover:underline text-xs"
+                                >
+                                  Xoá
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {displayedStudents.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                              {showDupOnly ? (
+                                <span>
+                                  Không còn học sinh trùng tên —{' '}
+                                  <button
+                                    className="underline text-blue-500"
+                                    onClick={() => setShowDupOnly(false)}
+                                  >
+                                    Hiện tất cả
+                                  </button>
+                                </span>
+                              ) : (
+                                'Chưa có học sinh nào'
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-3">
                     {displayedStudents.map((s, i) => {
                       const isDup = duplicateNorms.has(normalizeName(s.name));
                       return (
-                      <tr key={s._id} className={`border-b last:border-0 ${isDup ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
-                        <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                        <td className="px-4 py-3 font-medium">
-                          {s.name}
-                          {isDup && <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{GENDER_LABEL[s.gender]}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{s.height ?? '—'}</td>
-                        <td className="px-4 py-3 text-right text-gray-600">{s.weight ?? '—'}</td>
-                        <td className="px-4 py-3 text-gray-400 text-xs">{s.notes}</td>
-                        <td className="px-4 py-3 text-right space-x-2">
-                          <button
-                            onClick={() => openEdit(s)}
-                            className="text-blue-600 hover:underline text-xs"
-                          >
-                            Sửa
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s._id)}
-                            className="text-red-600 hover:underline text-xs"
-                          >
-                            Xoá
-                          </button>
-                        </td>
-                      </tr>
+                        <div
+                          key={s._id}
+                          className={`card p-4 ${isDup ? 'border-yellow-300 bg-yellow-50' : ''}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <span className="text-xs text-gray-400 mr-1">{i + 1}.</span>
+                              <span className="font-semibold">{s.name}</span>
+                              <span className="ml-2 text-sm text-gray-500">
+                                {GENDER_LABEL[s.gender]}
+                              </span>
+                              {isDup && (
+                                <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                            {s.height && <span>📏 {s.height} cm</span>}
+                            {s.weight && <span>⚖️ {s.weight} kg</span>}
+                          </div>
+                          {s.notes && <p className="text-xs text-gray-400 mt-1">{s.notes}</p>}
+                          <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => openEdit(s)}
+                              className="text-blue-600 text-xs font-medium"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => handleDelete(s._id)}
+                              className="text-red-600 text-xs font-medium"
+                            >
+                              Xoá
+                            </button>
+                          </div>
+                        </div>
                       );
                     })}
                     {displayedStudents.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                          {showDupOnly ? (
-                            <span>
-                              Không còn học sinh trùng tên —{' '}
-                              <button className="underline text-blue-500" onClick={() => setShowDupOnly(false)}>Hiện tất cả</button>
-                            </span>
-                          ) : 'Chưa có học sinh nào'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile cards */}
-              <div className="md:hidden space-y-3">
-                {displayedStudents.map((s, i) => {
-                  const isDup = duplicateNorms.has(normalizeName(s.name));
-                  return (
-                  <div key={s._id} className={`card p-4 ${isDup ? 'border-yellow-300 bg-yellow-50' : ''}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-xs text-gray-400 mr-1">{i + 1}.</span>
-                        <span className="font-semibold">{s.name}</span>
-                        <span className="ml-2 text-sm text-gray-500">{GENDER_LABEL[s.gender]}</span>
-                        {isDup && <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>}
+                      <div className="card py-10 text-center text-gray-400">
+                        {showDupOnly ? (
+                          <span>
+                            Không còn học sinh trùng tên —{' '}
+                            <button
+                              className="underline text-blue-500"
+                              onClick={() => setShowDupOnly(false)}
+                            >
+                              Hiện tất cả
+                            </button>
+                          </span>
+                        ) : (
+                          'Không có học sinh nào'
+                        )}
                       </div>
-                    </div>
-                    <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                      {s.height && <span>📏 {s.height} cm</span>}
-                      {s.weight && <span>⚖️ {s.weight} kg</span>}
-                    </div>
-                    {s.notes && <p className="text-xs text-gray-400 mt-1">{s.notes}</p>}
-                    <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
-                      <button
-                        onClick={() => openEdit(s)}
-                        className="text-blue-600 text-xs font-medium"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s._id)}
-                        className="text-red-600 text-xs font-medium"
-                      >
-                        Xoá
-                      </button>
-                    </div>
+                    )}
                   </div>
-                  );
-                })}
-                {displayedStudents.length === 0 && (
-                  <div className="card py-10 text-center text-gray-400">
-                    {showDupOnly ? (
-                      <span>
-                        Không còn học sinh trùng tên —{' '}
-                        <button className="underline text-blue-500" onClick={() => setShowDupOnly(false)}>Hiện tất cả</button>
-                      </span>
-                    ) : 'Không có học sinh nào'}
-                  </div>
-                )}
-              </div>
-            </>
-            );
-          })()}
+                </>
+              );
+            })()
+          )}
         </>
       )}
 
@@ -537,18 +611,28 @@ const CustomerSizePage = () => {
       {/* Import preview modal */}
       <Modal
         isOpen={importModalOpen}
-        onClose={() => { if (!importing) { setImportModalOpen(false); setImportRows([]); } }}
-        title={`Xem trước dữ liệu import — ${importRows.filter(r => !r.error).length} học sinh`}
+        onClose={() => {
+          if (!importing) {
+            setImportModalOpen(false);
+            setImportRows([]);
+          }
+        }}
+        title={`Xem trước dữ liệu import — ${importRows.filter((r) => !r.error).length} học sinh`}
         size="lg"
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500">
-            Hệ thống đọc được <span className="font-semibold text-gray-800">{importRows.length}</span> dòng.
-            {importRows.some(r => r.error) && (
-              <span className="text-red-500 ml-1">{importRows.filter(r => r.error).length} dòng lỗi sẽ bị bỏ qua.</span>
+            Hệ thống đọc được{' '}
+            <span className="font-semibold text-gray-800">{importRows.length}</span> dòng.
+            {importRows.some((r) => r.error) && (
+              <span className="text-red-500 ml-1">
+                {importRows.filter((r) => r.error).length} dòng lỗi sẽ bị bỏ qua.
+              </span>
             )}
-            {importRows.some(r => r.warning) && (
-              <span className="text-yellow-600 ml-1">{importRows.filter(r => r.warning).length} dòng có thể bị trùng tên.</span>
+            {importRows.some((r) => r.warning) && (
+              <span className="text-yellow-600 ml-1">
+                {importRows.filter((r) => r.warning).length} dòng có thể bị trùng tên.
+              </span>
             )}
           </p>
           <div className="max-h-72 overflow-y-auto border rounded-lg">
@@ -565,9 +649,14 @@ const CustomerSizePage = () => {
               </thead>
               <tbody>
                 {importRows.map((r, i) => (
-                  <tr key={i} className={`border-t ${r.error ? 'bg-red-50 text-red-400' : r.warning ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+                  <tr
+                    key={i}
+                    className={`border-t ${r.error ? 'bg-red-50 text-red-400' : r.warning ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
+                  >
                     <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
-                    <td className="px-3 py-1.5 font-medium">{r.name || <span className="italic">trống</span>}</td>
+                    <td className="px-3 py-1.5 font-medium">
+                      {r.name || <span className="italic">trống</span>}
+                    </td>
                     <td className="px-3 py-1.5">{GENDER_LABEL[r.gender] ?? r.gender}</td>
                     <td className="px-3 py-1.5 text-right">{r.height ?? '—'}</td>
                     <td className="px-3 py-1.5 text-right">{r.weight ?? '—'}</td>
@@ -588,14 +677,20 @@ const CustomerSizePage = () => {
                 <span>{importProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div className="bg-primary-600 h-1.5 rounded-full transition-all" style={{ width: `${importProgress}%` }} />
+                <div
+                  className="bg-primary-600 h-1.5 rounded-full transition-all"
+                  style={{ width: `${importProgress}%` }}
+                />
               </div>
             </div>
           )}
           <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
-              onClick={() => { setImportModalOpen(false); setImportRows([]); }}
+              onClick={() => {
+                setImportModalOpen(false);
+                setImportRows([]);
+              }}
               disabled={importing}
               className="btn-secondary"
             >
@@ -604,10 +699,12 @@ const CustomerSizePage = () => {
             <button
               type="button"
               onClick={handleConfirmImport}
-              disabled={importing || importRows.filter(r => !r.error).length === 0}
+              disabled={importing || importRows.filter((r) => !r.error).length === 0}
               className="btn-primary"
             >
-              {importing ? 'Đang import…' : `Import ${importRows.filter(r => !r.error).length} học sinh`}
+              {importing
+                ? 'Đang import…'
+                : `Import ${importRows.filter((r) => !r.error).length} học sinh`}
             </button>
           </div>
         </div>
@@ -633,22 +730,34 @@ const CustomerSizePage = () => {
             <div>
               <label className="label">Chiều cao (cm) *</label>
               <input
-                {...register('height', { required: 'Vui lòng nhập chiều cao', valueAsNumber: true, min: { value: 1, message: 'Chiều cao không hợp lệ' } })}
+                {...register('height', {
+                  required: 'Vui lòng nhập chiều cao',
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Chiều cao không hợp lệ' },
+                })}
                 type="number"
                 step="0.1"
                 className="input"
               />
-              {errors.height && <p className="text-red-500 text-xs mt-1">{errors.height.message}</p>}
+              {errors.height && (
+                <p className="text-red-500 text-xs mt-1">{errors.height.message}</p>
+              )}
             </div>
             <div>
               <label className="label">Cân nặng (kg) *</label>
               <input
-                {...register('weight', { required: 'Vui lòng nhập cân nặng', valueAsNumber: true, min: { value: 1, message: 'Cân nặng không hợp lệ' } })}
+                {...register('weight', {
+                  required: 'Vui lòng nhập cân nặng',
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Cân nặng không hợp lệ' },
+                })}
                 type="number"
                 step="0.1"
                 className="input"
               />
-              {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>}
+              {errors.weight && (
+                <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className="label">Ghi chú</label>

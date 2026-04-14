@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { categoryService } from '../services/categoryService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
+import { ConfirmModal, Modal } from '../components/organisms';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchCategories } from '../store/slices/categoriesSlice';
 import { toast } from 'react-toastify';
 import type { Category } from '../types';
 
 const CategoriesPage = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const dispatch = useAppDispatch();
+  const { list: categories } = useAppSelector((s) => s.categories);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -18,10 +20,9 @@ const CategoriesPage = () => {
     formState: { isSubmitting },
   } = useForm<Partial<Category>>();
 
-  const load = () => categoryService.getAll().then(setCategories);
   useEffect(() => {
-    load();
-  }, []);
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
@@ -45,7 +46,7 @@ const CategoriesPage = () => {
         toast.success('Thêm danh mục thành công!');
       }
       setModalOpen(false);
-      load();
+      dispatch(fetchCategories());
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -58,7 +59,7 @@ const CategoriesPage = () => {
     try {
       await categoryService.remove(confirmId);
       toast.success('Đã xoá danh mục.');
-      load();
+      dispatch(fetchCategories());
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }

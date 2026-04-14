@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { packageService } from '../services/packageService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
+import { ConfirmModal, Modal } from '../components/organisms';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchPackages } from '../store/slices/packagesSlice';
 import { toast } from 'react-toastify';
 import type { Package } from '../types';
 
@@ -30,8 +31,8 @@ interface PackageFormValues {
 }
 
 const PackagesPage = () => {
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { list: packages, loading } = useAppSelector((s) => s.packages);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Package | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -43,16 +44,9 @@ const PackagesPage = () => {
     formState: { isSubmitting },
   } = useForm<PackageFormValues>();
 
-  const load = async () => {
-    setLoading(true);
-    const data = await packageService.getAll();
-    setPackages(data);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    load();
-  }, []);
+    dispatch(fetchPackages());
+  }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
@@ -86,7 +80,7 @@ const PackagesPage = () => {
         toast.success('Thêm gói chụp thành công!');
       }
       setModalOpen(false);
-      load();
+      dispatch(fetchPackages());
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -99,7 +93,7 @@ const PackagesPage = () => {
     try {
       await packageService.remove(confirmId);
       toast.success('Đã xoá gói chụp.');
-      load();
+      dispatch(fetchPackages());
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -138,14 +132,16 @@ const PackagesPage = () => {
                 {packages.map((pkg) => (
                   <tr key={pkg._id} className="border-b last:border-0 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">{pkg.name}</td>
-                    <td className="px-4 py-3">
-                      {pkg.pricePerMember.toLocaleString('vi-VN')}₫
+                    <td className="px-4 py-3">{pkg.pricePerMember.toLocaleString('vi-VN')}₫</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {pkg.duration ? durationLabel[pkg.duration] : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{pkg.duration ? durationLabel[pkg.duration] : '—'}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-pre-line">{pkg.costume ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-pre-line">
+                      {pkg.costume ?? '—'}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">
                       {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
                     </td>
@@ -207,10 +203,14 @@ const PackagesPage = () => {
                 </div>
                 <div className="space-y-1 text-sm text-gray-600">
                   {pkg.duration && <div>⏱ {durationLabel[pkg.duration]}</div>}
-                  {pkg.studentsPerCrew != null && <div>👥 {pkg.studentsPerCrew} học sinh / thợ</div>}
+                  {pkg.studentsPerCrew != null && (
+                    <div>👥 {pkg.studentsPerCrew} học sinh / thợ</div>
+                  )}
                   {pkg.costume && <div className="whitespace-pre-line">👗 {pkg.costume}</div>}
                   {pkg.editingScope && <div>✂️ {editingScopeLabel[pkg.editingScope]}</div>}
-                  {pkg.deliveryDays != null && <div>📦 Trả file tối đa: {pkg.deliveryDays} ngày</div>}
+                  {pkg.deliveryDays != null && (
+                    <div>📦 Trả file tối đa: {pkg.deliveryDays} ngày</div>
+                  )}
                   {pkg.description && <div className="text-gray-500 italic">{pkg.description}</div>}
                 </div>
               </div>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { userService } from '../services/userService';
-import Modal from '../components/Modal';
-import ConfirmModal from '../components/ConfirmModal';
+import { ConfirmModal, Modal } from '../components/organisms';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchUsers } from '../store/slices/usersSlice';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_LABELS } from '../types';
@@ -25,7 +26,8 @@ interface FormValues {
 
 const UsersPage = () => {
   const { user: me } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const dispatch = useAppDispatch();
+  const { list: users } = useAppSelector((s) => s.users);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -37,10 +39,9 @@ const UsersPage = () => {
     formState: { isSubmitting },
   } = useForm<FormValues>();
 
-  const load = () => userService.getAll().then(setUsers);
   useEffect(() => {
-    load();
-  }, []);
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
   const toggleRole = (r: UserRole) =>
     setSelectedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
@@ -74,7 +75,7 @@ const UsersPage = () => {
         toast.success('Thêm người dùng thành công!');
       }
       setModalOpen(false);
-      load();
+      dispatch(fetchUsers());
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -93,7 +94,7 @@ const UsersPage = () => {
     try {
       await userService.remove(confirmId);
       toast.success('Đã xoá tài khoản.');
-      load();
+      dispatch(fetchUsers());
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }

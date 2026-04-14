@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS } from '../../types';
 import { navItems, superadminItems, type NavItem } from '../../config/navItems';
-import Logo from '../Logo';
+import { Logo } from '../atoms';
 
 interface SidebarProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../components/Logo';
+import Logo from '../components/atoms/Logo';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 
