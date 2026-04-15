@@ -130,6 +130,7 @@ const DashboardPage = () => {
       {/* Greeting */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Xin chào, {displayName}!</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Chúc bạn một ngày làm việc tốt lành!</p>
         <p className="text-sm text-gray-500 mt-0.5">
           {new Date().toLocaleDateString('vi-VN', {
             weekday: 'long',
