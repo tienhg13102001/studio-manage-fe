@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { categoryService } from '../services/categoryService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { toast } from 'react-toastify';
+import { Select } from '../components/atoms';
 import type { Category } from '../types';
 
 const CategoriesPage = () => {
@@ -17,6 +18,7 @@ const CategoriesPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting },
   } = useForm<Partial<Category>>();
 
@@ -134,10 +136,21 @@ const CategoriesPage = () => {
           </div>
           <div>
             <label className="label">Loại *</label>
-            <select {...register('type', { required: true })} className="input">
-              <option value="income">Thu</option>
-              <option value="expense">Chi</option>
-            </select>
+            <Controller
+              name="type"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  options={[
+                    { value: 'income', label: 'Thu' },
+                    { value: 'expense', label: 'Chi' },
+                  ]}
+                  value={field.value ?? ''}
+                  onChange={(v) => field.onChange(v)}
+                />
+              )}
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import ExcelJS from 'exceljs';
 import { ConfirmModal, Modal } from '../components/organisms';
-import { TableSkeleton } from '../components/atoms';
+import { TableSkeleton, Select } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import type { Customer, Student } from '../types';
@@ -50,6 +50,7 @@ const CustomerSizePage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting, errors },
   } = useForm<StudentForm>();
 
@@ -723,10 +724,21 @@ const CustomerSizePage = () => {
             </div>
             <div>
               <label className="label">Giới tính *</label>
-              <select {...register('gender', { required: true })} className="input">
-                <option value="male">Nam</option>
-                <option value="female">Nữ</option>
-              </select>
+              <Controller
+                name="gender"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    options={[
+                      { value: 'male', label: 'Nam' },
+                      { value: 'female', label: 'Nữ' },
+                    ]}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v)}
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Chiều cao (cm) *</label>

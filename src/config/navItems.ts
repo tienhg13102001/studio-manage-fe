@@ -6,6 +6,7 @@ import CustomerDetailPage from '../pages/CustomerDetailPage';
 import SchedulesPage from '../pages/SchedulesPage';
 import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
+import CostumesPage from '../pages/CostumesPage';
 import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
@@ -61,29 +62,22 @@ export const navItems: NavItem[] = [
     ],
   },
   { to: '/schedules', label: 'Lịch chụp', icon: '📅', component: SchedulesPage },
-  {
-    to: '/packages',
-    label: 'Gói chụp',
-    icon: '📦',
-    allowedRoles: [0, 1, 2, 4],
-    component: PackagesPage,
-  },
-  {
-    to: '/finance',
-    label: 'Thu chi',
-    icon: '💰',
-    allowedRoles: [0, 1, 2, 4],
-    component: FinancePage,
-  },
 ];
 
 export const superadminItems: NavItem[] = [
   {
-    to: '/settings',
-    label: 'Cài đặt',
-    icon: '⚙️',
+    to: '/manage',
+    label: 'Quản lý',
+    icon: '🛠️',
     allowedRoles: [0, 1],
     children: [
+      {
+        to: '/finance',
+        label: 'Tài chính',
+        icon: '💰',
+        allowedRoles: [0, 1],
+        component: FinancePage,
+      },
       {
         to: '/users',
         label: 'Người dùng',
@@ -91,12 +85,34 @@ export const superadminItems: NavItem[] = [
         allowedRoles: [0, 1],
         component: UsersPage,
       },
+    ],
+  },
+  {
+    to: '/settings',
+    label: 'Cài đặt',
+    icon: '⚙️',
+    allowedRoles: [0, 1],
+    children: [
       {
         to: '/categories',
         label: 'Danh mục thu/chi',
         icon: '🏷️',
         allowedRoles: [0, 1],
         component: CategoriesPage,
+      },
+      {
+        to: '/costumes',
+        label: 'Trang phục',
+        icon: '👗',
+        allowedRoles: [0, 1],
+        component: CostumesPage,
+      },
+      {
+        to: '/packages',
+        label: 'Gói chụp',
+        icon: '📦',
+        allowedRoles: [0, 1, 2, 4],
+        component: PackagesPage,
       },
     ],
   },

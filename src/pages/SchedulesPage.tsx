@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { ConfirmModal, Modal, ScheduleCalendar } from '../components/organisms';
 import { scheduleService } from '../services/scheduleService';
 import type { Customer, Package, Schedule, User } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
-import { TableSkeleton } from '../components/atoms';
+import { TableSkeleton, Select } from '../components/atoms';
 import {
   SCHEDULE_STATUS_COLOR as statusColor,
   SCHEDULE_STATUS_LABEL as statusLabel,
@@ -54,6 +54,7 @@ const SchedulesPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting },
     watch,
   } = useForm<ScheduleFormValues>();
@@ -455,25 +456,37 @@ const SchedulesPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="label">Lớp *</label>
-              <select {...register('customerId', { required: true })} className="input">
-                <option value="">-- Chọn lớp --</option>
-                {customers.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.className} – {c.school}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="customerId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    options={customers.map((c) => ({ value: c._id, label: `${c.className} – ${c.school}` }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v)}
+                    placeholder="-- Chọn lớp --"
+                  />
+                )}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="label">Gói chụp</label>
-              <select {...register('packageId')} className="input">
-                <option value="">-- Không chọn gói --</option>
-                {packages.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} – {p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="packageId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={packages.map((p) => ({
+                      value: p._id,
+                      label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
+                    }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v || undefined)}
+                    placeholder="-- Không chọn gói --"
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Ngày chụp *</label>
@@ -481,13 +494,17 @@ const SchedulesPage = () => {
             </div>
             <div>
               <label className="label">Trạng thái</label>
-              <select {...register('status')} className="input">
-                {Object.entries(statusLabel).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={Object.entries(statusLabel).map(([v, l]) => ({ value: v, label: l }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v)}
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Giờ bắt đầu</label>
@@ -503,27 +520,39 @@ const SchedulesPage = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="label">Người chốt lớp (Sale)</label>
-              <select {...register('bookedBy')} className="input">
-                <option value="">-- Không chỉ định --</option>
-                {salesUsers.map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.username}
-                    {u.name ? ` (${u.name})` : ''}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="bookedBy"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={salesUsers.map((u) => ({
+                      value: u._id,
+                      label: u.username + (u.name ? ` (${u.name})` : ''),
+                    }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v || undefined)}
+                    placeholder="-- Không chỉ định --"
+                  />
+                )}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="label">Thợ leader</label>
-              <select {...register('leadPhotographer')} className="input">
-                <option value="">-- Không chỉ định --</option>
-                {photographers.map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.username}
-                    {u.name ? ` (${u.name})` : ''} – {ROLE_LABELS[3]}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="leadPhotographer"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={photographers.map((u) => ({
+                      value: u._id,
+                      label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
+                    }))}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v || undefined)}
+                    placeholder="-- Không chỉ định --"
+                  />
+                )}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="label">Thợ support</label>

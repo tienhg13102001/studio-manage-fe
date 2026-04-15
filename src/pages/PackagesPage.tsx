@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { packageService } from '../services/packageService';
+import { costumeService } from '../services/costumeService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
-import { TableSkeleton } from '../components/atoms';
+import { TableSkeleton, Select } from '../components/atoms';
 import { toast } from 'react-toastify';
-import type { Package } from '../types';
+import type { Costume, Package } from '../types';
 
 const editingScopeLabel: Record<string, string> = {
   full: 'Toàn bộ',
@@ -23,7 +24,7 @@ interface PackageFormValues {
   name: string;
   pricePerMember: number;
   duration?: 'full_day' | 'half_day' | 'two_thirds_day';
-  costume?: string;
+  costumes?: string[];
   crewRatio?: string;
   editingScope?: 'full' | 'partial';
   deliveryDays?: number;
@@ -34,6 +35,8 @@ interface PackageFormValues {
 const PackagesPage = () => {
   const dispatch = useAppDispatch();
   const { list: packages, loading } = useAppSelector((s) => s.packages);
+  const [allCostumes, setAllCostumes] = useState<Costume[]>([]);
+  const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Package | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -42,26 +45,31 @@ const PackagesPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting },
   } = useForm<PackageFormValues>();
 
   useEffect(() => {
     dispatch(fetchPackages());
+    costumeService.getAll().then(setAllCostumes);
   }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
+    setSelectedCostumes([]);
     reset({ editingScope: 'full' });
     setModalOpen(true);
   };
 
   const openEdit = (pkg: Package) => {
     setEditing(pkg);
+    const costumeIds = (pkg.costumes ?? []).map((c) => c._id);
+    setSelectedCostumes(costumeIds);
     reset({
       name: pkg.name,
       pricePerMember: pkg.pricePerMember,
       duration: pkg.duration,
-      costume: pkg.costume,
+      costumes: costumeIds,
       crewRatio: pkg.crewRatio,
       editingScope: pkg.editingScope ?? 'full',
       deliveryDays: pkg.deliveryDays,
@@ -73,11 +81,12 @@ const PackagesPage = () => {
 
   const onSubmit = async (data: PackageFormValues) => {
     try {
+      const payload = { ...data, costumes: selectedCostumes };
       if (editing) {
-        await packageService.update(editing._id, data);
+        await packageService.update(editing._id, payload);
         toast.success('Cập nhật gói chụp thành công!');
       } else {
-        await packageService.create(data);
+        await packageService.create(payload);
         toast.success('Thêm gói chụp thành công!');
       }
       setModalOpen(false);
@@ -140,8 +149,10 @@ const PackagesPage = () => {
                     <td className="px-4 py-3 text-gray-600">
                       {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-pre-line">
-                      {pkg.costume ?? '—'}
+                    <td className="px-4 py-3 text-gray-600">
+                      {pkg.costumes && pkg.costumes.length > 0
+                        ? pkg.costumes.map((c) => c.name).join(', ')
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
@@ -207,7 +218,9 @@ const PackagesPage = () => {
                   {pkg.studentsPerCrew != null && (
                     <div>👥 {pkg.studentsPerCrew} học sinh / thợ</div>
                   )}
-                  {pkg.costume && <div className="whitespace-pre-line">👗 {pkg.costume}</div>}
+                  {pkg.costumes && pkg.costumes.length > 0 && (
+                    <div>👗 {pkg.costumes.map((c) => c.name).join(', ')}</div>
+                  )}
                   {pkg.editingScope && <div>✂️ {editingScopeLabel[pkg.editingScope]}</div>}
                   {pkg.deliveryDays != null && (
                     <div>📦 Trả file tối đa: {pkg.deliveryDays} ngày</div>
@@ -250,12 +263,22 @@ const PackagesPage = () => {
             </div>
             <div>
               <label className="label">Thời gian</label>
-              <select {...register('duration')} className="input">
-                <option value="">-- Không xác định --</option>
-                <option value="half_day">1/2 ngày</option>
-                <option value="two_thirds_day">2/3 ngày</option>
-                <option value="full_day">1 ngày</option>
-              </select>
+              <Controller
+                name="duration"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={[
+                      { value: 'half_day', label: '1/2 ngày' },
+                      { value: 'two_thirds_day', label: '2/3 ngày' },
+                      { value: 'full_day', label: '1 ngày' },
+                    ]}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v || undefined)}
+                    placeholder="-- Không xác định --"
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Ekip (số học sinh / 1 thợ)</label>
@@ -269,19 +292,34 @@ const PackagesPage = () => {
             </div>
             <div>
               <label className="label">Trang phục</label>
-              <textarea
-                {...register('costume')}
-                className="input"
-                rows={3}
-                placeholder="VD: Đồng phục trường, tự do..."
+              <Select
+                multiple
+                options={allCostumes.map((c) => ({
+                  value: c._id,
+                  label: c.name + (c.description ? ` — ${c.description}` : ''),
+                }))}
+                value={selectedCostumes}
+                onChange={(v) => setSelectedCostumes(v as string[])}
+                placeholder={allCostumes.length === 0 ? 'Chưa có trang phục nào' : 'Chọn trang phục...'}
+                disabled={allCostumes.length === 0}
               />
             </div>
             <div>
               <label className="label">Chỉnh sửa ảnh</label>
-              <select {...register('editingScope')} className="input">
-                <option value="full">Toàn bộ file</option>
-                <option value="partial">Một phần</option>
-              </select>
+              <Controller
+                name="editingScope"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={[
+                      { value: 'full', label: 'Toàn bộ file' },
+                      { value: 'partial', label: 'Một phần' },
+                    ]}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v)}
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Trả file sau tối đa (ngày)</label>

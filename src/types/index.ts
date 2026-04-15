@@ -30,12 +30,19 @@ export interface Customer {
   createdAt?: string;
 }
 
+export interface Costume {
+  _id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+}
+
 export interface Package {
   _id: string;
   name: string;
   pricePerMember: number;
   duration?: 'full_day' | 'half_day' | 'two_thirds_day';
-  costume?: string;
+  costumes?: Costume[];
   crewRatio?: string;
   editingScope?: 'full' | 'partial';
   deliveryDays?: number;

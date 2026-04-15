@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Select } from '../components/atoms';
 import {
   LineChart,
   Line,
@@ -145,18 +146,14 @@ const DashboardPage = () => {
           <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
             Xem theo người:
           </span>
-          <select
-            className="input flex-1 max-w-xs"
-            value={filterUserId}
-            onChange={(e) => handleFilterChange(e.target.value)}
-          >
-            <option value="">Tất cả</option>
-            {users.map((u) => (
-              <option key={u._id} value={u._id}>
-                {u.name ?? u.username}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 max-w-xs">
+            <Select
+              options={users.map((u) => ({ value: u._id, label: u.name ?? u.username }))}
+              value={filterUserId}
+              onChange={(v) => handleFilterChange(v as string)}
+              placeholder="Tất cả"
+            />
+          </div>
           {selectedUserName && (
             <span className="text-sm text-blue-600 font-medium">— {selectedUserName}</span>
           )}

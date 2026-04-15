@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { transactionService } from '../services/transactionService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { toast } from 'react-toastify';
@@ -10,7 +10,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchTransactions, fetchTransactionSummary } from '../store/slices/transactionsSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
-import { TableSkeleton } from '../components/atoms';
+import { TableSkeleton, Select } from '../components/atoms';
 import { fetchUsers } from '../store/slices/usersSlice';
 
 interface FilterState {
@@ -47,6 +47,7 @@ const FinancePage = () => {
     handleSubmit,
     reset,
     watch,
+    control,
     formState: { isSubmitting },
   } = useForm<Partial<Transaction>>();
 
@@ -508,21 +509,41 @@ const FinancePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Loại *</label>
-              <select {...register('type', { required: true })} className="input">
-                <option value="income">Thu</option>
-                <option value="expense">Chi</option>
-              </select>
+              <Controller
+                name="type"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    options={[
+                      { value: 'income', label: 'Thu' },
+                      { value: 'expense', label: 'Chi' },
+                    ]}
+                    value={field.value ?? ''}
+                    onChange={(v) => field.onChange(v)}
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Danh mục *</label>
-              <select {...register('categoryId', { required: true })} className="input">
-                <option value="">-- Chọn danh mục --</option>
-                {filteredCategories.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="categoryId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    options={filteredCategories.map((c) => ({ value: c._id, label: c.name }))}
+                    value={
+                      typeof field.value === 'object' && field.value !== null
+                        ? (field.value as { _id: string })._id
+                        : (field.value ?? '')
+                    }
+                    onChange={(v) => field.onChange(v)}
+                    placeholder="-- Chọn danh mục --"
+                  />
+                )}
+              />
             </div>
             <div>
               <label className="label">Số tiền *</label>
@@ -538,26 +559,45 @@ const FinancePage = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="label">Lớp (tuỳ chọn)</label>
-              <select {...register('customerId')} className="input">
-                <option value="">-- Không có lớp --</option>
-                {customers.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.className} – {c.school}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="customerId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={customers.map((c) => ({
+                      value: c._id,
+                      label: `${c.className} – ${c.school}`,
+                    }))}
+                    value={
+                      typeof field.value === 'object' && field.value !== null
+                        ? (field.value as { _id: string })._id
+                        : (field.value ?? '')
+                    }
+                    onChange={(v) => field.onChange(v || undefined)}
+                    placeholder="-- Không có lớp --"
+                  />
+                )}
+              />
             </div>
             {isAdmin && (
               <div className="sm:col-span-2">
                 <label className="label">Người thực hiện</label>
-                <select {...register('createdBy')} className="input">
-                  <option value="">-- Mặc định (tôi) --</option>
-                  {users.map((u) => (
-                    <option key={u._id} value={u._id}>
-                      {u.name ?? u.username}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="createdBy"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={users.map((u) => ({ value: u._id, label: u.name ?? u.username }))}
+                      value={
+                        typeof field.value === 'object' && field.value !== null
+                          ? (field.value as { _id: string })._id
+                          : (field.value ?? '')
+                      }
+                      onChange={(v) => field.onChange(v || undefined)}
+                      placeholder="-- Mặc định (tôi) --"
+                    />
+                  )}
+                />
               </div>
             )}
             <div className="sm:col-span-2">
