@@ -163,39 +163,37 @@ const FinancePage = () => {
       {/* Filters */}
       <div className="card mb-4">
         <div className="flex flex-wrap gap-2">
-          <select
-            className="input flex-1 min-w-[7rem]"
-            value={filter.type}
-            onChange={(e) => setFilter((f) => ({ ...f, type: e.target.value }))}
-          >
-            <option value="">Tất cả</option>
-            <option value="income">Thu</option>
-            <option value="expense">Chi</option>
-          </select>
-          <select
-            className="input flex-1 min-w-[8rem]"
-            value={filter.customerId}
-            onChange={(e) => setFilter((f) => ({ ...f, customerId: e.target.value }))}
-          >
-            <option value="">Tất cả lớp</option>
-            {customers.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.className}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input flex-1 min-w-[8rem]"
-            value={filter.categoryId}
-            onChange={(e) => setFilter((f) => ({ ...f, categoryId: e.target.value }))}
-          >
-            <option value="">Tất cả danh mục</option>
-            {categories.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 min-w-[7rem]">
+            <Select
+              options={[
+                { value: '', label: 'Tất cả' },
+                { value: 'income', label: 'Thu' },
+                { value: 'expense', label: 'Chi' },
+              ]}
+              value={filter.type}
+              onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
+            />
+          </div>
+          <div className="flex-1 min-w-[8rem]">
+            <Select
+              options={[
+                { value: '', label: 'Tất cả lớp' },
+                ...customers.map((c) => ({ value: c._id, label: c.className })),
+              ]}
+              value={filter.customerId}
+              onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
+            />
+          </div>
+          <div className="flex-1 min-w-[8rem]">
+            <Select
+              options={[
+                { value: '', label: 'Tất cả danh mục' },
+                ...categories.map((c) => ({ value: c._id, label: c.name })),
+              ]}
+              value={filter.categoryId}
+              onChange={(v) => setFilter((f) => ({ ...f, categoryId: v as string }))}
+            />
+          </div>
           <input
             type="date"
             className="input flex-1 min-w-[8rem]"

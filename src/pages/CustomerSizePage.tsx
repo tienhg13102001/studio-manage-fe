@@ -356,19 +356,17 @@ const CustomerSizePage = () => {
       {/* Class selector */}
       <div className="card p-4 mb-4 flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-gray-700 shrink-0">Chọn lớp:</label>
-        <select
-          className="input flex-1 min-w-[200px]"
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          <option value="">-- Chọn lớp --</option>
-          {customers.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.className}
-              {c.school ? ` — ${c.school}` : ''}
-            </option>
-          ))}
-        </select>
+        <div className="flex-1 min-w-[200px]">
+          <Select
+            options={customers.map((c) => ({
+              value: c._id,
+              label: `${c.className}${c.school ? ` — ${c.school}` : ''}`,
+            }))}
+            value={selectedId}
+            onChange={(v) => setSelectedId(v as string)}
+            placeholder="-- Chọn lớp --"
+          />
+        </div>
         <button
           onClick={handleCopy}
           disabled={!selectedId}
