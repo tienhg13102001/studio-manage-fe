@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS } from '../../types';
-import { navItems, superadminItems, type NavItem } from '../../config/navItems';
+import { navItems, adminItems, type NavItem } from '../../config/navItems';
 import { Logo } from '../atoms';
 
 interface SidebarProps {
@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const getInitialOpen = () => {
     const open: Record<string, boolean> = {};
-    [...navItems, ...superadminItems].forEach((item) => {
+    [...navItems, ...adminItems].forEach((item) => {
       if (item.children?.some((child) => location.pathname.startsWith(item.to + child.to))) {
         open[item.to] = true;
       }
@@ -142,13 +142,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           {navItems.map(renderNavItem)}
 
           {user?.roles?.some((r) =>
-            superadminItems.some((item) => item.allowedRoles?.includes(r)),
+            adminItems.some((item) => item.allowedRoles?.includes(r)),
           ) && (
             <>
               <div className="pt-3 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Admin
               </div>
-              {superadminItems.map(renderNavItem)}
+              {adminItems.map(renderNavItem)}
             </>
           )}
         </nav>

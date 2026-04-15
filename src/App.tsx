@@ -3,7 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/LoginPage';
-import { navItems, superadminItems, type NavItem } from './config/navItems';
+import { navItems, adminItems, type NavItem } from './config/navItems';
 import type { UserRole } from './types';
 import StudentFormPage from './pages/StudentFormPage';
 import { ToastContainer } from 'react-toastify';
@@ -66,7 +66,7 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {[...navItems, ...superadminItems].map(renderRouteItem)}
+            {[...navItems, ...adminItems].map(renderRouteItem)}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

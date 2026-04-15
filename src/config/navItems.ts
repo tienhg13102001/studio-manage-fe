@@ -64,7 +64,7 @@ export const navItems: NavItem[] = [
   { to: '/schedules', label: 'Lịch chụp', icon: '📅', component: SchedulesPage },
 ];
 
-export const superadminItems: NavItem[] = [
+export const adminItems: NavItem[] = [
   {
     to: '/manage',
     label: 'Quản lý',
