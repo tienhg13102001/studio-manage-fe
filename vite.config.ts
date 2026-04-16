@@ -13,18 +13,19 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           // React core
-          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'react-redux', 'react-is'],
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // Redux
-          'vendor-redux': ['@reduxjs/toolkit'],
-          // Chart (nặng ~500kB)
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux', 'react-is'],
+          // Chart - tách riêng dependencies nặng
           'vendor-charts': ['recharts'],
-          // Excel export (nặng ~800kB)
-          'vendor-excel': ['exceljs', 'xlsx'],
+          // Excel export - tách thành 2 chunk riêng
+          'vendor-exceljs': ['exceljs'],
+          'vendor-xlsx': ['xlsx'],
           // Utilities
           'vendor-utils': ['axios', 'date-fns', 'react-hook-form', 'react-toastify'],
         },
