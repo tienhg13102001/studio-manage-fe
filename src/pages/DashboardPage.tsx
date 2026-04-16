@@ -37,15 +37,21 @@ const DashboardPage = () => {
   const { list: users } = useAppSelector((s) => s.users);
   const [scheduleViewMode, setScheduleViewMode] = useState<'table' | 'calendar'>('table');
   const [filterUserId, setFilterUserId] = useState('');
+  const [chartMonths, setChartMonths] = useState(1);
 
   useEffect(() => {
-    dispatch(fetchDashboardStats(undefined));
+    dispatch(fetchDashboardStats(filterUserId ? { userId: filterUserId, months: chartMonths } : { months: chartMonths }));
     if (isAdmin) dispatch(fetchUsers());
   }, [dispatch, isAdmin]);
 
+  const handleChartMonthsChange = (m: number) => {
+    setChartMonths(m);
+    dispatch(fetchDashboardStats(filterUserId ? { userId: filterUserId, months: m } : { months: m }));
+  };
+
   const handleFilterChange = (uid: string) => {
     setFilterUserId(uid);
-    dispatch(fetchDashboardStats(uid ? { userId: uid } : undefined));
+    dispatch(fetchDashboardStats(uid ? { userId: uid, months: chartMonths } : { months: chartMonths }));
   };
 
   const displayName = user?.name ?? user?.username ?? '';
@@ -74,7 +80,7 @@ const DashboardPage = () => {
 
   if (loading || !stats) return <PageLoader />;
 
-  const { thisMonth, monthly, customerCount, scheduleCount, showSchedules, upcomingSchedules } =
+  const { thisMonth, monthly, granularity, customerCount, scheduleCount, showSchedules, upcomingSchedules } =
     stats!;
 
   const STATUS_LABEL = SCHEDULE_STATUS_LABEL;
@@ -118,12 +124,39 @@ const DashboardPage = () => {
     },
   ];
 
-  const chartData = monthly.map((m) => ({
-    name: shortLabel(m.label),
-    Thu: m.income,
-    Chi: -m.expense,
-    'Lợi nhuận': m.income - m.expense,
-  }));
+  const formatChartLabel = (label: string) => {
+    if (granularity === 'day') {
+      // label = YYYY-MM-DD → hiển thị dd/MM
+      const [, mo, dd] = label.split('-');
+      return `${dd}/${mo}`;
+    }
+    return shortLabel(label);
+  };
+
+  const chartData = (() => {
+    if (granularity === 'day') {
+      // Chế độ ngày: cộng dồn theo thời gian (cumulative)
+      let cumThu = 0;
+      let cumChi = 0;
+      return monthly.map((m) => {
+        cumThu += m.income;
+        cumChi += m.expense;
+        return {
+          name: formatChartLabel(m.label),
+          Thu: cumThu,
+          Chi: -cumChi,
+          'Lợi nhuận': cumThu - cumChi,
+        };
+      });
+    }
+    // Chế độ tháng: hiển thị theo từng tháng riêng lẻ
+    return monthly.map((m) => ({
+      name: formatChartLabel(m.label),
+      Thu: m.income,
+      Chi: -m.expense,
+      'Lợi nhuận': m.income - m.expense,
+    }));
+  })();
 
   return (
     <div className="space-y-6">
@@ -176,7 +209,28 @@ const DashboardPage = () => {
       {/* Monthly chart */}
       {showFinance && (
         <div className="card">
-          <h3 className="text-base font-semibold text-gray-700 mb-4">Thu chi 6 tháng gần đây</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h3 className="text-base font-semibold text-gray-700">
+              {chartMonths === 1
+                ? 'Thu chi 30 ngày gần đây'
+                : `Thu chi ${chartMonths} tháng gần đây`}
+            </h3>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              {[1, 3, 6, 12].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleChartMonthsChange(m)}
+                  className={`px-3 py-1 text-xs font-medium transition-colors border-l first:border-l-0 border-gray-200 ${
+                    chartMonths === m
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {m}T
+                </button>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -196,7 +250,13 @@ const DashboardPage = () => {
               />
               <ReferenceLine y={0} stroke="#d1d5db" strokeWidth={1.5} />
               <Tooltip
-                formatter={(value, name) => [formatCurrency(Math.abs(Number(value ?? 0))), name]}
+                formatter={(value, name) => {
+                  const v = Number(value ?? 0);
+                  // "Chi" được lưu âm trong chart → hiển thị giá trị tuyệt đối
+                  // "Lợi nhuận" giữ nguyên dấu để thấy lời/lỗ
+                  const display = name === 'Chi' ? Math.abs(v) : v;
+                  return [formatCurrency(display), name];
+                }}
                 labelStyle={{ fontWeight: 600 }}
               />
               <Legend />

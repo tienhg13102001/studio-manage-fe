@@ -14,6 +14,7 @@ export interface UpcomingSchedule {
 export interface DashboardStats {
   thisMonth: { income: number; expense: number; profit: number };
   monthly: Array<{ label: string; income: number; expense: number }>;
+  granularity: 'day' | 'month';
   customerCount: number;
   scheduleCount: number;
   showSchedules: boolean;
@@ -21,6 +22,7 @@ export interface DashboardStats {
 }
 
 export const dashboardService = {
-  getStats: (params?: { userId?: string }) =>
+  getStats: (params?: { userId?: string; months?: number }) =>
     api.get<DashboardStats>('/dashboard', { params }).then((r) => r.data),
 };
+
