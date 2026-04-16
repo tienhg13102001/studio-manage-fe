@@ -178,7 +178,7 @@ const FinancePage = () => {
             <Select
               options={[
                 { value: '', label: 'Tất cả lớp' },
-                ...customers.map((c) => ({ value: c._id, label: c.className })),
+                ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
               ]}
               value={filter.customerId}
               onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
