@@ -161,30 +161,27 @@ const FinancePage = () => {
       </div>
 
       {/* Filters */}
-      <div className="card mb-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-1 min-w-[7rem]">
-            <Select
-              options={[
-                { value: '', label: 'Tất cả' },
-                { value: 'income', label: 'Thu' },
-                { value: 'expense', label: 'Chi' },
-              ]}
-              value={filter.type}
-              onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
-            />
-          </div>
-          <div className="flex-1 min-w-[8rem]">
-            <Select
-              options={[
-                { value: '', label: 'Tất cả lớp' },
-                ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
-              ]}
-              value={filter.customerId}
-              onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
-            />
-          </div>
-          <div className="flex-1 min-w-[8rem]">
+      <div className="card mb-4 space-y-3">
+        {/* Hàng 1: Loại + Lớp + Danh mục */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Select
+            options={[
+              { value: '', label: 'Tất cả loại' },
+              { value: 'income', label: 'Thu' },
+              { value: 'expense', label: 'Chi' },
+            ]}
+            value={filter.type}
+            onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
+          />
+          <Select
+            options={[
+              { value: '', label: 'Tất cả lớp' },
+              ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
+            ]}
+            value={filter.customerId}
+            onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
+          />
+          <div className="col-span-2 md:col-span-1">
             <Select
               options={[
                 { value: '', label: 'Tất cả danh mục' },
@@ -194,26 +191,44 @@ const FinancePage = () => {
               onChange={(v) => setFilter((f) => ({ ...f, categoryId: v as string }))}
             />
           </div>
-          <input
-            type="date"
-            className="input flex-1 min-w-[8rem]"
-            value={filter.dateFrom}
-            onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
-          />
-          <input
-            type="date"
-            className="input flex-1 min-w-[8rem]"
-            value={filter.dateTo}
-            onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
-          />
-          <button onClick={applyFilter} className="btn-primary">
-            Lọc
-          </button>
-          <button onClick={resetFilter} className="btn-secondary">
-            Xoá
-          </button>
+        </div>
+
+        {/* Hàng 2: Từ ngày + Đến ngày + Buttons */}
+        <div className="grid grid-cols-2 md:flex md:items-center gap-3">
+          <div className="md:flex-1 relative">
+            <span className="absolute -top-2 left-2.5 px-1 bg-white text-xs text-gray-400 leading-none z-10 pointer-events-none">
+              Từ ngày
+            </span>
+            <input
+              type="date"
+              className="input"
+              value={filter.dateFrom}
+              onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
+            />
+          </div>
+          <div className="md:flex-1 relative">
+            <span className="absolute -top-2 left-2.5 px-1 bg-white text-xs text-gray-400 leading-none z-10 pointer-events-none">
+              Đến ngày
+            </span>
+            <input
+              type="date"
+              className="input"
+              value={filter.dateTo}
+              onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
+            />
+          </div>
+          <div className="col-span-2 md:col-span-1 flex gap-2 md:ml-auto">
+            <button onClick={applyFilter} className="btn-primary flex-1 md:flex-none">
+              Lọc
+            </button>
+            <button onClick={resetFilter} className="btn-secondary flex-1 md:flex-none">
+              Xoá
+            </button>
+          </div>
         </div>
       </div>
+
+
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
