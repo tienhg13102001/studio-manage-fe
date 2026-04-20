@@ -31,6 +31,7 @@ const Select = ({
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Tính toán vị trí dropdown dựa trên trigger box
   const updateDropdownPosition = () => {
@@ -62,7 +63,14 @@ const Select = ({
   };
 
   useEffect(() => {
-    if (open) updateDropdownPosition();
+    if (open) {
+      updateDropdownPosition();
+      // Focus thủ công sau khi DOM đã render xong
+      // Dùng setTimeout để tránh iOS Safari scroll đến vị trí portal trong DOM
+      setTimeout(() => {
+        searchInputRef.current?.focus({ preventScroll: true });
+      }, 50);
+    }
   }, [open]);
 
   useEffect(() => {
@@ -82,10 +90,13 @@ const Select = ({
       if (open) updateDropdownPosition();
     };
     document.addEventListener('mousedown', handleClickOutside);
+    // iOS Safari dùng touchstart thay vì mousedown
+    document.addEventListener('touchstart', handleClickOutside as EventListener);
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
     };
@@ -136,7 +147,7 @@ const Select = ({
       {/* Search */}
       <div className="p-2 border-b border-gray-100">
         <input
-          autoFocus
+          ref={searchInputRef}
           type="text"
           className="input py-1 text-sm"
           placeholder="Tìm kiếm..."
