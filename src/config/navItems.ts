@@ -10,6 +10,7 @@ import CostumesPage from '../pages/CostumesPage';
 import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
+import FeedbackPage from '../pages/FeedbackPage';
 
 export interface NavItem {
   to: string;
@@ -85,6 +86,13 @@ export const adminItems: NavItem[] = [
         allowedRoles: [0, 1],
         component: UsersPage,
       },
+      {
+        to: '/feedback',
+        label: 'Phản hồi',
+        icon: '📝',
+        allowedRoles: [0, 1],
+        component: FeedbackPage,
+      }
     ],
   },
   {

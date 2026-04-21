@@ -112,3 +112,20 @@ export interface Student {
   notes?: string;
   createdAt?: string;
 }
+
+export interface FeedbackItem {
+  rating: number;
+  description?: string;
+}
+
+export interface Feedback {
+  _id: string;
+  customerId?: string | Customer | null;
+  phone?: string;
+  crewFeedback: FeedbackItem;
+  albumFeedback: FeedbackItem;
+  content?: string;
+  suggestion?: string;
+  isRead: boolean;
+  createdAt: string;
+}

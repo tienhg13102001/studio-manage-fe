@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import { navItems, adminItems, type NavItem } from './config/navItems';
 import type { UserRole } from './types';
 import StudentFormPage from './pages/StudentFormPage';
+import FeedbackFormPage from './pages/FeedbackFormPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -58,6 +59,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/form/:customerId" element={<StudentFormPage />} />
+          <Route path="/feedback" element={<FeedbackFormPage />} />
+          <Route path="/feedback/:customerId" element={<FeedbackFormPage />} />
           <Route
             path="/"
             element={
