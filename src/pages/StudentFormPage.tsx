@@ -13,6 +13,7 @@ interface FormValues {
   height: number | '';
   weight: number | '';
   notes: string;
+  costumes: string[];
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -28,9 +29,25 @@ const StudentFormPage = () => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
+    watch,
+    setValue,
   } = useForm<FormValues>({
-    defaultValues: { name: '', gender: 'male', height: '', weight: '', notes: '' },
+    defaultValues: { name: '', gender: 'male', height: '', weight: '', notes: '', costumes: [] },
   });
+
+  const gender = watch('gender');
+  const visibleCostumes = (schedule?.package?.costumes ?? []).filter(
+    (c) => c.gender === gender || c.gender === 'unisex',
+  );
+
+  // Default: tick all visible costumes whenever schedule loads hoặc gender thay đổi
+  useEffect(() => {
+    setValue(
+      'costumes',
+      visibleCostumes.map((c) => c._id),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule, gender]);
 
   useEffect(() => {
     if (!customer) return;
@@ -56,6 +73,7 @@ const StudentFormPage = () => {
         height: data.height !== '' ? Number(data.height) : undefined,
         weight: data.weight !== '' ? Number(data.weight) : undefined,
         notes: data.notes || undefined,
+        costumes: data.costumes,
       });
       setSubmitStatus('success');
       reset();
@@ -196,6 +214,25 @@ const StudentFormPage = () => {
               {errors.weight && (
                 <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
               )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Trang phục</label>
+            <div className="flex flex-wrap gap-3">
+              {visibleCostumes.map((c) => (
+                <label
+                  key={c._id}
+                  className="flex items-center gap-2 border rounded-lg py-2.5 px-3 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    value={c._id}
+                    {...register('costumes')}
+                    className="accent-primary-600"
+                  />
+                  <span className="text-sm">{c.name}</span>
+                </label>
+              ))}
             </div>
           </div>
 

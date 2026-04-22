@@ -8,7 +8,7 @@ import { TableSkeleton, Select } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
-import type { Customer, Student } from '../types';
+import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import dayjs from 'dayjs';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
@@ -36,14 +36,15 @@ interface ImportRow {
 const CustomerSizePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedId, setSelectedId] = useState<string>('');
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<StudentResponse[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleResponse | null>();
   const [totalMale, setTotalMale] = useState(0);
   const [totalFemale, setTotalFemale] = useState(0);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedInfo, setCopiedInfo] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Student | null>(null);
+  const [editing, setEditing] = useState<StudentResponse | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [importRows, setImportRows] = useState<ImportRow[]>([]);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -57,8 +58,40 @@ const CustomerSizePage = () => {
     handleSubmit,
     reset,
     control,
+    watch,
+    setValue,
     formState: { isSubmitting, errors },
   } = useForm<StudentForm>();
+
+  const formGender = watch('gender');
+  const scheduleCostumes = schedules?.package?.costumes ?? [];
+  const visibleCostumes = scheduleCostumes.filter(
+    (c) => c.gender === formGender || c.gender === 'unisex',
+  );
+
+  // When user changes gender inside the modal, re-tick all visible costumes.
+  // Skip the first run after the modal opens so we preserve the pre-filled
+  // selection from openCreate / openEdit.
+  const prevGenderRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!modalOpen) {
+      prevGenderRef.current = null;
+      return;
+    }
+    if (prevGenderRef.current === null) {
+      prevGenderRef.current = formGender;
+      return;
+    }
+    if (prevGenderRef.current !== formGender) {
+      prevGenderRef.current = formGender;
+      setValue(
+        'costumes',
+        scheduleCostumes
+          .filter((c) => c.gender === formGender || c.gender === 'unisex')
+          .map((c) => c._id),
+      );
+    }
+  }, [formGender, modalOpen, scheduleCostumes, setValue]);
 
   useEffect(() => {
     customerService.getAll({ limit: 200 }).then((r) => setCustomers(r.data));
@@ -81,9 +114,15 @@ const CustomerSizePage = () => {
         setTotalFemale(r.totalFemale ?? 0);
       })
       .finally(() => setLoadingStudents(false));
+    scheduleService
+      .getByCustomer(selectedId)
+      .then((r) => setSchedules(r))
+      .catch(() => setSchedules(null));
   }, [selectedId]);
 
   const selectedCustomer = customers.find((c) => c._id === selectedId);
+  const noSchedule = selectedId ? !schedules : false;
+  const disabledAll = !selectedId || noSchedule;
 
   // Find names that appear more than once in the current student list
   const duplicateNorms = useMemo(() => {
@@ -170,6 +209,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       { width: 16 },
       { width: 15 },
       { width: 32 },
+      { width: 32 },
     ];
 
     // Row 1: Tên lớp
@@ -190,6 +230,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       'Giới tính',
       'Chiều cao (cm)',
       'Cân nặng (kg)',
+      'Trang phục',
       'Ghi chú',
     ]);
     headerRow.font = { bold: true };
@@ -218,6 +259,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         GENDER_LABEL[s.gender],
         s.height ?? '',
         s.weight ?? '',
+        s.costumes?.map((c) => c.name).join(', ') ?? '',
         s.notes ?? '',
       ]);
       row.eachCell({ includeEmpty: true }, (cell, colNum) => {
@@ -241,13 +283,29 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: '', gender: 'male', height: undefined, weight: undefined, notes: '' });
+    reset({
+      name: '',
+      gender: 'male',
+      height: undefined,
+      weight: undefined,
+      notes: '',
+      costumes: scheduleCostumes
+        .filter((c) => c.gender === 'male' || c.gender === 'unisex')
+        .map((c) => c._id),
+    });
     setModalOpen(true);
   };
 
-  const openEdit = (s: Student) => {
+  const openEdit = (s: StudentResponse) => {
     setEditing(s);
-    reset({ name: s.name, gender: s.gender, height: s.height, weight: s.weight, notes: s.notes });
+    reset({
+      name: s.name,
+      gender: s.gender,
+      height: s.height,
+      weight: s.weight,
+      notes: s.notes,
+      costumes: s.costumes?.map((c) => c._id) ?? [],
+    });
     setModalOpen(true);
   };
 
@@ -438,30 +496,30 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         </div>
         <button
           onClick={handleCopy}
-          disabled={!selectedId}
-          className={`btn-secondary text-sm shrink-0 ${!selectedId ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={disabledAll}
+          className={`btn-secondary text-sm shrink-0 ${disabledAll ? 'opacity-40 cursor-not-allowed' : ''}`}
           title={publicUrl}
         >
           {copied ? '✅ Đã copy link nhập liệu!' : '🔗 Copy link nhập liệu'}
         </button>
         <button
           onClick={handleCopyInfo}
-          disabled={!selectedId || students.length === 0}
-          className={`btn-secondary text-sm shrink-0 ${!selectedId || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={disabledAll || students.length === 0}
+          className={`btn-secondary text-sm shrink-0 ${disabledAll || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
           {copiedInfo ? '✅ Đã copy thông tin gửi đồ!' : '🔗 Copy thông tin gửi đồ'}
         </button>
         <button
           onClick={handleExportExcel}
-          disabled={!selectedId || students.length === 0}
-          className={`btn-secondary text-sm shrink-0 ${!selectedId || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={disabledAll || students.length === 0}
+          className={`btn-secondary text-sm shrink-0 ${disabledAll || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
           📅 Xuất Excel
         </button>
         <button
           onClick={() => importFileRef.current?.click()}
-          disabled={!selectedId}
-          className={`btn-secondary text-sm shrink-0 ${!selectedId ? 'opacity-40 cursor-not-allowed' : ''}`}
+          disabled={disabledAll}
+          className={`btn-secondary text-sm shrink-0 ${disabledAll ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
           📥 Nhập từ Excel
         </button>
@@ -480,6 +538,14 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
           <div className="text-4xl mb-3">🏫</div>
           <p className="text-base font-medium">Xin mời chọn lớp để xem danh sách học sinh</p>
           <p className="text-sm mt-1">Sau đó bạn có thể copy link để học sinh tự nhập thông tin</p>
+        </div>
+      )}
+
+      {/* No-schedule warning */}
+      {selectedId && noSchedule && (
+        <div className="card p-4 mb-4 border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
+          ⚠ Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
+          thông tin.
         </div>
       )}
 
@@ -520,7 +586,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   ⚠ {showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng tên'}
                 </button>
               )}
-              <button onClick={openCreate} className="btn-primary text-sm">
+              <button
+                onClick={openCreate}
+                disabled={noSchedule}
+                className={`btn-primary text-sm ${noSchedule ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
                 + Thêm học sinh
               </button>
             </div>
@@ -533,7 +603,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               const displayedStudents = showDupOnly
                 ? students.filter((s) => duplicateNorms.has(normalizeName(s.name)))
                 : students;
-              const studentColumns: Column<Student>[] = [
+              const studentColumns: Column<StudentResponse>[] = [
                 {
                   key: 'index',
                   header: '#',
@@ -577,6 +647,26 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   render: (s) => s.weight ?? '—',
                 },
                 {
+                  key: 'costumes',
+                  header: 'Trang phục',
+                  className: 'text-gray-600',
+                  render: (s) =>
+                    s.costumes?.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {s.costumes.map((c) => (
+                          <span
+                            key={c._id}
+                            className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-0.5 rounded"
+                          >
+                            {c.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    ),
+                },
+                {
                   key: 'notes',
                   header: 'Ghi chú',
                   className: 'text-gray-400 text-xs',
@@ -588,12 +678,6 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   align: 'right',
                   render: (s) => (
                     <span className="space-x-2">
-                      <button
-                        onClick={() => openEdit(s)}
-                        className="text-blue-600 hover:underline text-xs"
-                      >
-                        Sửa
-                      </button>
                       <button
                         onClick={() => handleDelete(s._id)}
                         className="text-red-600 hover:underline text-xs"
@@ -608,10 +692,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 <>
                   {/* Desktop table */}
                   <div className="hidden md:block">
-                    <DataTable<Student>
+                    <DataTable<StudentResponse>
                       data={displayedStudents}
                       keyExtractor={(s) => s._id}
                       columns={studentColumns}
+                      onRowClick={(r) => openEdit(r)}
                       rowClassName={(s) =>
                         duplicateNorms.has(normalizeName(s.name))
                           ? 'bg-yellow-50'
@@ -662,6 +747,18 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                             {s.height && <span>📏 {s.height} cm</span>}
                             {s.weight && <span>⚖️ {s.weight} kg</span>}
                           </div>
+                          {s.costumes?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {s.costumes.map((c) => (
+                                <span
+                                  key={c._id}
+                                  className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-0.5 rounded"
+                                >
+                                  {c.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {s.notes && <p className="text-xs text-gray-400 mt-1">{s.notes}</p>}
                           <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
                             <button
@@ -893,6 +990,33 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               />
               {errors.weight && (
                 <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Trang phục</label>
+              {visibleCostumes.length === 0 ? (
+                <p className="text-xs text-gray-400">
+                  {scheduleCostumes.length === 0
+                    ? 'Gói dịch vụ của lịch chụp này chưa cấu hình trang phục.'
+                    : 'Không có trang phục phù hợp với giới tính đã chọn.'}
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {visibleCostumes.map((c) => (
+                    <label
+                      key={c._id}
+                      className="flex items-center gap-2 border rounded-lg py-2 px-3 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        value={c._id}
+                        {...register('costumes')}
+                        className="accent-primary-600"
+                      />
+                      <span className="text-sm">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
               )}
             </div>
             <div className="sm:col-span-2">

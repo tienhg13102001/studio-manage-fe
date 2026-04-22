@@ -94,7 +94,7 @@ function DataTable<T>({
     );
   }
 
-  const cellPad = dense ? 'px-3 py-1.5' : 'px-3 py-2';
+  const cellPad = dense ? 'px-3 py-1.5' : 'px-3 py-2 max-w-32';
   const textCls = textSize === 'xs' ? 'text-xs' : 'text-sm';
 
   const table = (

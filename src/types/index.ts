@@ -148,7 +148,13 @@ export interface Student {
   height?: number;
   weight?: number;
   notes?: string;
+  costumes: string[];
   createdAt?: string;
+}
+
+/** Populated Student returned by GET endpoints. */
+export interface StudentResponse extends Omit<Student, 'costumes'> {
+  costumes: Costume[];
 }
 
 export interface FeedbackItem {
