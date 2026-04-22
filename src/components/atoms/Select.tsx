@@ -102,17 +102,11 @@ const Select = ({
     };
   }, [open]);
 
-  const selectedValues: string[] = multiple
-    ? Array.isArray(value)
-      ? value
-      : []
-    : [];
+  const selectedValues: string[] = multiple ? (Array.isArray(value) ? value : []) : [];
 
   const singleValue = !multiple ? (typeof value === 'string' ? value : '') : '';
 
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleSelect = (optValue: string) => {
     if (multiple) {
@@ -132,9 +126,7 @@ const Select = ({
     onChange?.(selectedValues.filter((v) => v !== optValue));
   };
 
-  const selectedOptions = multiple
-    ? options.filter((o) => selectedValues.includes(o.value))
-    : [];
+  const selectedOptions = multiple ? options.filter((o) => selectedValues.includes(o.value)) : [];
 
   const singleLabel = !multiple ? options.find((o) => o.value === singleValue)?.label : undefined;
 
@@ -178,8 +170,18 @@ const Select = ({
             >
               <span>{opt.label}</span>
               {isSelected && (
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               )}
             </li>
@@ -205,9 +207,7 @@ const Select = ({
         {multiple ? (
           <>
             {selectedOptions.length === 0 ? (
-              <span className="text-gray-400 text-sm flex-1">
-                {placeholder ?? 'Chọn...'}
-              </span>
+              <span className="text-gray-400 text-sm flex-1">{placeholder ?? 'Chọn...'}</span>
             ) : (
               selectedOptions.map((opt) => (
                 <span
@@ -228,7 +228,7 @@ const Select = ({
           </>
         ) : (
           <span className={`flex-1 text-sm ${!singleLabel ? 'text-gray-400' : 'text-gray-900'}`}>
-            {singleLabel ?? (placeholder ?? 'Chọn...')}
+            {singleLabel ?? placeholder ?? 'Chọn...'}
           </span>
         )}
 

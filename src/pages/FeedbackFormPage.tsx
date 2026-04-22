@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { PageLoader, Select } from '../components/atoms';
+import { PageLoader, Select, StarRating } from '../components/atoms';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
@@ -24,53 +24,6 @@ interface FormValues {
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
-
-const STAR_LABELS = ['Chưa đánh giá', 'Rất tệ', 'Chưa tốt', 'Bình thường', 'Hài lòng', 'Tuyệt vời'];
-
-const StarRating = ({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) => {
-  const [hovered, setHovered] = useState(0);
-  const active = hovered || value;
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="flex gap-1.5" onMouseLeave={() => setHovered(0)}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            type="button"
-            key={n}
-            aria-label={`${n} sao`}
-            onMouseEnter={() => setHovered(n)}
-            onClick={() => onChange(n)}
-            className="p-1 focus:outline-none transition-transform hover:scale-125 active:scale-110"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className={`w-10 h-10 drop-shadow-sm transition-all duration-150 ${
-                n <= active ? 'fill-amber-400' : 'fill-slate-200'
-              }`}
-            >
-              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-            </svg>
-          </button>
-        ))}
-      </div>
-      <span
-        className={`font-semibold transition-colors ${
-          active > 0 ? 'text-amber-600' : 'text-slate-400'
-        }`}
-        style={{ fontSize: '14px' }}
-      >
-        {STAR_LABELS[active]}
-      </span>
-    </div>
-  );
-};
 
 const FeedbackFormPage = () => {
   const { customerId: paramCustomerId } = useParams<{ customerId: string }>();
@@ -102,6 +55,8 @@ const FeedbackFormPage = () => {
 
   const crewRating = watch('crewRating');
   const albumRating = watch('albumRating');
+  const crewDescription = watch('crewDescription');
+  const albumDescription = watch('albumDescription');
   const selectedCustomerId = watch('customerId');
 
   useEffect(() => {
@@ -138,11 +93,11 @@ const FeedbackFormPage = () => {
         phone: data.phone || undefined,
         crewFeedback: {
           rating: Number(data.crewRating),
-          description: data.crewDescription || undefined,
+          description: data.crewDescription.trim(),
         },
         albumFeedback: {
           rating: Number(data.albumRating),
-          description: data.albumDescription || undefined,
+          description: data.albumDescription.trim(),
         },
         content: data.content || undefined,
         suggestion: data.suggestion || undefined,
@@ -164,8 +119,22 @@ const FeedbackFormPage = () => {
   };
 
   const canSubmit = useMemo(
-    () => (fixedClass || selectedCustomerId) && crewRating > 0 && albumRating > 0 && !isSubmitting,
-    [fixedClass, selectedCustomerId, crewRating, albumRating, isSubmitting],
+    () =>
+      (fixedClass || selectedCustomerId) &&
+      crewRating > 0 &&
+      albumRating > 0 &&
+      crewDescription.trim().length > 0 &&
+      albumDescription.trim().length > 0 &&
+      !isSubmitting,
+    [
+      fixedClass,
+      selectedCustomerId,
+      crewRating,
+      albumRating,
+      crewDescription,
+      albumDescription,
+      isSubmitting,
+    ],
   );
 
   if (loading) {
@@ -213,8 +182,8 @@ const FeedbackFormPage = () => {
             Cảm ơn bạn rất nhiều!
           </h2>
           <p className="text-slate-500 leading-relaxed mb-8" style={{ fontSize: '15px' }}>
-            Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt
-            hơn trong tương lai.
+            Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt hơn
+            trong tương lai.
           </p>
           <button
             onClick={() => setSubmitStatus('idle')}
@@ -235,9 +204,14 @@ const FeedbackFormPage = () => {
   const inputCls =
     'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 transition placeholder:text-slate-300';
 
+  const totalSteps = 5;
   const completionCount =
-    (selectedCustomerId || fixedClass ? 1 : 0) + (crewRating > 0 ? 1 : 0) + (albumRating > 0 ? 1 : 0);
-  const progress = Math.round((completionCount / 3) * 100);
+    (selectedCustomerId || fixedClass ? 1 : 0) +
+    (crewRating > 0 ? 1 : 0) +
+    (albumRating > 0 ? 1 : 0) +
+    (crewDescription.trim().length > 0 ? 1 : 0) +
+    (albumDescription.trim().length > 0 ? 1 : 0);
+  const progress = Math.round((completionCount / totalSteps) * 100);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -307,9 +281,7 @@ const FeedbackFormPage = () => {
                   label: c.school ? `${c.className} — ${c.school}` : c.className,
                 }))}
                 value={selectedCustomerId}
-                onChange={(v) =>
-                  setValue('customerId', v as string, { shouldValidate: true })
-                }
+                onChange={(v) => setValue('customerId', v as string, { shouldValidate: true })}
                 placeholder="Chọn lớp…"
                 error={errors.customerId?.message}
               />
@@ -329,7 +301,7 @@ const FeedbackFormPage = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
-                  Ekip chụp ảnh
+                  Ekip chụp ảnh <span className="text-rose-500">*</span>
                 </h3>
                 <p className="text-slate-500 mt-0.5" style={labelStyle}>
                   Thái độ, sự chuyên nghiệp và kỹ năng
@@ -342,12 +314,18 @@ const FeedbackFormPage = () => {
               onChange={(v) => setValue('crewRating', v, { shouldValidate: true })}
             />
             <textarea
-              {...register('crewDescription')}
+              {...register('crewDescription', {
+                required: true,
+                validate: (v) => v.trim().length > 0,
+              })}
               rows={2}
-              className={`${inputCls} mt-4 resize-none`}
+              className={`${inputCls} mt-4 resize-none ${errors.crewDescription ? 'border-red-400' : ''}`}
               style={inputStyle}
-              placeholder="Chia sẻ thêm về ekip… (tuỳ chọn)"
+              placeholder="Chia sẻ thêm về ekip…"
             />
+            {errors.crewDescription && (
+              <p className="mt-1 text-xs text-red-500">Vui lòng chia sẻ thêm về ekip</p>
+            )}
           </div>
 
           {/* Album rating card */}
@@ -358,7 +336,7 @@ const FeedbackFormPage = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
-                  Album ảnh
+                  Album ảnh <span className="text-rose-500">*</span>
                 </h3>
                 <p className="text-slate-500 mt-0.5" style={labelStyle}>
                   Chất lượng, bố cục và màu sắc
@@ -371,12 +349,18 @@ const FeedbackFormPage = () => {
               onChange={(v) => setValue('albumRating', v, { shouldValidate: true })}
             />
             <textarea
-              {...register('albumDescription')}
+              {...register('albumDescription', {
+                required: true,
+                validate: (v) => v.trim().length > 0,
+              })}
               rows={2}
-              className={`${inputCls} mt-4 resize-none`}
+              className={`${inputCls} mt-4 resize-none ${errors.albumDescription ? 'border-red-400' : ''}`}
               style={inputStyle}
-              placeholder="Chia sẻ thêm về album… (tuỳ chọn)"
+              placeholder="Chia sẻ thêm về album…"
             />
+            {errors.albumDescription && (
+              <p className="mt-1 text-xs text-red-500">Vui lòng chia sẻ thêm về album</p>
+            )}
           </div>
 
           {/* General feedback card */}
@@ -468,7 +452,9 @@ const FeedbackFormPage = () => {
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-700" style={{ fontSize: '13px' }}>
-              {completionCount === 3 ? '✓ Sẵn sàng gửi' : `Hoàn thành ${completionCount}/3 mục bắt buộc`}
+              {completionCount === totalSteps
+                ? '✓ Sẵn sàng gửi'
+                : `Hoàn thành ${completionCount}/${totalSteps} mục bắt buộc`}
             </p>
           </div>
           <button

@@ -2,7 +2,8 @@ import api from './api';
 import type { Feedback, PaginatedResponse } from '../types';
 
 export interface FeedbackListResponse extends PaginatedResponse<Feedback> {
-  unreadCount: number;
+  totalRead: number;
+  totalUnread: number;
 }
 
 export interface FeedbackSubmitPayload {

@@ -25,4 +25,3 @@ export const dashboardService = {
   getStats: (params?: { userId?: string; months?: number }) =>
     api.get<DashboardStats>('/dashboard', { params }).then((r) => r.data),
 };
-

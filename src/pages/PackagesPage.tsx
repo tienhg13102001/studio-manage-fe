@@ -300,7 +300,9 @@ const PackagesPage = () => {
                 }))}
                 value={selectedCostumes}
                 onChange={(v) => setSelectedCostumes(v as string[])}
-                placeholder={allCostumes.length === 0 ? 'Chưa có trang phục nào' : 'Chọn trang phục...'}
+                placeholder={
+                  allCostumes.length === 0 ? 'Chưa có trang phục nào' : 'Chọn trang phục...'
+                }
                 disabled={allCostumes.length === 0}
               />
             </div>

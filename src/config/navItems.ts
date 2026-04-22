@@ -92,7 +92,7 @@ export const adminItems: NavItem[] = [
         icon: '📝',
         allowedRoles: [0, 1],
         component: FeedbackPage,
-      }
+      },
     ],
   },
   {

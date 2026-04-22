@@ -458,7 +458,10 @@ const SchedulesPage = () => {
                 rules={{ required: true }}
                 render={({ field }) => (
                   <Select
-                    options={customers.map((c) => ({ value: c._id, label: `${c.className} – ${c.school}` }))}
+                    options={customers.map((c) => ({
+                      value: c._id,
+                      label: `${c.className} – ${c.school}`,
+                    }))}
                     value={field.value ?? ''}
                     onChange={(v) => field.onChange(v)}
                     placeholder="-- Chọn lớp --"

@@ -5,6 +5,8 @@ export { default as Input } from './Input';
 export { default as PageLoader } from './PageLoader';
 export { default as Select } from './Select';
 export { default as Spinner } from './Spinner';
+export { default as StarRating } from './StarRating';
+export { default as Stars } from './Stars';
 export { default as TableSkeleton } from './TableSkeleton';
 export { default as Textarea } from './Textarea';
 export { default as Logo } from './Logo';
