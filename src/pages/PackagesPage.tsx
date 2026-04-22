@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { packageService } from '../services/packageService';
 import { costumeService } from '../services/costumeService';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { TableSkeleton, Select } from '../components/atoms';
@@ -124,43 +125,76 @@ const PackagesPage = () => {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block card p-0 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3">Tên gói</th>
-                  <th className="text-left px-4 py-3">Giá/thành viên</th>
-                  <th className="text-left px-4 py-3">Thời gian</th>
-                  <th className="text-left px-4 py-3">Ekip (hs/thợ)</th>
-                  <th className="text-left px-4 py-3">Trang phục</th>
-                  <th className="text-left px-4 py-3">Chỉnh sửa</th>
-                  <th className="text-left px-4 py-3">Trả file tối đa (ngày)</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {packages.map((pkg) => (
-                  <tr key={pkg._id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{pkg.name}</td>
-                    <td className="px-4 py-3">{pkg.pricePerMember.toLocaleString('vi-VN')}₫</td>
-                    <td className="px-4 py-3 text-gray-600">
+          <div className="hidden md:block">
+            <DataTable<Package>
+              data={packages}
+              keyExtractor={(pkg) => pkg._id}
+              emptyTitle="Chưa có gói chụp nào"
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Tên gói',
+                  render: (pkg) => <span className="font-medium">{pkg.name}</span>,
+                },
+                {
+                  key: 'price',
+                  header: 'Giá/thành viên',
+                  render: (pkg) => `${pkg.pricePerMember.toLocaleString('vi-VN')}₫`,
+                },
+                {
+                  key: 'duration',
+                  header: 'Thời gian',
+                  render: (pkg) => (
+                    <span className="text-gray-600">
                       {pkg.duration ? durationLabel[pkg.duration] : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    </span>
+                  ),
+                },
+                {
+                  key: 'crew',
+                  header: 'Ekip (hs/thợ)',
+                  render: (pkg) => (
+                    <span className="text-gray-600">
                       {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    </span>
+                  ),
+                },
+                {
+                  key: 'costumes',
+                  header: 'Trang phục',
+                  render: (pkg) => (
+                    <span className="text-gray-600">
                       {pkg.costumes && pkg.costumes.length > 0
                         ? pkg.costumes.map((c) => c.name).join(', ')
                         : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    </span>
+                  ),
+                },
+                {
+                  key: 'editingScope',
+                  header: 'Chỉnh sửa',
+                  render: (pkg) => (
+                    <span className="text-gray-600">
                       {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    </span>
+                  ),
+                },
+                {
+                  key: 'deliveryDays',
+                  header: 'Trả file tối đa (ngày)',
+                  render: (pkg) => (
+                    <span className="text-gray-600">
                       {pkg.deliveryDays != null ? `tối đa ${pkg.deliveryDays} ngày` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                    </span>
+                  ),
+                },
+                {
+                  key: 'actions',
+                  header: '',
+                  align: 'right',
+                  className: 'whitespace-nowrap',
+                  render: (pkg) => (
+                    <span className="space-x-2">
                       <button
                         onClick={() => openEdit(pkg)}
                         className="text-blue-600 hover:underline text-xs"
@@ -173,18 +207,11 @@ const PackagesPage = () => {
                       >
                         Xoá
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {packages.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                      Chưa có gói chụp nào
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </span>
+                  ),
+                } satisfies Column<Package>,
+              ]}
+            />
           </div>
 
           {/* Mobile cards */}

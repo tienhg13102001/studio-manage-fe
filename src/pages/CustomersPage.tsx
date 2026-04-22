@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { customerService } from '../services/customerService';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { TableSkeleton } from '../components/atoms';
@@ -120,34 +121,52 @@ const CustomersPage = () => {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block card p-0 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3">Tên lớp</th>
-                  <th className="text-left px-4 py-3">Trường</th>
-                  <th className="text-left px-4 py-3">Liên hệ</th>
-                  <th className="text-left px-4 py-3">SĐT</th>
-                  <th className="text-right px-4 py-3">Sĩ số</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.map((c) => (
-                  <tr key={c._id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <Link
-                        to={`/customers/${c._id}`}
-                        className="font-medium text-primary-600 hover:underline"
-                      >
-                        {c.className}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{c.school}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.contactName}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.contactPhone}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">{c.studentCount}</td>
-                    <td className="px-4 py-3 text-right space-x-2">
+          <div className="hidden md:block">
+            <DataTable<Customer>
+              data={customers}
+              keyExtractor={(c) => c._id}
+              emptyTitle="Chưa có dữ liệu"
+              columns={[
+                {
+                  key: 'className',
+                  header: 'Tên lớp',
+                  render: (c) => (
+                    <Link
+                      to={`/customers/${c._id}`}
+                      className="font-medium text-primary-600 hover:underline"
+                    >
+                      {c.className}
+                    </Link>
+                  ),
+                },
+                {
+                  key: 'school',
+                  header: 'Trường',
+                  render: (c) => <span className="text-gray-600">{c.school}</span>,
+                },
+                {
+                  key: 'contactName',
+                  header: 'Liên hệ',
+                  render: (c) => <span className="text-gray-600">{c.contactName}</span>,
+                },
+                {
+                  key: 'contactPhone',
+                  header: 'SĐT',
+                  render: (c) => <span className="text-gray-600">{c.contactPhone}</span>,
+                },
+                {
+                  key: 'studentCount',
+                  header: 'Sĩ số',
+                  align: 'right',
+                  render: (c) => <span className="text-gray-600">{c.studentCount}</span>,
+                },
+                {
+                  key: 'actions',
+                  header: '',
+                  align: 'right',
+                  className: 'whitespace-nowrap',
+                  render: (c) => (
+                    <span className="space-x-2">
                       <button
                         onClick={() => openEdit(c)}
                         className="text-blue-600 hover:underline text-xs"
@@ -160,18 +179,11 @@ const CustomersPage = () => {
                       >
                         Xoá
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {customers.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                      Chưa có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </span>
+                  ),
+                } satisfies Column<Customer>,
+              ]}
+            />
           </div>
 
           {/* Mobile cards */}

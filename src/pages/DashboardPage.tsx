@@ -19,7 +19,8 @@ import {
   SCHEDULE_STATUS_LABEL,
   SCHEDULE_STATUS_COLOR,
 } from '../utils/scheduleConstants';
-import { ScheduleCalendar } from '../components/organisms';
+import { DataTable, ScheduleCalendar } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { useAuth } from '../context/AuthContext';
 import { PageLoader } from '../components/atoms';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -85,6 +86,55 @@ const DashboardPage = () => {
       })),
     [stats?.upcomingSchedules],
   );
+
+  const upcomingColumns: Column<UpcomingSchedule>[] = [
+    {
+      key: 'date',
+      header: 'Ngày chụp',
+      className: 'font-medium',
+      render: (s) => formatDate(s.shootDate),
+    },
+    {
+      key: 'time',
+      header: 'Giờ',
+      className: 'text-gray-500',
+      render: (s) => `${s.startTime ?? '—'}${s.endTime ? ` – ${s.endTime}` : ''}`,
+    },
+    {
+      key: 'class',
+      header: 'Lớp',
+      render: (s) => (
+        <>
+          {s.customerId?.className ?? '—'}
+          {s.customerId?.school && (
+            <span className="text-xs text-gray-400 ml-1">({s.customerId.school})</span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'location',
+      header: 'Địa điểm',
+      className: 'text-gray-500',
+      render: (s) => s.location ?? '—',
+    },
+    {
+      key: 'lead',
+      header: 'Nhiếp ảnh chính',
+      className: 'text-gray-500',
+      render: (s) =>
+        s.leadPhotographer ? (s.leadPhotographer.name ?? s.leadPhotographer.username) : '—',
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      render: (s) => (
+        <span className={`badge ${STATUS_COLOR[s.status] ?? ''}`}>
+          {STATUS_LABEL[s.status] ?? s.status}
+        </span>
+      ),
+    },
+  ];
 
   if (loading || !stats) return <PageLoader />;
 
@@ -338,48 +388,12 @@ const DashboardPage = () => {
             <>
               {/* Desktop */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600 border-b">
-                    <tr>
-                      <th className="text-left px-3 py-2">Ngày chụp</th>
-                      <th className="text-left px-3 py-2">Giờ</th>
-                      <th className="text-left px-3 py-2">Lớp</th>
-                      <th className="text-left px-3 py-2">Địa điểm</th>
-                      <th className="text-left px-3 py-2">Nhiếp ảnh chính</th>
-                      <th className="text-left px-3 py-2">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(upcomingSchedules as UpcomingSchedule[]).map((s) => (
-                      <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="px-3 py-2 font-medium">{formatDate(s.shootDate)}</td>
-                        <td className="px-3 py-2 text-gray-500">
-                          {s.startTime ?? '—'}
-                          {s.endTime ? ` – ${s.endTime}` : ''}
-                        </td>
-                        <td className="px-3 py-2">
-                          {s.customerId?.className ?? '—'}
-                          {s.customerId?.school && (
-                            <span className="text-xs text-gray-400 ml-1">
-                              ({s.customerId.school})
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-gray-500">{s.location ?? '—'}</td>
-                        <td className="px-3 py-2 text-gray-500">
-                          {s.leadPhotographer
-                            ? (s.leadPhotographer.name ?? s.leadPhotographer.username)
-                            : '—'}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span className={`badge ${STATUS_COLOR[s.status] ?? ''}`}>
-                            {STATUS_LABEL[s.status] ?? s.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <DataTable<UpcomingSchedule>
+                  variant="plain"
+                  data={upcomingSchedules as UpcomingSchedule[]}
+                  keyExtractor={(s) => s._id}
+                  columns={upcomingColumns}
+                />
               </div>
               {/* Mobile */}
               <div className="md:hidden space-y-2">

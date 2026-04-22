@@ -6,6 +6,8 @@ import { transactionService } from '../services/transactionService';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Customer, Schedule, Transaction, User } from '../types';
 import { PageLoader } from '../components/atoms';
+import { DataTable } from '../components/organisms';
+import type { Column } from '../components/organisms';
 
 const statusLabel: Record<string, string> = {
   pending: 'Chờ xác nhận',
@@ -102,103 +104,102 @@ const CustomerDetailPage = () => {
       </div>
 
       {/* Schedules */}
-      <div className="card p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <h3 className="font-semibold text-gray-800">Lịch chụp</h3>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 border-b">
-            <tr>
-              <th className="text-left px-4 py-3">Ngày</th>
-              <th className="text-left px-4 py-3">Giờ</th>
-              <th className="text-left px-4 py-3">Địa điểm</th>
-              <th className="text-left px-4 py-3">Ekip</th>
-              <th className="text-left px-4 py-3">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map((s) => (
-              <tr key={s._id} className="border-b last:border-0">
-                <td className="px-4 py-3">{formatDate(s.shootDate)}</td>
-                <td className="px-4 py-3 text-gray-600">
-                  {s.startTime}
-                  {s.endTime ? ` – ${s.endTime}` : ''}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{s.location}</td>
-                <td className="px-4 py-3 text-gray-600">
-                  {typeof s.leadPhotographer === 'object'
-                    ? (s.leadPhotographer as User)?.username
-                    : (s.leadPhotographer ?? '—')}
-                  {(s.supportPhotographers?.length ?? 0) > 0 && (
-                    <span className="ml-1 text-xs text-gray-400">
-                      (+{s.supportPhotographers!.length})
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
-                </td>
-              </tr>
-            ))}
-            {schedules.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                  Chưa có lịch
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable<Schedule>
+        title="Lịch chụp"
+        data={schedules}
+        keyExtractor={(s) => s._id}
+        emptyTitle="Chưa có lịch"
+        columns={[
+          { key: 'date', header: 'Ngày', render: (s) => formatDate(s.shootDate) },
+          {
+            key: 'time',
+            header: 'Giờ',
+            render: (s) => (
+              <span className="text-gray-600">
+                {s.startTime}
+                {s.endTime ? ` – ${s.endTime}` : ''}
+              </span>
+            ),
+          },
+          {
+            key: 'location',
+            header: 'Địa điểm',
+            render: (s) => <span className="text-gray-600">{s.location}</span>,
+          },
+          {
+            key: 'crew',
+            header: 'Ekip',
+            render: (s) => (
+              <span className="text-gray-600">
+                {typeof s.leadPhotographer === 'object'
+                  ? (s.leadPhotographer as User)?.username
+                  : (s.leadPhotographer ?? '—')}
+                {(s.supportPhotographers?.length ?? 0) > 0 && (
+                  <span className="ml-1 text-xs text-gray-400">
+                    (+{s.supportPhotographers!.length})
+                  </span>
+                )}
+              </span>
+            ),
+          },
+          {
+            key: 'status',
+            header: 'Trạng thái',
+            render: (s) => (
+              <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
+            ),
+          } satisfies Column<Schedule>,
+        ]}
+      />
 
       {/* Transactions */}
-      <div className="card p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <h3 className="font-semibold text-gray-800">Thu chi</h3>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 border-b">
-            <tr>
-              <th className="text-left px-4 py-3">Ngày</th>
-              <th className="text-left px-4 py-3">Loại</th>
-              <th className="text-left px-4 py-3">Danh mục</th>
-              <th className="text-left px-4 py-3">Mô tả</th>
-              <th className="text-right px-4 py-3">Số tiền</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((t) => (
-              <tr key={t._id} className="border-b last:border-0">
-                <td className="px-4 py-3">{formatDate(t.date)}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                  >
-                    {t.type === 'income' ? 'Thu' : 'Chi'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-600">
-                  {typeof t.categoryId === 'object' ? t.categoryId.name : '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{t.description}</td>
-                <td
-                  className={`px-4 py-3 text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {t.type === 'expense' ? '-' : '+'}
-                  {formatCurrency(t.amount)}
-                </td>
-              </tr>
-            ))}
-            {transactions.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                  Chưa có giao dịch
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable<Transaction>
+        title="Thu chi"
+        data={transactions}
+        keyExtractor={(t) => t._id}
+        emptyTitle="Chưa có giao dịch"
+        columns={[
+          { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
+          {
+            key: 'type',
+            header: 'Loại',
+            render: (t) => (
+              <span
+                className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+              >
+                {t.type === 'income' ? 'Thu' : 'Chi'}
+              </span>
+            ),
+          },
+          {
+            key: 'category',
+            header: 'Danh mục',
+            render: (t) => (
+              <span className="text-gray-600">
+                {typeof t.categoryId === 'object' ? t.categoryId.name : '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'description',
+            header: 'Mô tả',
+            render: (t) => <span className="text-gray-600">{t.description}</span>,
+          },
+          {
+            key: 'amount',
+            header: 'Số tiền',
+            align: 'right',
+            render: (t) => (
+              <span
+                className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {t.type === 'expense' ? '-' : '+'}
+                {formatCurrency(t.amount)}
+              </span>
+            ),
+          } satisfies Column<Transaction>,
+        ]}
+      />
     </div>
   );
 };

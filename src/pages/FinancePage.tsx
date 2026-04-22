@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { transactionService } from '../services/transactionService';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { toast } from 'react-toastify';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Transaction, Customer, Category, User } from '../types';
@@ -171,6 +172,132 @@ const FinancePage = () => {
     { income: 0, expense: 0, profit: 0 },
   );
 
+  const txColumns: Column<Transaction>[] = [
+    { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
+    {
+      key: 'type',
+      header: 'Loại',
+      render: (t) => (
+        <span
+          className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+        >
+          {t.type === 'income' ? 'Thu' : 'Chi'}
+        </span>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Danh mục',
+      className: 'text-gray-600',
+      render: (t) =>
+        typeof t.categoryId === 'object' ? (t.categoryId as Category).name : '—',
+    },
+    {
+      key: 'class',
+      header: 'Lớp',
+      className: 'text-gray-600',
+      render: (t) =>
+        t.customerId && typeof t.customerId === 'object'
+          ? (t.customerId as Customer).className
+          : '—',
+    },
+    {
+      key: 'description',
+      header: 'Mô tả',
+      className: 'text-gray-600',
+      render: (t) => t.description,
+    },
+    {
+      key: 'createdBy',
+      header: 'Người thực hiện',
+      className: 'text-gray-600',
+      render: (t) =>
+        t.createdBy && typeof t.createdBy === 'object'
+          ? ((t.createdBy as User).name ?? (t.createdBy as User).username)
+          : '—',
+    },
+    {
+      key: 'amount',
+      header: 'Số tiền',
+      align: 'right',
+      render: (t) => (
+        <span
+          className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
+        >
+          {t.type === 'expense' ? '-' : '+'}
+          {formatCurrency(t.amount)}
+        </span>
+      ),
+    },
+    {
+      key: 'refund',
+      header: 'KT hoàn tiền',
+      align: 'center',
+      render: (t) => (
+        <input
+          type="checkbox"
+          className="rounded border-gray-300"
+          checked={!!t.accountantRefunded}
+          disabled={!canRefund}
+          onChange={(e) => toggleRefund(t, e.target.checked)}
+        />
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      render: (t) => (
+        <span className="space-x-2">
+          <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline text-xs">
+            Sửa
+          </button>
+          <button onClick={() => handleDelete(t._id)} className="text-red-600 hover:underline text-xs">
+            Xoá
+          </button>
+        </span>
+      ),
+    },
+  ];
+
+  type SummaryRow = (typeof summary)[number];
+  const summaryColumns: Column<SummaryRow>[] = [
+    {
+      key: 'class',
+      header: 'Lớp',
+      className: 'font-medium',
+      render: (row) => row.customer?.className ?? '(Không có lớp)',
+    },
+    {
+      key: 'school',
+      header: 'Trường',
+      className: 'text-gray-600',
+      render: (row) => row.customer?.school,
+    },
+    {
+      key: 'income',
+      header: <span className="text-green-600">Tổng thu</span>,
+      align: 'right',
+      render: (row) => <span className="text-green-600">{formatCurrency(row.income)}</span>,
+    },
+    {
+      key: 'expense',
+      header: <span className="text-red-600">Tổng chi</span>,
+      align: 'right',
+      render: (row) => <span className="text-red-600">{formatCurrency(row.expense)}</span>,
+    },
+    {
+      key: 'profit',
+      header: 'Lợi nhuận',
+      align: 'right',
+      render: (row) => (
+        <span className={`font-medium ${row.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {formatCurrency(row.profit)}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -283,86 +410,13 @@ const FinancePage = () => {
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden md:block card p-0 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600 border-b">
-                  <tr>
-                    <th className="text-left px-4 py-3">Ngày</th>
-                    <th className="text-left px-4 py-3">Loại</th>
-                    <th className="text-left px-4 py-3">Danh mục</th>
-                    <th className="text-left px-4 py-3">Lớp</th>
-                    <th className="text-left px-4 py-3">Mô tả</th>
-                    <th className="text-left px-4 py-3">Người thực hiện</th>
-                    <th className="text-right px-4 py-3">Số tiền</th>
-                    <th className="text-center px-4 py-3">KT hoàn tiền</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((t) => (
-                    <tr key={t._id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-4 py-3">{formatDate(t.date)}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                        >
-                          {t.type === 'income' ? 'Thu' : 'Chi'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {typeof t.categoryId === 'object' ? (t.categoryId as Category).name : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {t.customerId && typeof t.customerId === 'object'
-                          ? (t.customerId as Customer).className
-                          : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{t.description}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {t.createdBy && typeof t.createdBy === 'object'
-                          ? ((t.createdBy as User).name ?? (t.createdBy as User).username)
-                          : '—'}
-                      </td>
-                      <td
-                        className={`px-4 py-3 text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {t.type === 'expense' ? '-' : '+'}
-                        {formatCurrency(t.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                          checked={!!t.accountantRefunded}
-                          disabled={!canRefund}
-                          onChange={(e) => toggleRefund(t, e.target.checked)}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <button
-                          onClick={() => openEdit(t)}
-                          className="text-blue-600 hover:underline text-xs"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(t._id)}
-                          className="text-red-600 hover:underline text-xs"
-                        >
-                          Xoá
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {transactions.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
-                        Chưa có dữ liệu
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="hidden md:block">
+              <DataTable<Transaction>
+                data={transactions}
+                keyExtractor={(t) => t._id}
+                emptyTitle="Chưa có dữ liệu"
+                columns={txColumns}
+              />
             </div>
 
             {/* Mobile cards */}
@@ -439,64 +493,33 @@ const FinancePage = () => {
       {tab === 'summary' && (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block card p-0 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3">Lớp</th>
-                  <th className="text-left px-4 py-3">Trường</th>
-                  <th className="text-right px-4 py-3 text-green-600">Tổng thu</th>
-                  <th className="text-right px-4 py-3 text-red-600">Tổng chi</th>
-                  <th className="text-right px-4 py-3">Lợi nhuận</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.map((row) => (
-                  <tr key={row._id ?? 'unknown'} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">
-                      {row.customer?.className ?? '(Không có lớp)'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{row.customer?.school}</td>
-                    <td className="px-4 py-3 text-right text-green-600">
-                      {formatCurrency(row.income)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-red-600">
-                      {formatCurrency(row.expense)}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-right font-medium ${row.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {formatCurrency(row.profit)}
-                    </td>
-                  </tr>
-                ))}
-                {summary.length > 0 && (
+          <div className="hidden md:block">
+            <DataTable<SummaryRow>
+              data={summary}
+              keyExtractor={(row) => row._id ?? 'unknown'}
+              emptyTitle="Chưa có dữ liệu"
+              columns={summaryColumns}
+              footer={
+                summary.length > 0 ? (
                   <tr className="border-t bg-gray-50 font-semibold">
-                    <td className="px-4 py-3" colSpan={2}>
+                    <td className="px-3 py-2" colSpan={2}>
                       Tổng cộng
                     </td>
-                    <td className="px-4 py-3 text-right text-green-600">
+                    <td className="px-3 py-2 text-right text-green-600">
                       {formatCurrency(grandTotal.income)}
                     </td>
-                    <td className="px-4 py-3 text-right text-red-600">
+                    <td className="px-3 py-2 text-right text-red-600">
                       {formatCurrency(grandTotal.expense)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right ${grandTotal.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      className={`px-3 py-2 text-right ${grandTotal.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
                     >
                       {formatCurrency(grandTotal.profit)}
                     </td>
                   </tr>
-                )}
-                {summary.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                      Chưa có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                ) : undefined
+              }
+            />
           </div>
 
           {/* Mobile cards */}

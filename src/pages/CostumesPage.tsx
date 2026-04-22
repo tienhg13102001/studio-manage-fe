@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { costumeService } from '../services/costumeService';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { toast } from 'react-toastify';
 import type { Costume } from '../types';
 
@@ -86,50 +87,46 @@ const CostumesPage = () => {
         </button>
       </div>
 
-      {loading ? (
-        <div className="card p-6 text-center text-gray-400">Đang tải...</div>
-      ) : (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 border-b">
-              <tr>
-                <th className="text-left px-4 py-3">Tên trang phục</th>
-                <th className="text-left px-4 py-3">Mô tả</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {costumes.map((c) => (
-                <tr key={c._id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.description ?? '—'}</td>
-                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    <button
-                      onClick={() => openEdit(c)}
-                      className="text-blue-600 hover:underline text-xs"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      onClick={() => setConfirmId(c._id)}
-                      className="text-red-600 hover:underline text-xs"
-                    >
-                      Xoá
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {costumes.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
-                    Chưa có trang phục nào
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<Costume>
+        loading={loading}
+        data={costumes}
+        keyExtractor={(c) => c._id}
+        emptyTitle="Chưa có trang phục nào"
+        columns={[
+          {
+            key: 'name',
+            header: 'Tên trang phục',
+            render: (c) => <span className="font-medium">{c.name}</span>,
+          },
+          {
+            key: 'description',
+            header: 'Mô tả',
+            render: (c) => <span className="text-gray-600">{c.description ?? '—'}</span>,
+          },
+          {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            className: 'whitespace-nowrap',
+            render: (c) => (
+              <span className="space-x-2">
+                <button
+                  onClick={() => openEdit(c)}
+                  className="text-blue-600 hover:underline text-xs"
+                >
+                  Sửa
+                </button>
+                <button
+                  onClick={() => setConfirmId(c._id)}
+                  className="text-red-600 hover:underline text-xs"
+                >
+                  Xoá
+                </button>
+              </span>
+            ),
+          } satisfies Column<Costume>,
+        ]}
+      />
 
       <Modal
         isOpen={modalOpen}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { userService } from '../services/userService';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchUsers } from '../store/slices/usersSlice';
 import { toast } from 'react-toastify';
@@ -119,43 +120,57 @@ const UsersPage = () => {
         </button>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        {/* Desktop table */}
-        <table className="hidden md:table w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 border-b">
-            <tr>
-              <th className="text-left px-4 py-3">Tên đăng nhập</th>
-              <th className="text-left px-4 py-3">Họ tên</th>
-              <th className="text-left px-4 py-3">Role</th>
-              <th className="text-left px-4 py-3">Trạng thái</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u._id} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium">
+      <div className="hidden md:block">
+        <DataTable<User>
+          data={users}
+          keyExtractor={(u) => u._id}
+          columns={[
+            {
+              key: 'username',
+              header: 'Tên đăng nhập',
+              render: (u) => (
+                <span className="font-medium">
                   {u.username}
                   {u._id === me?._id && <span className="ml-2 text-xs text-gray-400">(bạn)</span>}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{u.name ?? '—'}</td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {(u.roles ?? []).map((r) => (
-                      <span key={r} className={`badge ${ROLE_BADGE[r]}`}>
-                        {ROLE_LABELS[r]}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`badge ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                  >
-                    {u.isActive ? 'Hoạt động' : 'Đã khoá'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right space-x-2">
+                </span>
+              ),
+            },
+            {
+              key: 'name',
+              header: 'Họ tên',
+              render: (u) => <span className="text-gray-600">{u.name ?? '—'}</span>,
+            },
+            {
+              key: 'roles',
+              header: 'Role',
+              render: (u) => (
+                <div className="flex flex-wrap gap-1">
+                  {(u.roles ?? []).map((r) => (
+                    <span key={r} className={`badge ${ROLE_BADGE[r]}`}>
+                      {ROLE_LABELS[r]}
+                    </span>
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: 'status',
+              header: 'Trạng thái',
+              render: (u) => (
+                <span
+                  className={`badge ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                >
+                  {u.isActive ? 'Hoạt động' : 'Đã khoá'}
+                </span>
+              ),
+            },
+            {
+              key: 'actions',
+              header: '',
+              align: 'right',
+              className: 'whitespace-nowrap',
+              render: (u) => (
+                <span className="space-x-2">
                   <button
                     onClick={() => openEdit(u)}
                     className="text-blue-600 hover:underline text-xs"
@@ -170,11 +185,11 @@ const UsersPage = () => {
                       Xoá
                     </button>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </span>
+              ),
+            } satisfies Column<User>,
+          ]}
+        />
       </div>
 
       {/* Mobile cards */}

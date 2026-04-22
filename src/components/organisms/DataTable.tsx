@@ -4,37 +4,32 @@ import EmptyState from '../atoms/EmptyState';
 
 export interface Column<T> {
   key: string;
-  header: string;
-  render: (row: T) => ReactNode;
-  /** Extra Tailwind classes on the <th> and matching <td> */
+  header: ReactNode;
+  render: (row: T, index: number) => ReactNode;
   className?: string;
-  /** Align the column. Defaults to left */
   align?: 'left' | 'center' | 'right';
 }
 
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
-  keyExtractor: (row: T) => string;
+  keyExtractor: (row: T, index: number) => string;
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyIcon?: string;
+  title?: ReactNode;
+  className?: string;
+  footer?: ReactNode;
+  rowClassName?: (row: T, index: number) => string;
+  stickyHeader?: boolean;
+  variant?: 'card' | 'plain';
+  dense?: boolean;
+  textSize?: 'xs' | 'sm';
 }
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
-/**
- * Organism: generic responsive data table.
- * Handles loading state, empty state, and column rendering automatically.
- *
- * Usage:
- *   const columns: Column<Customer>[] = [
- *     { key: 'name', header: 'Tên lớp', render: (c) => c.className },
- *     { key: 'actions', header: '', align: 'right', render: (c) => <ActionButtons ... /> },
- *   ];
- *   <DataTable columns={columns} data={customers} keyExtractor={(c) => c._id} loading={loading} />
- */
 function DataTable<T>({
   columns,
   data,
@@ -43,49 +38,109 @@ function DataTable<T>({
   emptyTitle = 'Không có dữ liệu',
   emptyDescription,
   emptyIcon,
+  title,
+  className = '',
+  footer,
+  rowClassName,
+  stickyHeader = false,
+  variant = 'card',
+  dense = false,
+  textSize = 'sm',
 }: DataTableProps<T>) {
+  const renderTitle = () =>
+    title ? (
+      <div className="px-6 py-4 border-b bg-gray-50">
+        {typeof title === 'string' ? (
+          <h3 className="font-semibold text-gray-800">{title}</h3>
+        ) : (
+          title
+        )}
+      </div>
+    ) : null;
+
+  const wrapperCls =
+    variant === 'card' ? `card p-0 overflow-hidden ${className}` : className || undefined;
+
   if (loading) {
-    return (
+    const content = (
       <div className="flex items-center justify-center py-16 text-gray-400">
         <Spinner size="lg" />
       </div>
     );
+    return variant === 'card' ? (
+      <div className={wrapperCls}>
+        {renderTitle()}
+        {content}
+      </div>
+    ) : (
+      content
+    );
   }
 
   if (data.length === 0) {
-    return <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />;
+    const content = (
+      <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />
+    );
+    return variant === 'card' ? (
+      <div className={wrapperCls}>
+        {renderTitle()}
+        {content}
+      </div>
+    ) : (
+      content
+    );
   }
 
-  return (
-    <div className="card p-0 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-600 border-b">
-          <tr>
+  const cellPad = dense ? 'px-3 py-1.5' : 'px-3 py-2';
+  const textCls = textSize === 'xs' ? 'text-xs' : 'text-sm';
+
+  const table = (
+    <table className={`w-full ${textCls}`}>
+      <thead
+        className={`bg-gray-50 text-gray-600 border-b ${stickyHeader ? 'sticky top-0 z-10' : ''}`}
+      >
+        <tr>
+          {columns.map((col) => (
+            <th
+              key={col.key}
+              className={`${cellPad} font-medium ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+            >
+              {col.header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row, i) => (
+          <tr
+            key={keyExtractor(row, i)}
+            className={
+              rowClassName
+                ? `border-b last:border-0 ${rowClassName(row, i)}`
+                : 'border-b last:border-0 hover:bg-gray-50'
+            }
+          >
             {columns.map((col) => (
-              <th
+              <td
                 key={col.key}
-                className={`px-4 py-3 font-medium ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+                className={`${cellPad} ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
               >
-                {col.header}
-              </th>
+                {col.render(row, i)}
+              </td>
             ))}
           </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={keyExtractor(row)} className="border-b last:border-0 hover:bg-gray-50">
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className={`px-4 py-3 ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
-                >
-                  {col.render(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        ))}
+      </tbody>
+      {footer && <tfoot>{footer}</tfoot>}
+    </table>
+  );
+
+  if (variant === 'plain') return table;
+
+  return (
+    <div className={wrapperCls}>
+      {renderTitle()}
+      {table}
     </div>
   );
 }

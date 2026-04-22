@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { ConfirmModal, Modal, ScheduleCalendar } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal, ScheduleCalendar } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { scheduleService } from '../services/scheduleService';
 import type { Customer, Package, Schedule, User } from '../types';
 import { ROLE_LABELS } from '../types';
@@ -178,6 +179,114 @@ const SchedulesPage = () => {
     [schedules],
   );
 
+  const scheduleColumns: Column<Schedule>[] = [
+    {
+      key: 'date',
+      header: 'Ngày chụp',
+      className: 'font-medium',
+      render: (s) => formatDate(s.shootDate),
+    },
+    {
+      key: 'class',
+      header: 'Lớp',
+      className: 'text-primary-600',
+      render: (s) =>
+        typeof s.customerId === 'object' ? ((s.customerId as Customer).className ?? '—') : '—',
+    },
+    {
+      key: 'package',
+      header: 'Gói chụp',
+      className: 'text-gray-600',
+      render: (s) =>
+        typeof s.packageId === 'object'
+          ? (s.packageId as Package)?.name
+          : (s.packageId ?? '—'),
+    },
+    {
+      key: 'notes',
+      header: 'Ghi chú',
+      className: 'max-w-[14rem]',
+      render: (s) => (
+        <span
+          className="inline-block bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 max-w-full whitespace-pre-line"
+          title={s.notes}
+        >
+          {s.notes || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'time',
+      header: 'Giờ',
+      className: 'text-gray-600',
+      render: (s) => `${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`,
+    },
+    {
+      key: 'location',
+      header: 'Địa điểm',
+      className: 'text-gray-600',
+      render: (s) => s.location,
+    },
+    {
+      key: 'sale',
+      header: 'Sale',
+      className: 'text-gray-600',
+      render: (s) =>
+        typeof s.bookedBy === 'object'
+          ? ((s.bookedBy as User)?.name ?? (s.bookedBy as User)?.username)
+          : (s.bookedBy ?? '—'),
+    },
+    {
+      key: 'leader',
+      header: 'Leader',
+      className: 'text-gray-600',
+      render: (s) =>
+        typeof s.leadPhotographer === 'object'
+          ? (s.leadPhotographer as User)?.name
+          : (s.leadPhotographer ?? '—'),
+    },
+    {
+      key: 'support',
+      header: 'Support',
+      className: 'text-gray-600',
+      render: (s) =>
+        (s.supportPhotographers ?? [])
+          .map((u) => (typeof u === 'object' ? (u as User)?.name : u))
+          .join(', ') || '—',
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      render: (s) => (
+        <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      render: (s) => (
+        <span className="space-x-2">
+          <button
+            onClick={() => handleDownloadContract(s)}
+            className="text-green-600 hover:underline text-xs"
+          >
+            Hợp đồng
+          </button>
+          <button onClick={() => openEdit(s)} className="text-blue-600 hover:underline text-xs">
+            Sửa
+          </button>
+          <button
+            onClick={() => handleDelete(s._id)}
+            className="text-red-600 hover:underline text-xs"
+          >
+            Xoá
+          </button>
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap space-y-4">
@@ -263,101 +372,13 @@ const SchedulesPage = () => {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block card p-0 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3">Ngày chụp</th>
-                  <th className="text-left px-4 py-3">Lớp</th>
-                  <th className="text-left px-4 py-3">Gói chụp</th>
-                  <th className="text-left px-4 py-3">Ghi chú</th>
-                  <th className="text-left px-4 py-3">Giờ</th>
-                  <th className="text-left px-4 py-3">Địa điểm</th>
-                  <th className="text-left px-4 py-3">Sale</th>
-                  <th className="text-left px-4 py-3">Leader</th>
-                  <th className="text-left px-4 py-3">Support</th>
-                  <th className="text-left px-4 py-3">Trạng thái</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedules.map((s) => {
-                  const customer =
-                    typeof s.customerId === 'object' ? (s.customerId as Customer) : null;
-                  return (
-                    <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium">{formatDate(s.shootDate)}</td>
-                      <td className="px-4 py-3 text-primary-600">{customer?.className ?? '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {typeof s.packageId === 'object'
-                          ? (s.packageId as Package)?.name
-                          : (s.packageId ?? '—')}
-                      </td>
-                      <td className="px-4 py-3 max-w-[14rem]">
-                        <span
-                          className="inline-block bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 max-w-full whitespace-pre-line"
-                          title={s.notes}
-                        >
-                          {s.notes || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {s.startTime}
-                        {s.endTime ? ` – ${s.endTime}` : ''}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{s.location}</td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {typeof s.bookedBy === 'object'
-                          ? ((s.bookedBy as User)?.name ?? (s.bookedBy as User)?.username)
-                          : (s.bookedBy ?? '—')}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {typeof s.leadPhotographer === 'object'
-                          ? (s.leadPhotographer as User)?.name
-                          : (s.leadPhotographer ?? '—')}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {(s.supportPhotographers ?? [])
-                          .map((u) => (typeof u === 'object' ? (u as User)?.name : u))
-                          .join(', ') || '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`badge ${statusColor[s.status]}`}>
-                          {statusLabel[s.status]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        <button
-                          onClick={() => handleDownloadContract(s)}
-                          className="text-green-600 hover:underline text-xs"
-                        >
-                          Hợp đồng
-                        </button>
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="text-blue-600 hover:underline text-xs"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s._id)}
-                          className="text-red-600 hover:underline text-xs"
-                        >
-                          Xoá
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {schedules.length === 0 && (
-                  <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
-                      Chưa có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="hidden md:block overflow-x-auto">
+            <DataTable<Schedule>
+              data={schedules}
+              keyExtractor={(s) => s._id}
+              emptyTitle="Chưa có dữ liệu"
+              columns={scheduleColumns}
+            />
           </div>
 
           {/* Mobile cards */}

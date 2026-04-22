@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import ExcelJS from 'exceljs';
-import { ConfirmModal, Modal } from '../components/organisms';
+import { ConfirmModal, DataTable, Modal } from '../components/organisms';
+import type { Column } from '../components/organisms';
 import { TableSkeleton, Select } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
@@ -452,85 +453,106 @@ const CustomerSizePage = () => {
               const displayedStudents = showDupOnly
                 ? students.filter((s) => duplicateNorms.has(normalizeName(s.name)))
                 : students;
+              const studentColumns: Column<Student>[] = [
+                {
+                  key: 'index',
+                  header: '#',
+                  className: 'text-gray-400',
+                  render: (_s, i) => i + 1,
+                },
+                {
+                  key: 'name',
+                  header: 'Họ tên',
+                  className: 'font-medium',
+                  render: (s) => {
+                    const isDup = duplicateNorms.has(normalizeName(s.name));
+                    return (
+                      <>
+                        {s.name}
+                        {isDup && (
+                          <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>
+                        )}
+                      </>
+                    );
+                  },
+                },
+                {
+                  key: 'gender',
+                  header: 'Giới tính',
+                  className: 'text-gray-600',
+                  render: (s) => GENDER_LABEL[s.gender],
+                },
+                {
+                  key: 'height',
+                  header: 'Chiều cao (cm)',
+                  align: 'right',
+                  className: 'text-gray-600',
+                  render: (s) => s.height ?? '—',
+                },
+                {
+                  key: 'weight',
+                  header: 'Cân nặng (kg)',
+                  align: 'right',
+                  className: 'text-gray-600',
+                  render: (s) => s.weight ?? '—',
+                },
+                {
+                  key: 'notes',
+                  header: 'Ghi chú',
+                  className: 'text-gray-400 text-xs',
+                  render: (s) => s.notes,
+                },
+                {
+                  key: 'actions',
+                  header: '',
+                  align: 'right',
+                  render: (s) => (
+                    <span className="space-x-2">
+                      <button
+                        onClick={() => openEdit(s)}
+                        className="text-blue-600 hover:underline text-xs"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s._id)}
+                        className="text-red-600 hover:underline text-xs"
+                      >
+                        Xoá
+                      </button>
+                    </span>
+                  ),
+                },
+              ];
               return (
                 <>
                   {/* Desktop table */}
-                  <div className="hidden md:block card p-0 overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-gray-600 border-b">
-                        <tr>
-                          <th className="text-left px-4 py-3">#</th>
-                          <th className="text-left px-4 py-3">Họ tên</th>
-                          <th className="text-left px-4 py-3">Giới tính</th>
-                          <th className="text-right px-4 py-3">Chiều cao (cm)</th>
-                          <th className="text-right px-4 py-3">Cân nặng (kg)</th>
-                          <th className="text-left px-4 py-3">Ghi chú</th>
-                          <th className="px-4 py-3"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayedStudents.map((s, i) => {
-                          const isDup = duplicateNorms.has(normalizeName(s.name));
-                          return (
-                            <tr
-                              key={s._id}
-                              className={`border-b last:border-0 ${isDup ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
-                            >
-                              <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                              <td className="px-4 py-3 font-medium">
-                                {s.name}
-                                {isDup && (
-                                  <span className="ml-1.5 text-yellow-600 text-xs">
-                                    ⚠ trùng tên
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-gray-600">{GENDER_LABEL[s.gender]}</td>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {s.height ?? '—'}
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {s.weight ?? '—'}
-                              </td>
-                              <td className="px-4 py-3 text-gray-400 text-xs">{s.notes}</td>
-                              <td className="px-4 py-3 text-right space-x-2">
-                                <button
-                                  onClick={() => openEdit(s)}
-                                  className="text-blue-600 hover:underline text-xs"
-                                >
-                                  Sửa
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(s._id)}
-                                  className="text-red-600 hover:underline text-xs"
-                                >
-                                  Xoá
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        {displayedStudents.length === 0 && (
-                          <tr>
-                            <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                              {showDupOnly ? (
-                                <span>
-                                  Không còn học sinh trùng tên —{' '}
-                                  <button
-                                    className="underline text-blue-500"
-                                    onClick={() => setShowDupOnly(false)}
-                                  >
-                                    Hiện tất cả
-                                  </button>
-                                </span>
-                              ) : (
-                                'Chưa có học sinh nào'
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                  <div className="hidden md:block">
+                    <DataTable<Student>
+                      data={displayedStudents}
+                      keyExtractor={(s) => s._id}
+                      columns={studentColumns}
+                      rowClassName={(s) =>
+                        duplicateNorms.has(normalizeName(s.name))
+                          ? 'bg-yellow-50'
+                          : 'hover:bg-gray-50'
+                      }
+                      emptyTitle={
+                        showDupOnly ? 'Không còn học sinh trùng tên' : 'Chưa có học sinh nào'
+                      }
+                      emptyDescription={showDupOnly ? 'Bỏ lọc để xem toàn bộ danh sách.' : undefined}
+                      emptyIcon="🧑‍🎓"
+                    />
+                    {showDupOnly && displayedStudents.length === 0 && (
+                      <div className="text-center mt-2">
+                        <button
+                          className="underline text-blue-500 text-sm"
+                          onClick={() => setShowDupOnly(false)}
+                        >
+                          Hiện tất cả
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Mobile cards */}
@@ -636,39 +658,60 @@ const CustomerSizePage = () => {
             )}
           </p>
           <div className="max-h-72 overflow-y-auto border rounded-lg">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600 sticky top-0">
-                <tr>
-                  <th className="text-left px-3 py-2">#</th>
-                  <th className="text-left px-3 py-2">Họ tên</th>
-                  <th className="text-left px-3 py-2">Giới tính</th>
-                  <th className="text-right px-3 py-2">Cao (cm)</th>
-                  <th className="text-right px-3 py-2">Nặng (kg)</th>
-                  <th className="text-left px-3 py-2">Ghi chú</th>
-                </tr>
-              </thead>
-              <tbody>
-                {importRows.map((r, i) => (
-                  <tr
-                    key={i}
-                    className={`border-t ${r.error ? 'bg-red-50 text-red-400' : r.warning ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}
-                  >
-                    <td className="px-3 py-1.5 text-gray-400">{i + 1}</td>
-                    <td className="px-3 py-1.5 font-medium">
-                      {r.name || <span className="italic">trống</span>}
-                    </td>
-                    <td className="px-3 py-1.5">{GENDER_LABEL[r.gender] ?? r.gender}</td>
-                    <td className="px-3 py-1.5 text-right">{r.height ?? '—'}</td>
-                    <td className="px-3 py-1.5 text-right">{r.weight ?? '—'}</td>
-                    <td className="px-3 py-1.5 text-gray-400">
+            <DataTable<ImportRow>
+              variant="plain"
+              textSize="xs"
+              dense
+              stickyHeader
+              data={importRows}
+              keyExtractor={(_r, i) => String(i)}
+              rowClassName={(r) =>
+                r.error ? 'bg-red-50 text-red-400' : r.warning ? 'bg-yellow-50' : 'hover:bg-gray-50'
+              }
+              columns={[
+                {
+                  key: 'index',
+                  header: '#',
+                  className: 'text-gray-400',
+                  render: (_r, i) => i + 1,
+                },
+                {
+                  key: 'name',
+                  header: 'Họ tên',
+                  className: 'font-medium',
+                  render: (r) => r.name || <span className="italic">trống</span>,
+                },
+                {
+                  key: 'gender',
+                  header: 'Giới tính',
+                  render: (r) => GENDER_LABEL[r.gender] ?? r.gender,
+                },
+                {
+                  key: 'height',
+                  header: 'Cao (cm)',
+                  align: 'right',
+                  render: (r) => r.height ?? '—',
+                },
+                {
+                  key: 'weight',
+                  header: 'Nặng (kg)',
+                  align: 'right',
+                  render: (r) => r.weight ?? '—',
+                },
+                {
+                  key: 'notes',
+                  header: 'Ghi chú',
+                  className: 'text-gray-400',
+                  render: (r) => (
+                    <>
                       {r.notes ?? ''}
                       {r.error && <span className="text-red-500 ml-1">({r.error})</span>}
                       {r.warning && <span className="text-yellow-600 ml-1">⚠ {r.warning}</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </>
+                  ),
+                },
+              ]}
+            />
           </div>
           {importing && (
             <div className="space-y-1">
