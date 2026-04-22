@@ -5,7 +5,7 @@ import { ConfirmModal, DataTable, Modal } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { toast } from 'react-toastify';
 import { formatDate, formatCurrency } from '../utils/format';
-import type { Transaction, Customer, Category, User } from '../types';
+import type { Transaction, TransactionResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
@@ -49,7 +49,7 @@ const FinancePage = () => {
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [tab, setTab] = useState<'list' | 'summary'>('list');
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [editing, setEditing] = useState<TransactionResponse | null>(null);
   const {
     register,
     handleSubmit,
@@ -86,20 +86,14 @@ const FinancePage = () => {
     setModalOpen(true);
   };
 
-  const openEdit = (t: Transaction) => {
+  const openEdit = (t: TransactionResponse) => {
     setEditing(t);
     reset({
       ...t,
-      customer:
-        typeof t.customer === 'object' && t.customer
-          ? (t.customer as Customer)._id
-          : (t.customer ?? ''),
-      categoryId: typeof t.categoryId === 'object' ? (t.categoryId as Category)._id : t.categoryId,
+      customer: t.customer?._id ?? '',
+      categoryId: t.categoryId._id,
       date: t.date.slice(0, 10),
-      createdBy:
-        typeof t.createdBy === 'object' && t.createdBy
-          ? (t.createdBy as User)._id
-          : (t.createdBy ?? ''),
+      createdBy: t.createdBy?._id ?? '',
     });
     setModalOpen(true);
   };
@@ -122,7 +116,7 @@ const FinancePage = () => {
     }
   };
 
-  const toggleRefund = async (t: Transaction, value: boolean) => {
+  const toggleRefund = async (t: TransactionResponse, value: boolean) => {
     // Optimistic update via redux – không trigger loading state
     dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: value } }));
     try {
@@ -172,7 +166,7 @@ const FinancePage = () => {
     { income: 0, expense: 0, profit: 0 },
   );
 
-  const txColumns: Column<Transaction>[] = [
+  const txColumns: Column<TransactionResponse>[] = [
     { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
     {
       key: 'type',
@@ -189,17 +183,13 @@ const FinancePage = () => {
       key: 'category',
       header: 'Danh mục',
       className: 'text-gray-600',
-      render: (t) =>
-        typeof t.categoryId === 'object' ? (t.categoryId as Category).name : '—',
+      render: (t) => t.categoryId?.name ?? '—',
     },
     {
       key: 'class',
       header: 'Lớp',
       className: 'text-gray-600',
-      render: (t) =>
-        t.customer && typeof t.customer === 'object'
-          ? (t.customer as Customer).className
-          : '—',
+      render: (t) => t.customer?.className ?? '—',
     },
     {
       key: 'description',
@@ -211,10 +201,7 @@ const FinancePage = () => {
       key: 'createdBy',
       header: 'Người thực hiện',
       className: 'text-gray-600',
-      render: (t) =>
-        t.createdBy && typeof t.createdBy === 'object'
-          ? ((t.createdBy as User).name ?? (t.createdBy as User).username)
-          : '—',
+      render: (t) => t.createdBy?.name ?? t.createdBy?.username ?? '—',
     },
     {
       key: 'amount',
@@ -411,7 +398,7 @@ const FinancePage = () => {
           <>
             {/* Desktop table */}
             <div className="hidden md:block">
-              <DataTable<Transaction>
+              <DataTable<TransactionResponse>
                 data={transactions}
                 keyExtractor={(t) => t._id}
                 emptyTitle="Chưa có dữ liệu"
@@ -427,19 +414,17 @@ const FinancePage = () => {
                     <div>
                       <div className="text-sm text-gray-500">{formatDate(t.date)}</div>
                       <div className="text-sm text-gray-600 mt-0.5">
-                        {typeof t.categoryId === 'object' ? (t.categoryId as Category).name : '—'}
+                        {t.categoryId?.name ?? '—'}
                       </div>
-                      {t.customer && typeof t.customer === 'object' && (
-                        <div className="text-xs text-gray-400">
-                          {(t.customer as Customer).className}
-                        </div>
+                      {t.customer && (
+                        <div className="text-xs text-gray-400">{t.customer.className}</div>
                       )}
                       {t.description && (
                         <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
                       )}
-                      {t.createdBy && typeof t.createdBy === 'object' && (
+                      {t.createdBy && (
                         <div className="text-xs text-gray-400 mt-0.5">
-                          👤 {(t.createdBy as User).name ?? (t.createdBy as User).username}
+                          👤 {t.createdBy.name ?? t.createdBy.username}
                         </div>
                       )}
                     </div>

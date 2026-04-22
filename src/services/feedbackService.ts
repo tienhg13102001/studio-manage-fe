@@ -1,7 +1,7 @@
 import api from './api';
-import type { Feedback, PaginatedResponse } from '../types';
+import type { Feedback, FeedbackResponse, PaginatedResponse } from '../types';
 
-export interface FeedbackListResponse extends PaginatedResponse<Feedback> {
+export interface FeedbackListResponse extends PaginatedResponse<FeedbackResponse> {
   totalRead: number;
   totalUnread: number;
 }

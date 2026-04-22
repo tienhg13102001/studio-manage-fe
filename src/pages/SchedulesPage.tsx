@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { ConfirmModal, DataTable, Modal, ScheduleCalendar } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { scheduleService } from '../services/scheduleService';
-import type { Customer, Package, Schedule, User } from '../types';
+import type { ScheduleResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
 import { TableSkeleton, Select } from '../components/atoms';
@@ -48,10 +48,10 @@ const SchedulesPage = () => {
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Schedule | null>(null);
+  const [editing, setEditing] = useState<ScheduleResponse | null>(null);
   const [supportIds, setSupportIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
-  const [detail, setDetail] = useState<Schedule | null>(null);
+  const [detail, setDetail] = useState<ScheduleResponse | null>(null);
   const {
     register,
     handleSubmit,
@@ -85,20 +85,14 @@ const SchedulesPage = () => {
     setModalOpen(true);
   };
 
-  const openEdit = (s: Schedule) => {
+  const openEdit = (s: ScheduleResponse) => {
     setEditing(s);
-    const leadId =
-      typeof s.leadPhotographer === 'object'
-        ? (s.leadPhotographer as User)._id
-        : (s.leadPhotographer ?? '');
-    const supIds = (s.supportPhotographers ?? []).map((u) =>
-      typeof u === 'object' ? (u as User)._id : u,
-    );
+    const leadId = s.leadPhotographer?._id ?? '';
+    const supIds = s.supportPhotographers.map((u) => u._id);
     setSupportIds(supIds);
     reset({
-      customer: typeof s.customer === 'object' ? (s.customer as Customer)._id : s.customer,
-      package:
-        typeof s.package === 'object' ? (s.package as Package)._id : (s.package ?? ''),
+      customer: s.customer._id,
+      package: s.package?._id ?? '',
       shootDate: s.shootDate.slice(0, 10),
       startTime: s.startTime,
       endTime: s.endTime,
@@ -106,7 +100,7 @@ const SchedulesPage = () => {
       status: s.status,
       notes: s.notes,
       leadPhotographer: leadId,
-      bookedBy: typeof s.bookedBy === 'object' ? (s.bookedBy as User)._id : (s.bookedBy ?? ''),
+      bookedBy: s.bookedBy?._id ?? '',
     });
     setModalOpen(true);
   };
@@ -149,8 +143,8 @@ const SchedulesPage = () => {
     setConfirmId(null);
   };
 
-  const handleDownloadContract = async (s: Schedule) => {
-    const customer = typeof s.customer === 'object' ? (s.customer as Customer) : null;
+  const handleDownloadContract = async (s: ScheduleResponse) => {
+    const customer = s.customer;
     const filename = `${customer?.className?.replace(/\s+/g, '-') ?? s._id}-${customer?.school?.replace(/\s+/g, '-') ?? ''}`;
     await scheduleService.downloadContract(s._id, filename);
   };
@@ -171,16 +165,13 @@ const SchedulesPage = () => {
         location: s.location,
         status: s.status,
         notes: s.notes,
-        className: typeof s.customer === 'object' ? (s.customer as Customer).className : '—',
-        leadName:
-          typeof s.leadPhotographer === 'object'
-            ? ((s.leadPhotographer as User).name ?? (s.leadPhotographer as User).username)
-            : (s.leadPhotographer ?? undefined),
+        className: s.customer?.className ?? '—',
+        leadName: s.leadPhotographer?.name ?? s.leadPhotographer?.username,
       })),
     [schedules],
   );
 
-  const scheduleColumns: Column<Schedule>[] = [
+  const scheduleColumns: Column<ScheduleResponse>[] = [
     {
       key: 'date',
       header: 'Ngày chụp',
@@ -198,14 +189,8 @@ const SchedulesPage = () => {
       className: 'text-primary-600',
       render: (s) => (
         <div className="flex flex-col">
-          <span className="font-medium">
-            {typeof s.customer === 'object' ? (s.customer as Customer)?.className : '—'}
-          </span>
-          <span className="text-gray-600 text-xs">
-            {typeof s.customer === 'object' && (s.customer as Customer)?.school
-              ? `${(s.customer as Customer)?.school}`
-              : ''}
-          </span>
+          <span className="font-medium">{s.customer?.className ?? '—'}</span>
+          <span className="text-gray-600 text-xs">{s.customer?.school ?? ''}</span>
         </div>
       ),
     },
@@ -213,35 +198,26 @@ const SchedulesPage = () => {
       key: 'package',
       header: 'Gói chụp',
       className: 'text-gray-600',
-      render: (s) =>
-        typeof s.package === 'object' ? (s.package as Package)?.name : (s.package ?? '—'),
+      render: (s) => s.package?.name ?? '—',
     },
     {
       key: 'sale',
       header: 'Sale',
       className: 'text-gray-600',
-      render: (s) =>
-        typeof s.bookedBy === 'object'
-          ? ((s.bookedBy as User)?.name ?? (s.bookedBy as User)?.username)
-          : (s.bookedBy ?? '—'),
+      render: (s) => s.bookedBy?.name ?? s.bookedBy?.username ?? '—',
     },
     {
       key: 'leader',
       header: 'Leader',
       className: 'text-gray-600',
-      render: (s) =>
-        typeof s.leadPhotographer === 'object'
-          ? (s.leadPhotographer as User)?.name
-          : (s.leadPhotographer ?? '—'),
+      render: (s) => s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? '—',
     },
     {
       key: 'support',
       header: 'Support',
       className: 'text-gray-600 max-w-24',
       render: (s) =>
-        (s.supportPhotographers ?? [])
-          .map((u) => (typeof u === 'object' ? (u as User)?.name : u))
-          .join(', ') || '—',
+        s.supportPhotographers.map((u) => u.name ?? u.username).join(', ') || '—',
     },
     {
       key: 'status',
@@ -362,7 +338,7 @@ const SchedulesPage = () => {
         <>
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
-            <DataTable<Schedule>
+            <DataTable<ScheduleResponse>
               data={schedules}
               keyExtractor={(s) => s._id}
               emptyTitle="Chưa có dữ liệu"
@@ -374,19 +350,11 @@ const SchedulesPage = () => {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {schedules.map((s) => {
-              const customer = typeof s.customer === 'object' ? (s.customer as Customer) : null;
-              const leadName =
-                typeof s.leadPhotographer === 'object'
-                  ? ((s.leadPhotographer as User)?.name ?? (s.leadPhotographer as User)?.username)
-                  : (s.leadPhotographer ?? null);
-              const bookedByName =
-                typeof s.bookedBy === 'object'
-                  ? ((s.bookedBy as User)?.name ?? (s.bookedBy as User)?.username)
-                  : (s.bookedBy ?? null);
-              const supports = (s.supportPhotographers ?? [])
-                .map((u) =>
-                  typeof u === 'object' ? ((u as User)?.name ?? (u as User)?.username) : u,
-                )
+              const customer = s.customer;
+              const leadName = s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? null;
+              const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
+              const supports = s.supportPhotographers
+                .map((u) => u.name ?? u.username)
                 .join(', ');
               return (
                 <div key={s._id} className="card p-4">
@@ -627,22 +595,13 @@ const SchedulesPage = () => {
       >
         {detail &&
           (() => {
-            const customer =
-              typeof detail.customer === 'object' ? (detail.customer as Customer) : null;
-            const pkg = typeof detail.package === 'object' ? (detail.package as Package) : null;
+            const customer = detail.customer;
+            const pkg = detail.package;
             const leadName =
-              typeof detail.leadPhotographer === 'object'
-                ? ((detail.leadPhotographer as User)?.name ??
-                  (detail.leadPhotographer as User)?.username)
-                : (detail.leadPhotographer ?? null);
-            const bookedByName =
-              typeof detail.bookedBy === 'object'
-                ? ((detail.bookedBy as User)?.name ?? (detail.bookedBy as User)?.username)
-                : (detail.bookedBy ?? null);
-            const supports = (detail.supportPhotographers ?? [])
-              .map((u) =>
-                typeof u === 'object' ? ((u as User)?.name ?? (u as User)?.username) : u,
-              )
+              detail.leadPhotographer?.name ?? detail.leadPhotographer?.username ?? null;
+            const bookedByName = detail.bookedBy?.name ?? detail.bookedBy?.username ?? null;
+            const supports = detail.supportPhotographers
+              .map((u) => u.name ?? u.username)
               .filter(Boolean)
               .join(', ');
 

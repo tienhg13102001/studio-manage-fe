@@ -9,4 +9,7 @@ export const customerService = {
   update: (id: string, data: Partial<Customer>) =>
     api.put<Customer>(`/customers/${id}`, data).then((r) => r.data),
   remove: (id: string) => api.delete(`/customers/${id}`).then((r) => r.data),
+  /** Public (no-auth) endpoint — used by the student self-entry form */
+  getPublic: (id: string) =>
+    api.get<Pick<Customer, '_id' | 'className' | 'school'>>(`/public/customers/${id}`).then((r) => r.data),
 };

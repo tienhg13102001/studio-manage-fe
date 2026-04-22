@@ -4,23 +4,21 @@ import { EmptyState, Spinner } from '../components/atoms';
 import { RatingBlock } from '../components/molecules';
 import { ConfirmModal } from '../components/organisms';
 import { feedbackService } from '../services/feedbackService';
-import type { Customer, Feedback } from '../types';
+import type { Customer, FeedbackResponse } from '../types';
 import { formatDateTime } from '../utils/format';
 
 type FilterValue = 'all' | 'unread' | 'read';
 
 const LIMIT = 20;
 
-const getClassLabel = (customer: Feedback['customer']): string | null => {
-  if (!customer || typeof customer === 'string') return null;
-  const c = customer as Customer;
-  return c.school ? `${c.className} — ${c.school}` : c.className;
+const getClassLabel = (customer: Customer | null): string | null => {
+  if (!customer) return null;
+  return customer.school ? `${customer.className} — ${customer.school}` : customer.className;
 };
 
-const getInitials = (customer: Feedback['customer'], phone?: string): string => {
-  if (customer && typeof customer !== 'string') {
-    const c = customer as Customer;
-    const src = c.className || c.school || '';
+const getInitials = (customer: Customer | null, phone?: string): string => {
+  if (customer) {
+    const src = customer.className || customer.school || '';
     const parts = src.trim().split(/\s+/).slice(0, 2);
     const initials = parts.map((p) => p[0]?.toUpperCase() ?? '').join('');
     if (initials) return initials;
@@ -47,7 +45,7 @@ const avatarColor = (seed: string): string => {
 const buildPublicLink = () => `${window.location.origin}/feedback`;
 
 const FeedbackPage = () => {
-  const [list, setList] = useState<Feedback[]>([]);
+  const [list, setList] = useState<FeedbackResponse[]>([]);
   const [total, setTotal] = useState(0);
   const [totalRead, setTotalRead] = useState(0);
   const [totalUnread, setTotalUnread] = useState(0);
@@ -180,12 +178,7 @@ const FeedbackPage = () => {
         <div className="space-y-3">
           {list.map((fb) => {
             const classLabel = getClassLabel(fb.customer);
-            const seed =
-              (fb.customer && typeof fb.customer !== 'string'
-                ? (fb.customer as Customer)._id
-                : '') ||
-              fb.phone ||
-              fb._id;
+            const seed = fb.customer?._id || fb.phone || fb._id;
             return (
               <div
                 key={fb._id}

@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { scheduleService } from '../../services/scheduleService';
-import type { Schedule } from '../../types';
+import type { ScheduleResponse } from '../../types';
 
 interface SchedulesState {
-  list: Schedule[];
+  list: ScheduleResponse[];
   loading: boolean;
   error: string | null;
 }

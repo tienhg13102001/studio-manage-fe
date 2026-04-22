@@ -4,7 +4,7 @@ import { customerService } from '../services/customerService';
 import { scheduleService } from '../services/scheduleService';
 import { transactionService } from '../services/transactionService';
 import { formatDate, formatCurrency } from '../utils/format';
-import type { Customer, Schedule, Transaction, User } from '../types';
+import type { Customer, ScheduleResponse, TransactionResponse } from '../types';
 import { PageLoader } from '../components/atoms';
 import { DataTable } from '../components/organisms';
 import type { Column } from '../components/organisms';
@@ -13,8 +13,8 @@ import { SCHEDULE_STATUS_COLOR, SCHEDULE_STATUS_LABEL } from '../utils/scheduleC
 const CustomerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
+  const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -99,7 +99,7 @@ const CustomerDetailPage = () => {
       </div>
 
       {/* Schedules */}
-      <DataTable<Schedule>
+      <DataTable<ScheduleResponse>
         title="Lịch chụp"
         data={schedules}
         keyExtractor={(s) => s._id}
@@ -126,12 +126,10 @@ const CustomerDetailPage = () => {
             header: 'Ekip',
             render: (s) => (
               <span className="text-gray-600">
-                {typeof s.leadPhotographer === 'object'
-                  ? (s.leadPhotographer as User)?.username
-                  : (s.leadPhotographer ?? '—')}
-                {(s.supportPhotographers?.length ?? 0) > 0 && (
+                {s.leadPhotographer?.username ?? '—'}
+                {s.supportPhotographers.length > 0 && (
                   <span className="ml-1 text-xs text-gray-400">
-                    (+{s.supportPhotographers!.length})
+                    (+{s.supportPhotographers.length})
                   </span>
                 )}
               </span>
@@ -145,12 +143,12 @@ const CustomerDetailPage = () => {
                 {SCHEDULE_STATUS_LABEL[s.status]}
               </span>
             ),
-          } satisfies Column<Schedule>,
+          } satisfies Column<ScheduleResponse>,
         ]}
       />
 
       {/* Transactions */}
-      <DataTable<Transaction>
+      <DataTable<TransactionResponse>
         title="Thu chi"
         data={transactions}
         keyExtractor={(t) => t._id}
@@ -172,9 +170,7 @@ const CustomerDetailPage = () => {
             key: 'category',
             header: 'Danh mục',
             render: (t) => (
-              <span className="text-gray-600">
-                {typeof t.categoryId === 'object' ? t.categoryId.name : '—'}
-              </span>
+              <span className="text-gray-600">{t.categoryId?.name ?? '—'}</span>
             ),
           },
           {
@@ -194,7 +190,7 @@ const CustomerDetailPage = () => {
                 {formatCurrency(t.amount)}
               </span>
             ),
-          } satisfies Column<Transaction>,
+          } satisfies Column<TransactionResponse>,
         ]}
       />
     </div>

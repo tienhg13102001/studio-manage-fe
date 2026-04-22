@@ -55,20 +55,38 @@ export interface Package {
   createdAt?: string;
 }
 
+/**
+ * Schedule model — relations are stored as ObjectId strings.
+ * Use this type for create/update payloads.
+ * For populated GET responses, use `ScheduleResponse` instead.
+ */
 export interface Schedule {
   _id: string;
-  customer: string | Customer;
-  package?: string | Package;
+  customer: string;
+  package: string | null;
   shootDate: string;
   startTime?: string;
   endTime?: string;
   location?: string;
-  leadPhotographer?: string | User;
-  supportPhotographers?: (string | User)[];
-  bookedBy?: string | User;
+  leadPhotographer: string | null;
+  supportPhotographers: string[];
+  bookedBy: string | null;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
   createdAt?: string;
+}
+
+/** Populated Schedule returned by GET endpoints (backend uses `.populate`). */
+export interface ScheduleResponse
+  extends Omit<
+    Schedule,
+    'customer' | 'package' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
+  > {
+  customer: Customer;
+  package: Package | null;
+  leadPhotographer: User | null;
+  supportPhotographers: User[];
+  bookedBy: User | null;
 }
 
 export interface Category {
@@ -79,17 +97,30 @@ export interface Category {
   createdBy?: string;
 }
 
+/**
+ * Transaction model — relations are stored as ObjectId strings.
+ * Use this type for create/update payloads.
+ * For populated GET responses, use `TransactionResponse` instead.
+ */
 export interface Transaction {
   _id: string;
-  customer?: string | Customer | null;
+  customer: string | null;
   type: 'income' | 'expense';
   amount: number;
-  categoryId: string | Category;
+  categoryId: string;
   description?: string;
   date: string;
-  createdBy?: string | User;
+  createdBy: string | null;
   accountantRefunded?: boolean;
   createdAt?: string;
+}
+
+/** Populated Transaction returned by GET endpoints. */
+export interface TransactionResponse
+  extends Omit<Transaction, 'customer' | 'categoryId' | 'createdBy'> {
+  customer: Customer | null;
+  categoryId: Category;
+  createdBy: User | null;
 }
 
 export interface TransactionSummaryRow {
@@ -127,7 +158,7 @@ export interface FeedbackItem {
 
 export interface Feedback {
   _id: string;
-  customer?: string | Customer | null;
+  customer: string | null;
   phone?: string;
   crewFeedback: FeedbackItem;
   albumFeedback: FeedbackItem;
@@ -135,4 +166,24 @@ export interface Feedback {
   suggestion?: string;
   isRead: boolean;
   createdAt: string;
+}
+
+/** Populated Feedback returned by GET endpoints. */
+export interface FeedbackResponse extends Omit<Feedback, 'customer'> {
+  customer: Customer | null;
+}
+
+/**
+ * Public (unauthenticated) schedule shape returned by `/public/schedules/:customer`.
+ * Intentionally narrower than `ScheduleResponse` to avoid leaking staff / booking info.
+ */
+export interface PublicScheduleResponse {
+  _id: string;
+  shootDate: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  status: Schedule['status'];
+  customer: Pick<Customer, '_id' | 'className' | 'school'>;
+  package: Pick<Package, '_id' | 'name' | 'costumes'> | null;
 }

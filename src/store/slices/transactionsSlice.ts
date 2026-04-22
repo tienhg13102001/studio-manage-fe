@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { transactionService } from '../../services/transactionService';
-import type { Transaction, TransactionSummaryRow } from '../../types';
+import type { TransactionResponse, TransactionSummaryRow } from '../../types';
 
 interface TransactionsState {
-  list: Transaction[];
+  list: TransactionResponse[];
   summary: TransactionSummaryRow[];
   loading: boolean;
   error: string | null;
@@ -28,7 +28,7 @@ const transactionsSlice = createSlice({
   reducers: {
     patchTransaction: (
       state,
-      action: { payload: { id: string; changes: Partial<Transaction> } },
+      action: { payload: { id: string; changes: Partial<TransactionResponse> } },
     ) => {
       const { id, changes } = action.payload;
       const idx = state.list.findIndex((t) => t._id === id);

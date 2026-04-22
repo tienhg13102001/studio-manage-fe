@@ -8,7 +8,7 @@ import { TableSkeleton, Select } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
-import type { Customer, Student, Package, Costume } from '../types';
+import type { Customer, Student } from '../types';
 import dayjs from 'dayjs';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
@@ -122,11 +122,10 @@ const CustomerSizePage = () => {
       toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin gửi đồ.');
     }
 
-    // Build costume lines if package is populated (object) and has costumes[]
+    // Build costume lines if package has costumes[]
     let costumeLines = '';
-    if (schedule && typeof schedule.package === 'object' && schedule.package !== null) {
-      const pkg = schedule.package as Package;
-      const costumes = (pkg.costumes ?? []) as Costume[];
+    if (schedule?.package) {
+      const costumes = schedule.package.costumes ?? [];
       costumeLines = costumes
         .map((c) => {
           if (c.gender === 'male') return `- ${totalMale} bộ ${c.name}`;

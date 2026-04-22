@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
+import dayjs from 'dayjs';
 import { PageLoader } from '../components/atoms';
-
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
-
-interface ClassInfo {
-  _id: string;
-  className: string;
-  school?: string;
-}
+import { studentService } from '../services/studentService';
+import { scheduleService } from '../services/scheduleService';
+import type { PublicScheduleResponse } from '../types';
 
 interface FormValues {
   name: string;
@@ -24,7 +19,7 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 
 const StudentFormPage = () => {
   const { customer } = useParams<{ customer: string }>();
-  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
+  const [schedule, setSchedule] = useState<PublicScheduleResponse | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<Status>('idle');
 
@@ -39,16 +34,22 @@ const StudentFormPage = () => {
 
   useEffect(() => {
     if (!customer) return;
-    api
-      .get<ClassInfo>(`/public/customers/${customer}`)
-      .then((r) => setClassInfo(r.data))
+    scheduleService
+      .getPublicByCustomer(customer)
+      .then((s) => {
+        if (!s) {
+          setLoadError(true);
+          return;
+        }
+        setSchedule(s);
+      })
       .catch(() => setLoadError(true));
   }, [customer]);
 
   const onSubmit = async (data: FormValues) => {
     setSubmitStatus('loading');
     try {
-      await api.post('/public/students', {
+      await studentService.createPublic({
         customer,
         name: data.name,
         gender: data.gender,
@@ -75,7 +76,7 @@ const StudentFormPage = () => {
     );
   }
 
-  if (!classInfo) {
+  if (!schedule) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <PageLoader />
@@ -109,9 +110,14 @@ const StudentFormPage = () => {
           <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
             Nhập thông tin học sinh
           </p>
-          <h1 className="text-xl font-bold text-gray-900">{classInfo.className}</h1>
-          {classInfo.school && (
-            <p className="text-sm text-gray-500 mt-0.5">🏫 {classInfo.school}</p>
+          <h1 className="text-xl font-bold text-gray-900">{schedule.customer.className}</h1>
+          {schedule.customer.school && (
+            <p className="text-sm text-gray-500 mt-0.5">🏫 {schedule.customer.school}</p>
+          )}
+          {schedule && (
+            <p className="text-sm text-primary-600 mt-1.5 font-medium">
+              📅 Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}
+            </p>
           )}
         </div>
 
@@ -173,7 +179,7 @@ const StudentFormPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cân nặng (kg) *
+                Cân nặng (kg) <span className="text-red-500">*</span>
               </label>
               <input
                 {...register('weight', {

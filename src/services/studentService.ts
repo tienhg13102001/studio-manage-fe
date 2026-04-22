@@ -9,4 +9,7 @@ export const studentService = {
   update: (id: string, data: Partial<Student>) =>
     api.put<Student>(`/students/${id}`, data).then((r) => r.data),
   remove: (id: string) => api.delete(`/students/${id}`).then((r) => r.data),
+  /** Public (no-auth) endpoint — used by the student self-entry form */
+  createPublic: (data: Partial<Student>) =>
+    api.post<Student>('/public/students', data).then((r) => r.data),
 };
