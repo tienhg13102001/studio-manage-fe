@@ -23,9 +23,8 @@ export default defineConfig({
           'vendor-redux': ['@reduxjs/toolkit', 'react-redux', 'react-is'],
           // Chart - tách riêng dependencies nặng
           'vendor-charts': ['recharts'],
-          // Excel export - tách thành 2 chunk riêng
+          // Excel export
           'vendor-exceljs': ['exceljs'],
-          'vendor-xlsx': ['xlsx'],
           // Utilities
           'vendor-utils': ['axios', 'date-fns', 'react-hook-form', 'react-toastify'],
         },
