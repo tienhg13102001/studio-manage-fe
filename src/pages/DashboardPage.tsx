@@ -125,8 +125,8 @@ const DashboardPage = () => {
   ];
 
   const formatChartLabel = (label: string) => {
-    if (granularity === 'day') {
-      // label = YYYY-MM-DD → hiển thị dd/MM
+    if (granularity === 'week') {
+      // label = YYYY-MM-DD (ngày bắt đầu tuần) → hiển thị dd/MM
       const [, mo, dd] = label.split('-');
       return `${dd}/${mo}`;
     }
@@ -134,8 +134,8 @@ const DashboardPage = () => {
   };
 
   const chartData = (() => {
-    if (granularity === 'day') {
-      // Chế độ ngày: cộng dồn theo thời gian (cumulative)
+    if (granularity === 'week') {
+      // Chế độ tuần: cộng dồn theo thời gian (cumulative)
       let cumThu = 0;
       let cumChi = 0;
       return monthly.map((m) => {
@@ -234,7 +234,7 @@ const DashboardPage = () => {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="name" tick={{  fontSize: 12 }} />
               <YAxis
                 tick={{ fontSize: 11 }}
                 tickFormatter={(v) => {
