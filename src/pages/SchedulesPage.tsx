@@ -180,9 +180,9 @@ const SchedulesPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Lịch chụp</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-between w-full md:w-auto">
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               onClick={() => setViewMode('table')}

@@ -14,8 +14,8 @@ export default {
       },
       fontSize: {
         // Override các class nhỏ hơn 16px → tất cả min 16px
-        xs: ['1rem', { lineHeight: '1.5rem' }],    // 12px → 16px
-        sm: ['1rem', { lineHeight: '1.5rem' }],    // 14px → 16px
+        xs: ['0.75rem', { lineHeight: '1.5rem' }],    // 12px → 16px
+        sm: ['0.875rem', { lineHeight: '1.5rem' }],    // 14px → 16px
         base: ['1rem', { lineHeight: '1.5rem' }],  // 16px (giữ nguyên)
       },
     },

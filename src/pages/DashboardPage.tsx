@@ -40,18 +40,26 @@ const DashboardPage = () => {
   const [chartMonths, setChartMonths] = useState(1);
 
   useEffect(() => {
-    dispatch(fetchDashboardStats(filterUserId ? { userId: filterUserId, months: chartMonths } : { months: chartMonths }));
+    dispatch(
+      fetchDashboardStats(
+        filterUserId ? { userId: filterUserId, months: chartMonths } : { months: chartMonths },
+      ),
+    );
     if (isAdmin) dispatch(fetchUsers());
   }, [dispatch, isAdmin]);
 
   const handleChartMonthsChange = (m: number) => {
     setChartMonths(m);
-    dispatch(fetchDashboardStats(filterUserId ? { userId: filterUserId, months: m } : { months: m }));
+    dispatch(
+      fetchDashboardStats(filterUserId ? { userId: filterUserId, months: m } : { months: m }),
+    );
   };
 
   const handleFilterChange = (uid: string) => {
     setFilterUserId(uid);
-    dispatch(fetchDashboardStats(uid ? { userId: uid, months: chartMonths } : { months: chartMonths }));
+    dispatch(
+      fetchDashboardStats(uid ? { userId: uid, months: chartMonths } : { months: chartMonths }),
+    );
   };
 
   const displayName = user?.name ?? user?.username ?? '';
@@ -80,8 +88,15 @@ const DashboardPage = () => {
 
   if (loading || !stats) return <PageLoader />;
 
-  const { thisMonth, monthly, granularity, customerCount, scheduleCount, showSchedules, upcomingSchedules } =
-    stats!;
+  const {
+    thisMonth,
+    monthly,
+    granularity,
+    customerCount,
+    scheduleCount,
+    showSchedules,
+    upcomingSchedules,
+  } = stats!;
 
   const STATUS_LABEL = SCHEDULE_STATUS_LABEL;
   const STATUS_COLOR = SCHEDULE_STATUS_COLOR;
@@ -234,7 +249,7 @@ const DashboardPage = () => {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{  fontSize: 12 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis
                 tick={{ fontSize: 11 }}
                 tickFormatter={(v) => {
@@ -293,7 +308,7 @@ const DashboardPage = () => {
       {/* Upcoming schedules */}
       {showSchedules && (
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap space-y-2">
             <h3 className="text-base font-semibold text-gray-700">Lịch chụp sắp tới</h3>
             <div className="flex items-center gap-3">
               <div className="flex rounded-lg border border-gray-200 overflow-hidden">
