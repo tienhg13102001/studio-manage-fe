@@ -152,9 +152,14 @@ const StudentFormPage = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Chiều cao (cm)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Chiều cao (cm) <span className="text-red-500">*</span>
+              </label>
               <input
-                {...register('height')}
+                {...register('height', {
+                  required: 'Vui lòng nhập chiều cao',
+                  validate: (v) => (v !== '' && Number(v) > 0) || 'Chiều cao không hợp lệ',
+                })}
                 type="number"
                 step="0.1"
                 min="50"
@@ -162,11 +167,19 @@ const StudentFormPage = () => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="165"
               />
+              {errors.height && (
+                <p className="text-red-500 text-xs mt-1">{errors.height.message}</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cân nặng (kg)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cân nặng (kg) *
+              </label>
               <input
-                {...register('weight')}
+                {...register('weight', {
+                  required: 'Vui lòng nhập cân nặng',
+                  validate: (v) => (v !== '' && Number(v) > 0) || 'Cân nặng không hợp lệ',
+                })}
                 type="number"
                 step="0.1"
                 min="10"
@@ -174,6 +187,9 @@ const StudentFormPage = () => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="55"
               />
+              {errors.weight && (
+                <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+              )}
             </div>
           </div>
 

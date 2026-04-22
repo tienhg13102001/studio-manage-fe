@@ -103,6 +103,11 @@ const CustomerSizePage = () => {
   const publicUrl = selectedId ? `${window.location.origin}/form/${selectedId}` : '';
 
   const handleCopy = () => {
+    if (!selectedId) return;
+    const schedule = scheduleService.getByCustomer(selectedId);
+    if (!schedule) {
+      toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin.');
+    }
     if (!publicUrl) return;
     navigator.clipboard.writeText(publicUrl).then(() => {
       setCopied(true);
@@ -114,7 +119,7 @@ const CustomerSizePage = () => {
     if (!selectedId) return;
     const schedule = await scheduleService.getByCustomer(selectedId);
     if (!schedule) {
-      toast.error('Không tìm thấy lịch chụp cho lớp này.');
+      toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin gửi đồ.');
     }
 
     // Build costume lines if package is populated (object) and has costumes[]
