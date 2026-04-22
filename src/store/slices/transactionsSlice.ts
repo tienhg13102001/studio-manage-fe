@@ -25,7 +25,18 @@ export const fetchTransactionSummary = createAsyncThunk(
 const transactionsSlice = createSlice({
   name: 'transactions',
   initialState,
-  reducers: {},
+  reducers: {
+    patchTransaction: (
+      state,
+      action: { payload: { id: string; changes: Partial<Transaction> } },
+    ) => {
+      const { id, changes } = action.payload;
+      const idx = state.list.findIndex((t) => t._id === id);
+      if (idx !== -1) {
+        state.list[idx] = { ...state.list[idx], ...changes };
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchTransactions.pending, (state) => {
@@ -45,5 +56,7 @@ const transactionsSlice = createSlice({
       });
   },
 });
+
+export const { patchTransaction } = transactionsSlice.actions;
 
 export default transactionsSlice.reducer;

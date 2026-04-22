@@ -70,13 +70,13 @@ export const adminItems: NavItem[] = [
     to: '/manage',
     label: 'Quản lý',
     icon: '🛠️',
-    allowedRoles: [0, 1],
+    allowedRoles: [0, 1, 5],
     children: [
       {
         to: '/finance',
         label: 'Tài chính',
         icon: '💰',
-        allowedRoles: [0, 1],
+        allowedRoles: [0, 1, 5],
         component: FinancePage,
       },
       {

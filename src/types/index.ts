@@ -1,5 +1,5 @@
-// 0: Superadmin | 1: Admin | 2: Sale | 3: Thợ chụp ảnh | 4: Cộng tác viên sale
-export type UserRole = 0 | 1 | 2 | 3 | 4;
+// 0: Superadmin | 1: Admin | 2: Sale | 3: Thợ chụp ảnh | 4: Cộng tác viên sale | 5: Kế toán
+export type UserRole = 0 | 1 | 2 | 3 | 4 | 5;
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   0: 'Superadmin',
@@ -7,6 +7,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   2: 'Sale',
   3: 'Thợ chụp ảnh',
   4: 'Cộng tác viên sale',
+  5: 'Kế toán',
 };
 
 export interface User {
@@ -84,6 +85,7 @@ export interface Transaction {
   description?: string;
   date: string;
   createdBy?: string | User;
+  accountantRefunded?: boolean;
   createdAt?: string;
 }
 

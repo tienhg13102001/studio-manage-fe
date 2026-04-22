@@ -15,6 +15,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
   2: 'bg-blue-100 text-blue-800',
   3: 'bg-orange-100 text-orange-800',
   4: 'bg-teal-100 text-teal-800',
+  5: 'bg-amber-100 text-amber-800',
 };
 
 interface FormValues {
@@ -25,7 +26,7 @@ interface FormValues {
 }
 
 const UsersPage = () => {
-  const { user: me } = useAuth();
+  const { user: me, updateUser } = useAuth();
   const dispatch = useAppDispatch();
   const { list: users } = useAppSelector((s) => s.users);
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,8 +69,16 @@ const UsersPage = () => {
     };
     try {
       if (editing) {
-        await userService.update(editing._id, payload);
+        const updated = await userService.update(editing._id, payload);
         toast.success('Cập nhật người dùng thành công!');
+        if (editing._id === me?._id) {
+          updateUser({
+            roles: updated.roles ?? selectedRoles,
+            name: updated.name ?? data.name,
+            username: updated.username ?? data.username,
+            isActive: updated.isActive ?? data.isActive,
+          });
+        }
       } else {
         await userService.create(payload);
         toast.success('Thêm người dùng thành công!');

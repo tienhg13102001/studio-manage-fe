@@ -7,7 +7,11 @@ import { formatDate, formatCurrency } from '../utils/format';
 import type { Transaction, Customer, Category, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
-import { fetchTransactions, fetchTransactionSummary } from '../store/slices/transactionsSlice';
+import {
+  fetchTransactions,
+  fetchTransactionSummary,
+  patchTransaction,
+} from '../store/slices/transactionsSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
 import { TableSkeleton, Select } from '../components/atoms';
@@ -17,6 +21,7 @@ interface FilterState {
   type: string;
   customerId: string;
   categoryId: string;
+  createdBy: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -25,6 +30,7 @@ const defaultFilter: FilterState = {
   type: '',
   customerId: '',
   categoryId: '',
+  createdBy: '',
   dateFrom: '',
   dateTo: '',
 };
@@ -32,6 +38,7 @@ const defaultFilter: FilterState = {
 const FinancePage = () => {
   const { user } = useAuth();
   const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
+  const canRefund = user?.roles.some((r) => r === 5) ?? false;
 
   const dispatch = useAppDispatch();
   const { list: transactions, summary, loading } = useAppSelector((s) => s.transactions);
@@ -58,6 +65,7 @@ const FinancePage = () => {
     if (f.type) params.type = f.type;
     if (f.customerId) params.customerId = f.customerId;
     if (f.categoryId) params.categoryId = f.categoryId;
+    if (f.createdBy) params.createdBy = f.createdBy;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
     return params;
@@ -68,8 +76,8 @@ const FinancePage = () => {
     dispatch(fetchTransactionSummary());
     dispatch(fetchCustomers({ limit: 200 }));
     dispatch(fetchCategories());
-    if (isAdmin) dispatch(fetchUsers());
-  }, [dispatch, isAdmin]);
+    if (canRefund) dispatch(fetchUsers());
+  }, [dispatch, canRefund]);
 
   const openCreate = () => {
     setEditing(null);
@@ -110,6 +118,18 @@ const FinancePage = () => {
       dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+    }
+  };
+
+  const toggleRefund = async (t: Transaction, value: boolean) => {
+    // Optimistic update via redux – không trigger loading state
+    dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: value } }));
+    try {
+      await transactionService.update(t._id, { accountantRefunded: value });
+    } catch {
+      // rollback
+      dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: !value } }));
+      toast.error('Không thể cập nhật trạng thái hoàn tiền.');
     }
   };
 
@@ -193,6 +213,19 @@ const FinancePage = () => {
           </div>
         </div>
 
+        {canRefund && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Select
+              options={[
+                { value: '', label: 'Tất cả người thực hiện' },
+                ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
+              ]}
+              value={filter.createdBy}
+              onChange={(v) => setFilter((f) => ({ ...f, createdBy: v as string }))}
+            />
+          </div>
+        )}
+
         {/* Hàng 2: Từ ngày + Đến ngày + Buttons */}
         <div className="grid grid-cols-2 md:flex md:items-center gap-3">
           <div className="md:flex-1 relative">
@@ -228,8 +261,6 @@ const FinancePage = () => {
         </div>
       </div>
 
-
-
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
         <button
@@ -263,6 +294,7 @@ const FinancePage = () => {
                     <th className="text-left px-4 py-3">Mô tả</th>
                     <th className="text-left px-4 py-3">Người thực hiện</th>
                     <th className="text-right px-4 py-3">Số tiền</th>
+                    <th className="text-center px-4 py-3">KT hoàn tiền</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -297,6 +329,15 @@ const FinancePage = () => {
                         {t.type === 'expense' ? '-' : '+'}
                         {formatCurrency(t.amount)}
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300"
+                          checked={!!t.accountantRefunded}
+                          disabled={!canRefund}
+                          onChange={(e) => toggleRefund(t, e.target.checked)}
+                        />
+                      </td>
                       <td className="px-4 py-3 text-right space-x-2">
                         <button
                           onClick={() => openEdit(t)}
@@ -315,7 +356,7 @@ const FinancePage = () => {
                   ))}
                   {transactions.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                         Chưa có dữ liệu
                       </td>
                     </tr>
@@ -363,6 +404,16 @@ const FinancePage = () => {
                     </div>
                   </div>
                   <div className="flex gap-4 pt-2 border-t border-gray-100">
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600 mr-auto">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
+                        checked={!!t.accountantRefunded}
+                        disabled={!canRefund}
+                        onChange={(e) => toggleRefund(t, e.target.checked)}
+                      />
+                      KT hoàn tiền
+                    </label>
                     <button
                       onClick={() => openEdit(t)}
                       className="text-blue-600 text-xs font-medium"
@@ -617,6 +668,18 @@ const FinancePage = () => {
               <label className="label">Mô tả</label>
               <textarea {...register('description')} className="input" rows={2} />
             </div>
+            {canRefund && (
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300"
+                    {...register('accountantRefunded')}
+                  />
+                  <span className="text-sm text-gray-700">Kế toán đã hoàn tiền</span>
+                </label>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
