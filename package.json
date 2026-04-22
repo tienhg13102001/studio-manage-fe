@@ -14,6 +14,7 @@
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.7.2",
     "date-fns": "^3.6.0",
+    "dayjs": "^1.11.20",
     "exceljs": "^4.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -9,6 +9,7 @@ import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { Customer, Student, Package, Costume } from '../types';
+import dayjs from 'dayjs';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
 
@@ -130,7 +131,9 @@ const CustomerSizePage = () => {
         .join('\n');
     }
 
-    const info = `Lớp: ${selectedCustomer?.className}
+    const info = `
+Ngày chụp: ${schedule ? dayjs(schedule.shootDate).format('DD/MM/YYYY') : 'N/A'}
+Lớp: ${selectedCustomer?.className}
 Trường: ${selectedCustomer?.school ?? 'N/A'}
 Sĩ số nam: ${totalMale}
 Sĩ số nữ: ${totalFemale}
@@ -139,7 +142,8 @@ SĐT: ${selectedCustomer?.contactPhone || '-'}
 Địa chỉ: ${selectedCustomer?.contactAddress || '-'}
 
 Thông tin số lượng đồ
-${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}`;
+${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
+`;
     navigator.clipboard.writeText(info).then(() => {
       setCopiedInfo(true);
       setTimeout(() => setCopiedInfo(false), 2000);
