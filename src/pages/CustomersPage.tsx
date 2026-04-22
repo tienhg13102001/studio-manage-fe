@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { customerService } from '../services/customerService';
 import { ConfirmModal, DataTable, Modal } from '../components/organisms';
@@ -14,6 +14,7 @@ type FormValues = Omit<Customer, '_id' | 'createdAt'>;
 
 const CustomersPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { list: customers, loading } = useAppSelector((s) => s.customers);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -23,7 +24,7 @@ const CustomersPage = () => {
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<FormValues>();
 
   useEffect(() => {
@@ -37,8 +38,10 @@ const CustomersPage = () => {
       school: '',
       contactName: '',
       contactPhone: '',
-      contactEmail: '',
-      studentCount: 0,
+      contactAddress: '',
+      total: 0,
+      totalMale: 0,
+      totalFemale: 0,
       notes: '',
     });
     setModalOpen(true);
@@ -126,6 +129,7 @@ const CustomersPage = () => {
               data={customers}
               keyExtractor={(c) => c._id}
               emptyTitle="Chưa có dữ liệu"
+              onRowClick={(c) => navigate(`/customers/${c._id}`)}
               columns={[
                 {
                   key: 'className',
@@ -155,10 +159,25 @@ const CustomersPage = () => {
                   render: (c) => <span className="text-gray-600">{c.contactPhone}</span>,
                 },
                 {
-                  key: 'studentCount',
+                  key: 'contactAddress',
+                  header: 'Địa chỉ',
+                  render: (c) => <span className="text-gray-600">{c.contactAddress}</span>,
+                },
+                {
+                  key: 'total',
                   header: 'Sĩ số',
                   align: 'right',
-                  render: (c) => <span className="text-gray-600">{c.studentCount}</span>,
+                  render: (c) => <span className="text-gray-600">{c.total}</span>,
+                },
+                {
+                  key: 'gender',
+                  header: 'Nam / Nữ',
+                  align: 'right',
+                  render: (c) => (
+                    <span className="text-gray-600">
+                      {c.totalMale ?? 0} / {c.totalFemale ?? 0}
+                    </span>
+                  ),
                 },
                 {
                   key: 'actions',
@@ -197,8 +216,8 @@ const CustomersPage = () => {
                   >
                     {c.className}
                   </Link>
-                  {c.studentCount != null && (
-                    <span className="text-sm text-gray-500 ml-2">{c.studentCount} hs</span>
+                  {c.total != null && (
+                    <span className="text-sm text-gray-500 ml-2">{c.total} hs</span>
                   )}
                 </div>
                 {c.school && <div className="text-sm text-gray-600">🏫 {c.school}</div>}
@@ -250,22 +269,70 @@ const CustomersPage = () => {
             <div>
               <label className="label">Sĩ số</label>
               <input
-                {...register('studentCount', { valueAsNumber: true })}
+                {...register('total', { valueAsNumber: true })}
                 type="number"
                 className="input"
               />
             </div>
             <div>
-              <label className="label">Người liên hệ</label>
-              <input {...register('contactName')} className="input" />
+              <label className="label">Số nam</label>
+              <input
+                {...register('totalMale', { valueAsNumber: true })}
+                type="number"
+                min={0}
+                className="input"
+              />
             </div>
             <div>
-              <label className="label">Số điện thoại</label>
-              <input {...register('contactPhone')} className="input" />
+              <label className="label">Số nữ</label>
+              <input
+                {...register('totalFemale', { valueAsNumber: true })}
+                type="number"
+                min={0}
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="label">
+                Người liên hệ <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('contactName', { required: 'Vui lòng nhập người liên hệ' })}
+                className="input"
+              />
+              {errors.contactName && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactName.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="label">
+                Số điện thoại <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('contactPhone', {
+                  required: 'Vui lòng nhập số điện thoại',
+                  pattern: {
+                    value: /^[0-9+\-\s()]{8,}$/,
+                    message: 'Số điện thoại không hợp lệ',
+                  },
+                })}
+                className="input"
+              />
+              {errors.contactPhone && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactPhone.message}</p>
+              )}
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Email</label>
-              <input {...register('contactEmail')} type="email" className="input" />
+              <label className="label">
+                Địa chỉ (người liên hệ) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('contactAddress', { required: 'Vui lòng nhập địa chỉ' })}
+                className="input"
+              />
+              {errors.contactAddress && (
+                <p className="text-xs text-red-500 mt-1">{errors.contactAddress.message}</p>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className="label">Ghi chú</label>

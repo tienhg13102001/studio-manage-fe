@@ -13,7 +13,7 @@ interface ClassInfo {
 }
 
 interface FormValues {
-  customerId: string;
+  customer: string;
   phone: string;
   crewRating: number;
   crewDescription: string;
@@ -26,7 +26,7 @@ interface FormValues {
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
 const FeedbackFormPage = () => {
-  const { customerId: paramCustomerId } = useParams<{ customerId: string }>();
+  const { customer: paramCustomerId } = useParams<{ customer: string }>();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [fixedClass, setFixedClass] = useState<ClassInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +42,7 @@ const FeedbackFormPage = () => {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
-      customerId: paramCustomerId || '',
+      customer: paramCustomerId || '',
       phone: '',
       crewRating: 0,
       crewDescription: '',
@@ -57,7 +57,7 @@ const FeedbackFormPage = () => {
   const albumRating = watch('albumRating');
   const crewDescription = watch('crewDescription');
   const albumDescription = watch('albumDescription');
-  const selectedCustomerId = watch('customerId');
+  const selectedCustomerId = watch('customer');
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +67,7 @@ const FeedbackFormPage = () => {
           const { data } = await api.get<ClassInfo>(`/public/customers/${paramCustomerId}`);
           if (!cancelled) {
             setFixedClass(data);
-            setValue('customerId', data._id);
+            setValue('customer', data._id);
           }
         } else {
           const { data } = await api.get<ClassInfo[]>('/public/customers');
@@ -89,7 +89,7 @@ const FeedbackFormPage = () => {
     setSubmitStatus('loading');
     try {
       await api.post('/public/feedback', {
-        customerId: data.customerId || undefined,
+        customer: data.customer || undefined,
         phone: data.phone || undefined,
         crewFeedback: {
           rating: Number(data.crewRating),
@@ -104,7 +104,7 @@ const FeedbackFormPage = () => {
       });
       setSubmitStatus('success');
       reset({
-        customerId: paramCustomerId || '',
+        customer: paramCustomerId || '',
         phone: '',
         crewRating: 0,
         crewDescription: '',
@@ -266,7 +266,7 @@ const FeedbackFormPage = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Class selector */}
           {fixedClass ? (
-            <input type="hidden" {...register('customerId')} />
+            <input type="hidden" {...register('customer')} />
           ) : (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
               <label
@@ -281,13 +281,13 @@ const FeedbackFormPage = () => {
                   label: c.school ? `${c.className} — ${c.school}` : c.className,
                 }))}
                 value={selectedCustomerId}
-                onChange={(v) => setValue('customerId', v as string, { shouldValidate: true })}
+                onChange={(v) => setValue('customer', v as string, { shouldValidate: true })}
                 placeholder="Chọn lớp…"
-                error={errors.customerId?.message}
+                error={errors.customer?.message}
               />
-              {errors.customerId && (
+              {errors.customer && (
                 <p className="text-rose-500 mt-2" style={helperStyle}>
-                  {errors.customerId.message}
+                  {errors.customer.message}
                 </p>
               )}
             </div>

@@ -7,7 +7,7 @@ export interface FeedbackListResponse extends PaginatedResponse<Feedback> {
 }
 
 export interface FeedbackSubmitPayload {
-  customerId?: string;
+  customer?: string;
   phone?: string;
   crewFeedback: { rating: number; description?: string };
   albumFeedback: { rating: number; description?: string };

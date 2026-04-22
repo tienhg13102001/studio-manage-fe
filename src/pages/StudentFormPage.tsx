@@ -23,7 +23,7 @@ interface FormValues {
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
 const StudentFormPage = () => {
-  const { customerId } = useParams<{ customerId: string }>();
+  const { customer } = useParams<{ customer: string }>();
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<Status>('idle');
@@ -38,18 +38,18 @@ const StudentFormPage = () => {
   });
 
   useEffect(() => {
-    if (!customerId) return;
+    if (!customer) return;
     api
-      .get<ClassInfo>(`/public/customers/${customerId}`)
+      .get<ClassInfo>(`/public/customers/${customer}`)
       .then((r) => setClassInfo(r.data))
       .catch(() => setLoadError(true));
-  }, [customerId]);
+  }, [customer]);
 
   const onSubmit = async (data: FormValues) => {
     setSubmitStatus('loading');
     try {
       await api.post('/public/students', {
-        customerId,
+        customer,
         name: data.name,
         gender: data.gender,
         height: data.height !== '' ? Number(data.height) : undefined,

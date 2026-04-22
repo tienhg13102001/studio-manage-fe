@@ -11,13 +11,13 @@ type FilterValue = 'all' | 'unread' | 'read';
 
 const LIMIT = 20;
 
-const getClassLabel = (customer: Feedback['customerId']): string | null => {
+const getClassLabel = (customer: Feedback['customer']): string | null => {
   if (!customer || typeof customer === 'string') return null;
   const c = customer as Customer;
   return c.school ? `${c.className} — ${c.school}` : c.className;
 };
 
-const getInitials = (customer: Feedback['customerId'], phone?: string): string => {
+const getInitials = (customer: Feedback['customer'], phone?: string): string => {
   if (customer && typeof customer !== 'string') {
     const c = customer as Customer;
     const src = c.className || c.school || '';
@@ -179,10 +179,10 @@ const FeedbackPage = () => {
       ) : (
         <div className="space-y-3">
           {list.map((fb) => {
-            const classLabel = getClassLabel(fb.customerId);
+            const classLabel = getClassLabel(fb.customer);
             const seed =
-              (fb.customerId && typeof fb.customerId !== 'string'
-                ? (fb.customerId as Customer)._id
+              (fb.customer && typeof fb.customer !== 'string'
+                ? (fb.customer as Customer)._id
                 : '') ||
               fb.phone ||
               fb._id;
@@ -202,7 +202,7 @@ const FeedbackPage = () => {
                       seed,
                     )}`}
                   >
-                    {getInitials(fb.customerId, fb.phone)}
+                    {getInitials(fb.customer, fb.phone)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

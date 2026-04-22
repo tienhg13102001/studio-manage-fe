@@ -79,7 +79,7 @@ const DashboardPage = () => {
         endTime: s.endTime,
         location: s.location,
         status: s.status,
-        className: s.customerId?.className ?? '—',
+        className: s.customer?.className ?? '—',
         leadName: s.leadPhotographer
           ? (s.leadPhotographer.name ?? s.leadPhotographer.username)
           : undefined,
@@ -105,9 +105,9 @@ const DashboardPage = () => {
       header: 'Lớp',
       render: (s) => (
         <>
-          {s.customerId?.className ?? '—'}
-          {s.customerId?.school && (
-            <span className="text-xs text-gray-400 ml-1">({s.customerId.school})</span>
+          {s.customer?.className ?? '—'}
+          {s.customer?.school && (
+            <span className="text-xs text-gray-400 ml-1">({s.customer.school})</span>
           )}
         </>
       ),
@@ -408,7 +408,7 @@ const DashboardPage = () => {
                             {s.endTime ? ` – ${s.endTime}` : ''}
                           </div>
                         )}
-                        <div className="text-sm mt-0.5">{s.customerId?.className ?? '—'}</div>
+                        <div className="text-sm mt-0.5">{s.customer?.className ?? '—'}</div>
                         {s.location && <div className="text-xs text-gray-400">{s.location}</div>}
                       </div>
                       <span className={`badge text-xs ${STATUS_COLOR[s.status] ?? ''}`}>

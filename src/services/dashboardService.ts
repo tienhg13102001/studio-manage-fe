@@ -7,7 +7,7 @@ export interface UpcomingSchedule {
   endTime?: string;
   location?: string;
   status: string;
-  customerId?: { _id: string; className: string; school?: string };
+  customer?: { _id: string; className: string; school?: string };
   leadPhotographer?: { _id: string; name?: string; username: string };
 }
 

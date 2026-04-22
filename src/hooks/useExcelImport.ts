@@ -154,7 +154,7 @@ export function useExcelImport({
 
     for (let i = 0; i < valid.length; i++) {
       try {
-        const created = await studentService.create({ ...valid[i], customerId: selectedId });
+        const created = await studentService.create({ ...valid[i], customer: selectedId });
         onStudentAdded(created);
         success++;
       } catch {

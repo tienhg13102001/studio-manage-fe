@@ -22,14 +22,14 @@ interface FilterState {
   status: string;
   dateFrom: string;
   dateTo: string;
-  customerId: string;
+  customer: string;
 }
 
-const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customerId: '' };
+const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
 
 interface ScheduleFormValues {
-  customerId: string;
-  packageId?: string;
+  customer: string;
+  package?: string;
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -51,6 +51,7 @@ const SchedulesPage = () => {
   const [editing, setEditing] = useState<Schedule | null>(null);
   const [supportIds, setSupportIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [detail, setDetail] = useState<Schedule | null>(null);
   const {
     register,
     handleSubmit,
@@ -65,7 +66,7 @@ const SchedulesPage = () => {
     if (f.status) params.status = f.status;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
-    if (f.customerId) params.customerId = f.customerId;
+    if (f.customer) params.customer = f.customer;
     return params;
   };
 
@@ -95,9 +96,9 @@ const SchedulesPage = () => {
     );
     setSupportIds(supIds);
     reset({
-      customerId: typeof s.customerId === 'object' ? (s.customerId as Customer)._id : s.customerId,
-      packageId:
-        typeof s.packageId === 'object' ? (s.packageId as Package)._id : (s.packageId ?? ''),
+      customer: typeof s.customer === 'object' ? (s.customer as Customer)._id : s.customer,
+      package:
+        typeof s.package === 'object' ? (s.package as Package)._id : (s.package ?? ''),
       shootDate: s.shootDate.slice(0, 10),
       startTime: s.startTime,
       endTime: s.endTime,
@@ -149,7 +150,7 @@ const SchedulesPage = () => {
   };
 
   const handleDownloadContract = async (s: Schedule) => {
-    const customer = typeof s.customerId === 'object' ? (s.customerId as Customer) : null;
+    const customer = typeof s.customer === 'object' ? (s.customer as Customer) : null;
     const filename = `${customer?.className?.replace(/\s+/g, '-') ?? s._id}-${customer?.school?.replace(/\s+/g, '-') ?? ''}`;
     await scheduleService.downloadContract(s._id, filename);
   };
@@ -170,7 +171,7 @@ const SchedulesPage = () => {
         location: s.location,
         status: s.status,
         notes: s.notes,
-        className: typeof s.customerId === 'object' ? (s.customerId as Customer).className : '—',
+        className: typeof s.customer === 'object' ? (s.customer as Customer).className : '—',
         leadName:
           typeof s.leadPhotographer === 'object'
             ? ((s.leadPhotographer as User).name ?? (s.leadPhotographer as User).username)
@@ -184,48 +185,36 @@ const SchedulesPage = () => {
       key: 'date',
       header: 'Ngày chụp',
       className: 'font-medium',
-      render: (s) => formatDate(s.shootDate),
+      render: (s) => (
+        <div className="flex flex-col">
+          <span>{formatDate(s.shootDate)} </span>
+          <span className="text-gray-500 text-xs whitespace-nowrap">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
+        </div>
+      ),
     },
     {
       key: 'class',
       header: 'Lớp',
       className: 'text-primary-600',
-      render: (s) =>
-        typeof s.customerId === 'object' ? ((s.customerId as Customer).className ?? '—') : '—',
+      render: (s) => (
+        <div className="flex flex-col">
+          <span className="font-medium">
+            {typeof s.customer === 'object' ? (s.customer as Customer)?.className : '—'}
+          </span>
+          <span className="text-gray-600 text-xs">
+            {typeof s.customer === 'object' && (s.customer as Customer)?.school
+              ? `${(s.customer as Customer)?.school}`
+              : ''}
+          </span>
+        </div>
+      ),
     },
     {
       key: 'package',
       header: 'Gói chụp',
       className: 'text-gray-600',
       render: (s) =>
-        typeof s.packageId === 'object'
-          ? (s.packageId as Package)?.name
-          : (s.packageId ?? '—'),
-    },
-    {
-      key: 'notes',
-      header: 'Ghi chú',
-      className: 'max-w-[14rem]',
-      render: (s) => (
-        <span
-          className="inline-block bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 max-w-full whitespace-pre-line"
-          title={s.notes}
-        >
-          {s.notes || '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'time',
-      header: 'Giờ',
-      className: 'text-gray-600',
-      render: (s) => `${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`,
-    },
-    {
-      key: 'location',
-      header: 'Địa điểm',
-      className: 'text-gray-600',
-      render: (s) => s.location,
+        typeof s.package === 'object' ? (s.package as Package)?.name : (s.package ?? '—'),
     },
     {
       key: 'sale',
@@ -248,7 +237,7 @@ const SchedulesPage = () => {
     {
       key: 'support',
       header: 'Support',
-      className: 'text-gray-600',
+      className: 'text-gray-600 max-w-24',
       render: (s) =>
         (s.supportPhotographers ?? [])
           .map((u) => (typeof u === 'object' ? (u as User)?.name : u))
@@ -331,8 +320,8 @@ const SchedulesPage = () => {
                 { value: '', label: 'Tất cả lớp' },
                 ...customers.map((c) => ({ value: c._id, label: c.className })),
               ]}
-              value={filter.customerId}
-              onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
+              value={filter.customer}
+              onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
             />
           </div>
           <input
@@ -378,13 +367,14 @@ const SchedulesPage = () => {
               keyExtractor={(s) => s._id}
               emptyTitle="Chưa có dữ liệu"
               columns={scheduleColumns}
+              onRowClick={(s) => setDetail(s)}
             />
           </div>
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {schedules.map((s) => {
-              const customer = typeof s.customerId === 'object' ? (s.customerId as Customer) : null;
+              const customer = typeof s.customer === 'object' ? (s.customer as Customer) : null;
               const leadName =
                 typeof s.leadPhotographer === 'object'
                   ? ((s.leadPhotographer as User)?.name ?? (s.leadPhotographer as User)?.username)
@@ -474,7 +464,7 @@ const SchedulesPage = () => {
             <div className="sm:col-span-2">
               <label className="label">Lớp *</label>
               <Controller
-                name="customerId"
+                name="customer"
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
@@ -493,7 +483,7 @@ const SchedulesPage = () => {
             <div className="sm:col-span-2">
               <label className="label">Gói chụp</label>
               <Controller
-                name="packageId"
+                name="package"
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -627,6 +617,140 @@ const SchedulesPage = () => {
         onConfirm={doDelete}
         onCancel={() => setConfirmId(null)}
       />
+
+      {/* Detail modal */}
+      <Modal
+        isOpen={!!detail}
+        onClose={() => setDetail(null)}
+        title="Chi tiết lịch chụp"
+        size="lg"
+      >
+        {detail &&
+          (() => {
+            const customer =
+              typeof detail.customer === 'object' ? (detail.customer as Customer) : null;
+            const pkg = typeof detail.package === 'object' ? (detail.package as Package) : null;
+            const leadName =
+              typeof detail.leadPhotographer === 'object'
+                ? ((detail.leadPhotographer as User)?.name ??
+                  (detail.leadPhotographer as User)?.username)
+                : (detail.leadPhotographer ?? null);
+            const bookedByName =
+              typeof detail.bookedBy === 'object'
+                ? ((detail.bookedBy as User)?.name ?? (detail.bookedBy as User)?.username)
+                : (detail.bookedBy ?? null);
+            const supports = (detail.supportPhotographers ?? [])
+              .map((u) =>
+                typeof u === 'object' ? ((u as User)?.name ?? (u as User)?.username) : u,
+              )
+              .filter(Boolean)
+              .join(', ');
+
+            const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
+              <div className="grid grid-cols-3 gap-3 py-2 border-b last:border-0">
+                <div className="text-sm text-gray-500">{label}</div>
+                <div className="col-span-2 text-sm text-gray-800">{value || '—'}</div>
+              </div>
+            );
+
+            return (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`badge ${statusColor[detail.status]}`}>
+                    {statusLabel[detail.status]}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        handleDownloadContract(detail);
+                      }}
+                      className="btn-secondary text-sm"
+                    >
+                      Hợp đồng
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDetail(null);
+                        openEdit(detail);
+                      }}
+                      className="btn-primary text-sm"
+                    >
+                      Sửa
+                    </button>
+                  </div>
+                </div>
+
+                <Row label="Ngày chụp" value={formatDate(detail.shootDate)} />
+                <Row
+                  label="Giờ"
+                  value={`${detail.startTime ?? ''}${detail.endTime ? ` – ${detail.endTime}` : ''}`}
+                />
+                <Row
+                  label="Lớp"
+                  value={
+                    customer ? (
+                      <>
+                        <span className="font-medium text-primary-600">{customer.className}</span>
+                        {customer.school && (
+                          <span className="text-gray-500"> – {customer.school}</span>
+                        )}
+                      </>
+                    ) : (
+                      '—'
+                    )
+                  }
+                />
+                <Row
+                  label="Gói chụp"
+                  value={
+                    pkg ? (
+                      <>
+                        {pkg.name}
+                        {typeof pkg.pricePerMember === 'number' && (
+                          <span className="text-gray-500">
+                            {' '}
+                            – {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      '—'
+                    )
+                  }
+                />
+                <Row label="Địa điểm" value={detail.location} />
+                <Row label="Sale" value={bookedByName} />
+                <Row label="Leader" value={leadName} />
+                <Row label="Support" value={supports} />
+                <Row
+                  label="Ghi chú"
+                  value={
+                    detail.notes ? (
+                      <span className="whitespace-pre-line">{detail.notes}</span>
+                    ) : (
+                      '—'
+                    )
+                  }
+                />
+
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => {
+                      if (detail) {
+                        const id = detail._id;
+                        setDetail(null);
+                        handleDelete(id);
+                      }
+                    }}
+                    className="text-red-600 hover:underline text-sm"
+                  >
+                    Xoá lịch chụp
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+      </Modal>
     </div>
   );
 };

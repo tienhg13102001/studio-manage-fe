@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export interface FinanceFilterState {
   type: string;
-  customerId: string;
+  customer: string;
   categoryId: string;
   dateFrom: string;
   dateTo: string;
@@ -10,7 +10,7 @@ export interface FinanceFilterState {
 
 const DEFAULT_FILTER: FinanceFilterState = {
   type: '',
-  customerId: '',
+  customer: '',
   categoryId: '',
   dateFrom: '',
   dateTo: '',
@@ -19,7 +19,7 @@ const DEFAULT_FILTER: FinanceFilterState = {
 function toParams(f: FinanceFilterState): Record<string, string> {
   const params: Record<string, string> = {};
   if (f.type) params.type = f.type;
-  if (f.customerId) params.customerId = f.customerId;
+  if (f.customer) params.customer = f.customer;
   if (f.categoryId) params.categoryId = f.categoryId;
   if (f.dateFrom) params.dateFrom = f.dateFrom;
   if (f.dateTo) params.dateTo = f.dateTo;

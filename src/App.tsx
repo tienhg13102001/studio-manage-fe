@@ -58,9 +58,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/form/:customerId" element={<StudentFormPage />} />
+          <Route path="/form/:customer" element={<StudentFormPage />} />
           <Route path="/feedback" element={<FeedbackFormPage />} />
-          <Route path="/feedback/:customerId" element={<FeedbackFormPage />} />
+          <Route path="/feedback/:customer" element={<FeedbackFormPage />} />
           <Route
             path="/"
             element={

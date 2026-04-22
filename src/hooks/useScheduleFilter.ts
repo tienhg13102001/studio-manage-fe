@@ -4,14 +4,14 @@ export interface ScheduleFilterState {
   status: string;
   dateFrom: string;
   dateTo: string;
-  customerId: string;
+  customer: string;
 }
 
 const DEFAULT_FILTER: ScheduleFilterState = {
   status: '',
   dateFrom: '',
   dateTo: '',
-  customerId: '',
+  customer: '',
 };
 
 function toParams(f: ScheduleFilterState): Record<string, string> {
@@ -19,7 +19,7 @@ function toParams(f: ScheduleFilterState): Record<string, string> {
   if (f.status) params.status = f.status;
   if (f.dateFrom) params.dateFrom = f.dateFrom;
   if (f.dateTo) params.dateTo = f.dateTo;
-  if (f.customerId) params.customerId = f.customerId;
+  if (f.customer) params.customer = f.customer;
   return params;
 }
 

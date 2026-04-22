@@ -23,10 +23,12 @@ export interface Customer {
   _id: string;
   className: string;
   school?: string;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
-  studentCount: number;
+  contactName: string;
+  contactPhone: string;
+  contactAddress: string;
+  total: number;
+  totalMale?: number;
+  totalFemale?: number;
   notes?: string;
   createdAt?: string;
 }
@@ -35,6 +37,7 @@ export interface Costume {
   _id: string;
   name: string;
   description?: string;
+  gender: 'male' | 'female' | 'unisex';
   createdAt?: string;
 }
 
@@ -54,8 +57,8 @@ export interface Package {
 
 export interface Schedule {
   _id: string;
-  customerId: string | Customer;
-  packageId?: string | Package;
+  customer: string | Customer;
+  package?: string | Package;
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -78,7 +81,7 @@ export interface Category {
 
 export interface Transaction {
   _id: string;
-  customerId?: string | Customer | null;
+  customer?: string | Customer | null;
   type: 'income' | 'expense';
   amount: number;
   categoryId: string | Category;
@@ -102,11 +105,13 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
+  totalMale?: number;
+  totalFemale?: number;
 }
 
 export interface Student {
   _id: string;
-  customerId: string;
+  customer: string;
   name: string;
   gender: 'male' | 'female';
   height?: number;
@@ -122,7 +127,7 @@ export interface FeedbackItem {
 
 export interface Feedback {
   _id: string;
-  customerId?: string | Customer | null;
+  customer?: string | Customer | null;
   phone?: string;
   crewFeedback: FeedbackItem;
   albumFeedback: FeedbackItem;

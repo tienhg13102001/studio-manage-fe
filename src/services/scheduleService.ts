@@ -4,6 +4,8 @@ import type { Schedule, PaginatedResponse } from '../types';
 export const scheduleService = {
   getAll: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Schedule>>('/schedules', { params }).then((r) => r.data),
+  getByCustomer: (customer: string) =>
+    api.get<Schedule | null>(`/schedules/customer/${customer}`).then((r) => r.data),
   getOne: (id: string) => api.get<Schedule>(`/schedules/${id}`).then((r) => r.data),
   create: (data: Partial<Schedule>) => api.post<Schedule>('/schedules', data).then((r) => r.data),
   update: (id: string, data: Partial<Schedule>) =>

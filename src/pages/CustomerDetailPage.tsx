@@ -8,20 +8,7 @@ import type { Customer, Schedule, Transaction, User } from '../types';
 import { PageLoader } from '../components/atoms';
 import { DataTable } from '../components/organisms';
 import type { Column } from '../components/organisms';
-
-const statusLabel: Record<string, string> = {
-  pending: 'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã huỷ',
-};
-
-const statusColor: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
+import { SCHEDULE_STATUS_COLOR, SCHEDULE_STATUS_LABEL } from '../utils/scheduleConstants';
 
 const CustomerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,8 +20,8 @@ const CustomerDetailPage = () => {
     if (!id) return;
     Promise.all([
       customerService.getOne(id),
-      scheduleService.getAll({ customerId: id, limit: 100 }),
-      transactionService.getAll({ customerId: id, limit: 100 }),
+      scheduleService.getAll({ customer: id, limit: 100 }),
+      transactionService.getAll({ customer: id, limit: 100 }),
     ]).then(([c, s, t]) => {
       setCustomer(c);
       setSchedules(s.data);
@@ -72,12 +59,20 @@ const CustomerDetailPage = () => {
             <span className="font-medium">{customer.contactPhone}</span>
           </div>
           <div>
-            <span className="text-gray-500">Email:</span>{' '}
-            <span className="font-medium">{customer.contactEmail}</span>
+            <span className="text-gray-500">Địa chỉ:</span>{' '}
+            <span className="font-medium">{customer.contactAddress}</span>
           </div>
           <div>
             <span className="text-gray-500">Sĩ số:</span>{' '}
-            <span className="font-medium">{customer.studentCount}</span>
+            <span className="font-medium">{customer.total}</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Nam:</span>{' '}
+            <span className="font-medium">{customer.totalMale ?? 0}</span>
+          </div>
+          <div>
+            <span className="text-gray-500">Nữ:</span>{' '}
+            <span className="font-medium">{customer.totalFemale ?? 0}</span>
           </div>
         </div>
         {customer.notes && <p className="mt-3 text-sm text-gray-600">{customer.notes}</p>}
@@ -146,7 +141,9 @@ const CustomerDetailPage = () => {
             key: 'status',
             header: 'Trạng thái',
             render: (s) => (
-              <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
+              <span className={`badge ${SCHEDULE_STATUS_COLOR[s.status]}`}>
+                {SCHEDULE_STATUS_LABEL[s.status]}
+              </span>
             ),
           } satisfies Column<Schedule>,
         ]}

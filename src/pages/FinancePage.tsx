@@ -20,7 +20,7 @@ import { fetchUsers } from '../store/slices/usersSlice';
 
 interface FilterState {
   type: string;
-  customerId: string;
+  customer: string;
   categoryId: string;
   createdBy: string;
   dateFrom: string;
@@ -29,7 +29,7 @@ interface FilterState {
 
 const defaultFilter: FilterState = {
   type: '',
-  customerId: '',
+  customer: '',
   categoryId: '',
   createdBy: '',
   dateFrom: '',
@@ -64,7 +64,7 @@ const FinancePage = () => {
   const buildListParams = (f: FilterState): Record<string, string> => {
     const params: Record<string, string> = {};
     if (f.type) params.type = f.type;
-    if (f.customerId) params.customerId = f.customerId;
+    if (f.customer) params.customer = f.customer;
     if (f.categoryId) params.categoryId = f.categoryId;
     if (f.createdBy) params.createdBy = f.createdBy;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
@@ -90,10 +90,10 @@ const FinancePage = () => {
     setEditing(t);
     reset({
       ...t,
-      customerId:
-        typeof t.customerId === 'object' && t.customerId
-          ? (t.customerId as Customer)._id
-          : (t.customerId ?? ''),
+      customer:
+        typeof t.customer === 'object' && t.customer
+          ? (t.customer as Customer)._id
+          : (t.customer ?? ''),
       categoryId: typeof t.categoryId === 'object' ? (t.categoryId as Category)._id : t.categoryId,
       date: t.date.slice(0, 10),
       createdBy:
@@ -105,7 +105,7 @@ const FinancePage = () => {
   };
 
   const onSubmit = async (data: Partial<Transaction>) => {
-    const payload = { ...data, customerId: data.customerId || null };
+    const payload = { ...data, customer: data.customer || null };
     try {
       if (editing) {
         await transactionService.update(editing._id, payload);
@@ -197,8 +197,8 @@ const FinancePage = () => {
       header: 'Lớp',
       className: 'text-gray-600',
       render: (t) =>
-        t.customerId && typeof t.customerId === 'object'
-          ? (t.customerId as Customer).className
+        t.customer && typeof t.customer === 'object'
+          ? (t.customer as Customer).className
           : '—',
     },
     {
@@ -325,8 +325,8 @@ const FinancePage = () => {
               { value: '', label: 'Tất cả lớp' },
               ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
             ]}
-            value={filter.customerId}
-            onChange={(v) => setFilter((f) => ({ ...f, customerId: v as string }))}
+            value={filter.customer}
+            onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
           />
           <div className="col-span-2 md:col-span-1">
             <Select
@@ -429,9 +429,9 @@ const FinancePage = () => {
                       <div className="text-sm text-gray-600 mt-0.5">
                         {typeof t.categoryId === 'object' ? (t.categoryId as Category).name : '—'}
                       </div>
-                      {t.customerId && typeof t.customerId === 'object' && (
+                      {t.customer && typeof t.customer === 'object' && (
                         <div className="text-xs text-gray-400">
-                          {(t.customerId as Customer).className}
+                          {(t.customer as Customer).className}
                         </div>
                       )}
                       {t.description && (
@@ -647,7 +647,7 @@ const FinancePage = () => {
             <div className="sm:col-span-2">
               <label className="label">Lớp (tuỳ chọn)</label>
               <Controller
-                name="customerId"
+                name="customer"
                 control={control}
                 render={({ field }) => (
                   <Select

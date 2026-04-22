@@ -26,6 +26,8 @@ interface DataTableProps<T> {
   variant?: 'card' | 'plain';
   dense?: boolean;
   textSize?: 'xs' | 'sm';
+  /** Called when a row is clicked. Clicks on buttons/links inside the row are ignored. */
+  onRowClick?: (row: T, index: number) => void;
 }
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
@@ -46,6 +48,7 @@ function DataTable<T>({
   variant = 'card',
   dense = false,
   textSize = 'sm',
+  onRowClick,
 }: DataTableProps<T>) {
   const renderTitle = () =>
     title ? (
@@ -114,10 +117,20 @@ function DataTable<T>({
         {data.map((row, i) => (
           <tr
             key={keyExtractor(row, i)}
-            className={
+            className={`${
               rowClassName
                 ? `border-b last:border-0 ${rowClassName(row, i)}`
                 : 'border-b last:border-0 hover:bg-gray-50'
+            }${onRowClick ? ' cursor-pointer' : ''}`}
+            onClick={
+              onRowClick
+                ? (e) => {
+                    if ((e.target as HTMLElement).closest('button, a, input, label, select, textarea')) {
+                      return;
+                    }
+                    onRowClick(row, i);
+                  }
+                : undefined
             }
           >
             {columns.map((col) => (

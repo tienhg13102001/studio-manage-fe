@@ -7,9 +7,10 @@ import type { Column } from '../components/organisms';
 import { TableSkeleton, Select } from '../components/atoms';
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
-import type { Customer, Student } from '../types';
+import { scheduleService } from '../services/scheduleService';
+import type { Customer, Student, Package, Costume } from '../types';
 
-type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customerId'>;
+type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
 
 const GENDER_LABEL: Record<string, string> = { male: 'Nam', female: 'Nữ' };
 const GENDER_FROM_LABEL: Record<string, string> = {
@@ -35,8 +36,11 @@ const CustomerSizePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedId, setSelectedId] = useState<string>('');
   const [students, setStudents] = useState<Student[]>([]);
+  const [totalMale, setTotalMale] = useState(0);
+  const [totalFemale, setTotalFemale] = useState(0);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedInfo, setCopiedInfo] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -63,12 +67,18 @@ const CustomerSizePage = () => {
     setShowDupOnly(false);
     if (!selectedId) {
       setStudents([]);
+      setTotalMale(0);
+      setTotalFemale(0);
       return;
     }
     setLoadingStudents(true);
     studentService
-      .getAll({ customerId: selectedId })
-      .then((r) => setStudents(r.data))
+      .getAll({ customer: selectedId })
+      .then((r) => {
+        setStudents(r.data);
+        setTotalMale(r.totalMale ?? 0);
+        setTotalFemale(r.totalFemale ?? 0);
+      })
       .finally(() => setLoadingStudents(false));
   }, [selectedId]);
 
@@ -96,6 +106,43 @@ const CustomerSizePage = () => {
     navigator.clipboard.writeText(publicUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleCopyInfo = async () => {
+    if (!selectedId) return;
+    const schedule = await scheduleService.getByCustomer(selectedId);
+    if (!schedule) {
+      toast.error('Không tìm thấy lịch chụp cho lớp này.');
+    }
+
+    // Build costume lines if package is populated (object) and has costumes[]
+    let costumeLines = '';
+    if (schedule && typeof schedule.package === 'object' && schedule.package !== null) {
+      const pkg = schedule.package as Package;
+      const costumes = (pkg.costumes ?? []) as Costume[];
+      costumeLines = costumes
+        .map((c) => {
+          if (c.gender === 'male') return `- ${totalMale} bộ ${c.name}`;
+          if (c.gender === 'female') return `- ${totalFemale} bộ ${c.name}`;
+          return `- ${totalMale + totalFemale} bộ ${c.name}`;
+        })
+        .join('\n');
+    }
+
+    const info = `Lớp: ${selectedCustomer?.className}
+Trường: ${selectedCustomer?.school ?? 'N/A'}
+Sĩ số nam: ${totalMale}
+Sĩ số nữ: ${totalFemale}
+Người nhận đồ: ${selectedCustomer?.contactName}
+SĐT: ${selectedCustomer?.contactPhone || '-'}
+Địa chỉ: ${selectedCustomer?.contactAddress || '-'}
+
+Thông tin số lượng đồ
+${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}`;
+    navigator.clipboard.writeText(info).then(() => {
+      setCopiedInfo(true);
+      setTimeout(() => setCopiedInfo(false), 2000);
     });
   };
 
@@ -201,10 +248,18 @@ const CustomerSizePage = () => {
       if (editing) {
         const updated = await studentService.update(editing._id, data);
         setStudents((prev) => prev.map((s) => (s._id === updated._id ? updated : s)));
+        if (editing.gender !== updated.gender) {
+          if (editing.gender === 'male') setTotalMale((v) => Math.max(0, v - 1));
+          else if (editing.gender === 'female') setTotalFemale((v) => Math.max(0, v - 1));
+          if (updated.gender === 'male') setTotalMale((v) => v + 1);
+          else if (updated.gender === 'female') setTotalFemale((v) => v + 1);
+        }
         toast.success('Cập nhật học sinh thành công!');
       } else {
-        const created = await studentService.create({ ...data, customerId: selectedId });
+        const created = await studentService.create({ ...data, customer: selectedId });
         setStudents((prev) => [...prev, created]);
+        if (created.gender === 'male') setTotalMale((v) => v + 1);
+        else if (created.gender === 'female') setTotalFemale((v) => v + 1);
         toast.success('Thêm học sinh thành công!');
       }
       setModalOpen(false);
@@ -322,8 +377,10 @@ const CustomerSizePage = () => {
     let success = 0;
     for (let i = 0; i < valid.length; i++) {
       try {
-        const created = await studentService.create({ ...valid[i], customerId: selectedId });
+        const created = await studentService.create({ ...valid[i], customer: selectedId });
         setStudents((prev) => [...prev, created]);
+        if (created.gender === 'male') setTotalMale((v) => v + 1);
+        else if (created.gender === 'female') setTotalFemale((v) => v + 1);
         success++;
       } catch {
         // continue on individual failure
@@ -340,7 +397,10 @@ const CustomerSizePage = () => {
     if (!confirmId) return;
     try {
       await studentService.remove(confirmId);
+      const removed = students.find((s) => s._id === confirmId);
       setStudents((prev) => prev.filter((s) => s._id !== confirmId));
+      if (removed?.gender === 'male') setTotalMale((v) => Math.max(0, v - 1));
+      else if (removed?.gender === 'female') setTotalFemale((v) => Math.max(0, v - 1));
       toast.success('Đã xoá học sinh.');
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
@@ -374,7 +434,14 @@ const CustomerSizePage = () => {
           className={`btn-secondary text-sm shrink-0 ${!selectedId ? 'opacity-40 cursor-not-allowed' : ''}`}
           title={publicUrl}
         >
-          {copied ? '✅ Đã copy!' : '🔗 Copy link nhập liệu'}
+          {copied ? '✅ Đã copy link nhập liệu!' : '🔗 Copy link nhập liệu'}
+        </button>
+        <button
+          onClick={handleCopyInfo}
+          disabled={!selectedId || students.length === 0}
+          className={`btn-secondary text-sm shrink-0 ${!selectedId || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+        >
+          {copiedInfo ? '✅ Đã copy thông tin gửi đồ!' : '🔗 Copy thông tin gửi đồ'}
         </button>
         <button
           onClick={handleExportExcel}
@@ -415,6 +482,11 @@ const CustomerSizePage = () => {
             <p className="text-sm text-gray-500">
               Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span>{' '}
               — {students.length} học sinh
+              <span className="ml-2 text-gray-600">
+                (<span className="text-blue-600 font-medium">Nam: {totalMale}</span>
+                {' / '}
+                <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
+              </span>
               {duplicateNorms.size > 0 && (
                 <span className="ml-2 text-yellow-600 font-medium">
                   ⚠{' '}
@@ -540,7 +612,9 @@ const CustomerSizePage = () => {
                       emptyTitle={
                         showDupOnly ? 'Không còn học sinh trùng tên' : 'Chưa có học sinh nào'
                       }
-                      emptyDescription={showDupOnly ? 'Bỏ lọc để xem toàn bộ danh sách.' : undefined}
+                      emptyDescription={
+                        showDupOnly ? 'Bỏ lọc để xem toàn bộ danh sách.' : undefined
+                      }
                       emptyIcon="🧑‍🎓"
                     />
                     {showDupOnly && displayedStudents.length === 0 && (

@@ -9,7 +9,14 @@ import type { Costume } from '../types';
 interface CostumeFormValues {
   name: string;
   description?: string;
+  gender: 'male' | 'female' | 'unisex';
 }
+
+const GENDER_LABEL: Record<Costume['gender'], string> = {
+  male: 'Nam',
+  female: 'Nữ',
+  unisex: 'Nam / Nữ',
+};
 
 const CostumesPage = () => {
   const [costumes, setCostumes] = useState<Costume[]>([]);
@@ -40,13 +47,17 @@ const CostumesPage = () => {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: '', description: '' });
+    reset({ name: '', description: '', gender: 'unisex' });
     setModalOpen(true);
   };
 
   const openEdit = (costume: Costume) => {
     setEditing(costume);
-    reset({ name: costume.name, description: costume.description ?? '' });
+    reset({
+      name: costume.name,
+      description: costume.description ?? '',
+      gender: costume.gender ?? 'unisex',
+    });
     setModalOpen(true);
   };
 
@@ -99,6 +110,13 @@ const CostumesPage = () => {
             render: (c) => <span className="font-medium">{c.name}</span>,
           },
           {
+            key: 'gender',
+            header: 'Giới tính',
+            render: (c) => (
+              <span className="text-gray-600">{GENDER_LABEL[c.gender] ?? '—'}</span>
+            ),
+          },
+          {
             key: 'description',
             header: 'Mô tả',
             render: (c) => <span className="text-gray-600">{c.description ?? '—'}</span>,
@@ -142,6 +160,18 @@ const CostumesPage = () => {
               className="input"
               placeholder="VD: Đồng phục trường, Áo dài, Tự do..."
             />
+          </div>
+          <div>
+            <label className="label">Giới tính *</label>
+            <select
+              {...register('gender', { required: true })}
+              className="input"
+              defaultValue="unisex"
+            >
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="unisex">Nam / Nữ</option>
+            </select>
           </div>
           <div>
             <label className="label">Mô tả</label>
