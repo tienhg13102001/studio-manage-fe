@@ -86,7 +86,7 @@ const FeedbackPage = () => {
     return Math.max(1, Math.ceil(count / LIMIT));
   }, [filter, total, totalRead, totalUnread]);
 
-  const toggleRead = async (fb: Feedback) => {
+  const toggleRead = async (fb: FeedbackResponse) => {
     try {
       const updated = await feedbackService.markRead(fb._id, !fb.isRead);
       setList((prev) => prev.map((f) => (f._id === fb._id ? { ...f, isRead: updated.isRead } : f)));

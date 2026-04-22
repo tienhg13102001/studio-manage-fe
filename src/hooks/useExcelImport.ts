@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import ExcelJS from 'exceljs';
 import { toast } from 'react-toastify';
 import { studentService } from '../services/studentService';
-import type { Student } from '../types';
+import type { Student, StudentResponse } from '../types';
 
 export interface ImportRow {
   name: string;
@@ -29,7 +29,7 @@ interface UseExcelImportOptions {
   selectedId: string;
   existingStudents: Student[];
   /** Called for each student successfully imported (optimistic update) */
-  onStudentAdded: (student: Student) => void;
+  onStudentAdded: (student: StudentResponse) => void;
 }
 
 /**
