@@ -124,7 +124,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       )}
 
       <aside
-        className={`w-60 bg-gray-900 text-white flex flex-col h-screen fixed left-0 top-0 z-40 transition-transform duration-200 ${
+        className={`w-60 bg-gray-900 text-white flex flex-col h-[100dvh] fixed left-0 top-0 z-40 transition-transform duration-200 ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -141,9 +141,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map(renderNavItem)}
 
-          {user?.roles?.some((r) =>
-            adminItems.some((item) => item.allowedRoles?.includes(r)),
-          ) && (
+          {user?.roles?.some((r) => adminItems.some((item) => item.allowedRoles?.includes(r))) && (
             <>
               <div className="pt-3 pb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Admin
