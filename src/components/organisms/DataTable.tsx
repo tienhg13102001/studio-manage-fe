@@ -17,7 +17,7 @@ interface DataTableProps<T> {
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
-  emptyIcon?: string;
+  emptyIcon?: ReactNode;
   title?: ReactNode;
   className?: string;
   footer?: ReactNode;

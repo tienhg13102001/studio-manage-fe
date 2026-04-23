@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FaCalendarAlt, FaTable } from 'react-icons/fa';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { costumeService } from '../services/costumeService';
@@ -273,15 +274,17 @@ const SchedulesPage = () => {
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors inline-flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              ☰ Bảng
+              <FaTable className={viewMode === 'table' ? 'text-white' : 'text-slate-500'} />
+              <span>Bảng</span>
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${viewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 inline-flex items-center gap-1.5 ${viewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              ◫ Lịch
+              <FaCalendarAlt className={viewMode === 'calendar' ? 'text-white' : 'text-slate-500'} />
+              <span>Lịch</span>
             </button>
           </div>
           <button onClick={openCreate} className="btn-primary">

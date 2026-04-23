@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import { MdAccessTime } from 'react-icons/md';
 import {
   MONTH_VN,
   DOW_VN,
@@ -158,12 +160,20 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                 <div className="space-y-0.5">
                   <div className="font-medium text-sm text-gray-900">{s.className}</div>
                   {(s.startTime || s.endTime) && (
-                    <div className="text-xs text-gray-500">
-                      ⏰ {s.startTime}
-                      {s.endTime ? ` – ${s.endTime}` : ''}
+                    <div className="text-xs text-gray-500 inline-flex items-center gap-1.5">
+                      <MdAccessTime className="text-sky-500" />
+                      <span>
+                        {s.startTime}
+                        {s.endTime ? ` – ${s.endTime}` : ''}
+                      </span>
                     </div>
                   )}
-                  {s.location && <div className="text-xs text-gray-500">📍 {s.location}</div>}
+                  {s.location && (
+                    <div className="text-xs text-gray-500 inline-flex items-center gap-1.5">
+                      <FaMapMarkerAlt className="text-rose-500" />
+                      <span>{s.location}</span>
+                    </div>
+                  )}
                   {s.leadName && <div className="text-xs text-gray-500">Leader: {s.leadName}</div>}
                   {s.notes && (
                     <div className="text-xs text-yellow-700 bg-yellow-50 rounded px-1 py-0.5 mt-1">

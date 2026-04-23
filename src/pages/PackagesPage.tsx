@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { FaBoxOpen, FaCut, FaTshirt, FaUsers } from 'react-icons/fa';
+import { MdOutlineTimer } from 'react-icons/md';
 import { useForm, Controller } from 'react-hook-form';
 import { packageService } from '../services/packageService';
 import { costumeTypeService } from '../services/costumeTypeService';
@@ -241,16 +243,35 @@ const PackagesPage = () => {
                   </div>
                 </div>
                 <div className="space-y-1 text-sm text-gray-600">
-                  {pkg.duration && <div>⏱ {durationLabel[pkg.duration]}</div>}
+                  {pkg.duration && (
+                    <div className="inline-flex items-center gap-1.5">
+                      <MdOutlineTimer className="text-sky-500" />
+                      <span>{durationLabel[pkg.duration]}</span>
+                    </div>
+                  )}
                   {pkg.studentsPerCrew != null && (
-                    <div>👥 {pkg.studentsPerCrew} học sinh / thợ</div>
+                    <div className="inline-flex items-center gap-1.5">
+                      <FaUsers className="text-indigo-500" />
+                      <span>{pkg.studentsPerCrew} học sinh / thợ</span>
+                    </div>
                   )}
                   {pkg.costumes && pkg.costumes.length > 0 && (
-                    <div>👗 {pkg.costumes.map((c) => c.name).join(', ')}</div>
+                    <div className="inline-flex items-center gap-1.5">
+                      <FaTshirt className="text-fuchsia-500" />
+                      <span>{pkg.costumes.map((c) => c.name).join(', ')}</span>
+                    </div>
                   )}
-                  {pkg.editingScope && <div>✂️ {editingScopeLabel[pkg.editingScope]}</div>}
+                  {pkg.editingScope && (
+                    <div className="inline-flex items-center gap-1.5">
+                      <FaCut className="text-amber-500" />
+                      <span>{editingScopeLabel[pkg.editingScope]}</span>
+                    </div>
+                  )}
                   {pkg.deliveryDays != null && (
-                    <div>📦 Trả file tối đa: {pkg.deliveryDays} ngày</div>
+                    <div className="inline-flex items-center gap-1.5">
+                      <FaBoxOpen className="text-orange-500" />
+                      <span>Trả file tối đa: {pkg.deliveryDays} ngày</span>
+                    </div>
                   )}
                   {pkg.description && <div className="text-gray-500 italic">{pkg.description}</div>}
                 </div>

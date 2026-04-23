@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FaPhoneAlt, FaRegCopy } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
+import { HiOutlineRefresh } from 'react-icons/hi';
+import { MdLightbulbOutline } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import { EmptyState, Spinner } from '../components/atoms';
 import { RatingBlock } from '../components/molecules';
@@ -130,8 +134,12 @@ const FeedbackPage = () => {
             Xem và quản lý các đánh giá từ khách hàng của bạn.
           </p>
         </div>
-        <button onClick={copyLink} className={linkCopied ? 'btn-primary' : 'btn-secondary'}>
-          {linkCopied ? '✓ Đã sao chép' : '🔗 Sao chép link gửi phản hồi'}
+        <button
+          onClick={copyLink}
+          className={`${linkCopied ? 'btn-primary' : 'btn-secondary'} inline-flex items-center gap-2`}
+        >
+          <FaRegCopy className={linkCopied ? 'text-white' : 'text-primary-500'} />
+          <span>{linkCopied ? 'Đã sao chép' : 'Sao chép link gửi phản hồi'}</span>
         </button>
       </div>
 
@@ -210,7 +218,12 @@ const FeedbackPage = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
-                      {fb.phone && <span>📞 {fb.phone}</span>}
+                      {fb.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <FaPhoneAlt className="text-emerald-500" />
+                          <span>{fb.phone}</span>
+                        </span>
+                      )}
                       <span>{formatDateTime(fb.createdAt)}</span>
                     </div>
                   </div>
@@ -236,8 +249,9 @@ const FeedbackPage = () => {
 
                 {fb.suggestion && (
                   <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">
-                      💡 Đề xuất cải thiện
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
+                      <MdLightbulbOutline className="text-amber-500" />
+                      <span>Đề xuất cải thiện</span>
                     </p>
                     <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                       {fb.suggestion}
@@ -249,15 +263,17 @@ const FeedbackPage = () => {
                 <div className="flex justify-end gap-3 pt-3 mt-3 border-t border-gray-100">
                   <button
                     onClick={() => toggleRead(fb)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
                   >
-                    {fb.isRead ? '↺ Đánh dấu chưa đọc' : '✓ Đánh dấu đã đọc'}
+                    <HiOutlineRefresh />
+                    <span>{fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}</span>
                   </button>
                   <button
                     onClick={() => setConfirmId(fb._id)}
-                    className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline"
+                    className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline inline-flex items-center gap-1"
                   >
-                    🗑 Xoá
+                    <FiTrash2 />
+                    <span>Xoá</span>
                   </button>
                 </div>
               </div>

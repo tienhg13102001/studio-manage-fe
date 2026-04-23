@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { FiSearch, FiX } from 'react-icons/fi';
 
 interface SearchInputProps {
   value: string;
@@ -33,7 +34,7 @@ const SearchInput = ({
     <div className={`flex gap-2 flex-wrap ${className}`}>
       <div className="relative flex-1 min-w-[12rem]">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">
-          🔍
+          <FiSearch className="text-base" />
         </span>
         <input
           ref={inputRef}
@@ -50,7 +51,7 @@ const SearchInput = ({
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs leading-none"
             aria-label="Xoá tìm kiếm"
           >
-            ✕
+            <FiX className="text-sm" />
           </button>
         )}
       </div>

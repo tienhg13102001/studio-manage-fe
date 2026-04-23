@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FaPhoneAlt, FaSchool } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { customerService } from '../services/customerService';
@@ -220,11 +221,21 @@ const CustomersPage = () => {
                     <span className="text-sm text-gray-500 ml-2">{c.total} hs</span>
                   )}
                 </div>
-                {c.school && <div className="text-sm text-gray-600">🏫 {c.school}</div>}
+                {c.school && (
+                  <div className="text-sm text-gray-600 inline-flex items-center gap-1.5">
+                    <FaSchool className="text-sky-500" />
+                    <span>{c.school}</span>
+                  </div>
+                )}
                 {c.contactName && (
                   <div className="text-sm text-gray-600 mt-0.5">{c.contactName}</div>
                 )}
-                {c.contactPhone && <div className="text-sm text-gray-600">📞 {c.contactPhone}</div>}
+                {c.contactPhone && (
+                  <div className="text-sm text-gray-600 inline-flex items-center gap-1.5">
+                    <FaPhoneAlt className="text-emerald-500" />
+                    <span>{c.contactPhone}</span>
+                  </div>
+                )}
                 <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
                   <button onClick={() => openEdit(c)} className="text-blue-600 text-xs font-medium">
                     Sửa

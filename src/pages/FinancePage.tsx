@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FaSchool, FaUserCircle } from 'react-icons/fa';
 import { useForm, Controller } from 'react-hook-form';
 import { transactionService } from '../services/transactionService';
 import { ConfirmModal, DataTable, Modal } from '../components/organisms';
@@ -424,8 +425,9 @@ const FinancePage = () => {
                         <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
                       )}
                       {t.createdBy && (
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          👤 {t.createdBy.name ?? t.createdBy.username}
+                        <div className="text-xs text-gray-400 mt-0.5 inline-flex items-center gap-1.5">
+                          <FaUserCircle className="text-indigo-400" />
+                          <span>{t.createdBy.name ?? t.createdBy.username}</span>
                         </div>
                       )}
                     </div>
@@ -516,7 +518,10 @@ const FinancePage = () => {
                   {row.customer?.className ?? '(Không có lớp)'}
                 </div>
                 {row.customer?.school && (
-                  <div className="text-sm text-gray-500 mb-2">🏫 {row.customer.school}</div>
+                  <div className="text-sm text-gray-500 mb-2 inline-flex items-center gap-1.5">
+                    <FaSchool className="text-sky-500" />
+                    <span>{row.customer.school}</span>
+                  </div>
                 )}
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
