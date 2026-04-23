@@ -35,7 +35,8 @@ interface ImportRow {
 
 const CustomerSizePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedId, setSelectedId] = useState<string>('');
+  console.log('🚀 ~ CustomerSizePage ~ customers:', customers);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [schedules, setSchedules] = useState<ScheduleResponse | null>();
   const [totalMale, setTotalMale] = useState(0);
@@ -99,7 +100,7 @@ const CustomerSizePage = () => {
 
   useEffect(() => {
     setShowDupOnly(false);
-    if (!selectedId) {
+    if (!selectedCustomer) {
       setStudents([]);
       setTotalMale(0);
       setTotalFemale(0);
@@ -107,7 +108,7 @@ const CustomerSizePage = () => {
     }
     setLoadingStudents(true);
     studentService
-      .getAll({ customer: selectedId })
+      .getAll({ customer: selectedCustomer._id })
       .then((r) => {
         setStudents(r.data);
         setTotalMale(r.totalMale ?? 0);
@@ -115,14 +116,13 @@ const CustomerSizePage = () => {
       })
       .finally(() => setLoadingStudents(false));
     scheduleService
-      .getByCustomer(selectedId)
+      .getByCustomer(selectedCustomer._id)
       .then((r) => setSchedules(r))
       .catch(() => setSchedules(null));
-  }, [selectedId]);
+  }, [selectedCustomer]);
 
-  const selectedCustomer = customers.find((c) => c._id === selectedId);
-  const noSchedule = selectedId ? !schedules : false;
-  const disabledAll = !selectedId || noSchedule;
+  const noSchedule = selectedCustomer ? !schedules : false;
+  const disabledAll = !selectedCustomer || noSchedule;
 
   // Find names that appear more than once in the current student list
   const duplicateNorms = useMemo(() => {
@@ -139,11 +139,13 @@ const CustomerSizePage = () => {
     if (showDupOnly && duplicateNorms.size === 0) setShowDupOnly(false);
   }, [duplicateNorms, showDupOnly]);
 
-  const publicUrl = selectedId ? `${window.location.origin}/form/${selectedId}` : '';
+  const publicUrl = selectedCustomer
+    ? `${window.location.origin}/form/${selectedCustomer._id}`
+    : '';
 
   const handleCopy = () => {
-    if (!selectedId) return;
-    const schedule = scheduleService.getByCustomer(selectedId);
+    if (!selectedCustomer) return;
+    const schedule = scheduleService.getByCustomer(selectedCustomer._id);
     if (!schedule) {
       toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin.');
     }
@@ -155,10 +157,18 @@ const CustomerSizePage = () => {
   };
 
   const handleCopyInfo = async () => {
-    if (!selectedId) return;
-    const schedule = await scheduleService.getByCustomer(selectedId);
+    if (!selectedCustomer) return;
+    const schedule = await scheduleService.getByCustomer(selectedCustomer._id);
+
     if (!schedule) {
       toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin gửi đồ.');
+      return;
+    }
+    if (totalFemale + totalFemale < selectedCustomer.total) {
+      toast.error(
+        'Sĩ số nam/nữ hiện tại nhỏ hơn sĩ số đã đăng ký. Vui lòng cập nhật đầy đủ thông tin học sinh trước khi lấy thông tin gửi đồ.',
+      );
+      return;
     }
 
     // Build costume lines if package has costumes[]
@@ -186,6 +196,7 @@ SĐT: ${selectedCustomer?.contactPhone || '-'}
 
 Thông tin số lượng đồ
 ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
+- ${totalMale + totalFemale} giấy màu
 `;
     navigator.clipboard.writeText(info).then(() => {
       setCopiedInfo(true);
@@ -322,7 +333,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         }
         toast.success('Cập nhật học sinh thành công!');
       } else {
-        const created = await studentService.create({ ...data, customer: selectedId });
+        const created = await studentService.create({ ...data, customer: selectedCustomer!._id });
         setStudents((prev) => [...prev, created]);
         if (created.gender === 'male') setTotalMale((v) => v + 1);
         else if (created.gender === 'female') setTotalFemale((v) => v + 1);
@@ -443,7 +454,10 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
     let success = 0;
     for (let i = 0; i < valid.length; i++) {
       try {
-        const created = await studentService.create({ ...valid[i], customer: selectedId });
+        const created = await studentService.create({
+          ...valid[i],
+          customer: selectedCustomer!._id,
+        });
         setStudents((prev) => [...prev, created]);
         if (created.gender === 'male') setTotalMale((v) => v + 1);
         else if (created.gender === 'female') setTotalFemale((v) => v + 1);
@@ -489,8 +503,8 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               value: c._id,
               label: `${c.className}${c.school ? ` — ${c.school}` : ''}`,
             }))}
-            value={selectedId}
-            onChange={(v) => setSelectedId(v as string)}
+            value={selectedCustomer?._id ?? ''}
+            onChange={(v) => setSelectedCustomer(customers.find((c) => c._id === v) ?? null)}
             placeholder="-- Chọn lớp --"
           />
         </div>
@@ -533,7 +547,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       </div>
 
       {/* Empty state */}
-      {!selectedId && (
+      {!selectedCustomer && (
         <div className="card py-16 text-center text-gray-400">
           <div className="text-4xl mb-3">🏫</div>
           <p className="text-base font-medium">Xin mời chọn lớp để xem danh sách học sinh</p>
@@ -542,7 +556,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       )}
 
       {/* No-schedule warning */}
-      {selectedId && noSchedule && (
+      {selectedCustomer && noSchedule && (
         <div className="card p-4 mb-4 border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
           ⚠ Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
           thông tin.
@@ -550,7 +564,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       )}
 
       {/* Student list */}
-      {selectedId && (
+      {selectedCustomer && (
         <>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-gray-500">
