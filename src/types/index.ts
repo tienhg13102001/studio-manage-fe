@@ -207,5 +207,9 @@ export interface PublicScheduleResponse {
   location?: string;
   status: Schedule['status'];
   customer: Pick<Customer, '_id' | 'className' | 'school'>;
-  package: Pick<Package, '_id' | 'name' | 'costumes'> | null;
+  costumes: Costume[];
+  package: {
+    _id: string;
+    name: string;
+  } | null;
 }
