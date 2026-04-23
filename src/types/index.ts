@@ -33,12 +33,25 @@ export interface Customer {
   createdAt?: string;
 }
 
+export interface CostumeType {
+  _id: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+}
+
 export interface Costume {
   _id: string;
   name: string;
   description?: string;
   gender: 'male' | 'female' | 'unisex';
+  type?: string;
   createdAt?: string;
+}
+
+/** Populated Costume returned by GET endpoints (type is populated). */
+export interface CostumeResponse extends Omit<Costume, 'type'> {
+  type?: CostumeType;
 }
 
 export interface Package {
@@ -46,7 +59,7 @@ export interface Package {
   name: string;
   pricePerMember: number;
   duration?: 'full_day' | 'half_day' | 'two_thirds_day';
-  costumes?: Costume[];
+  costumes?: CostumeType[];
   crewRatio?: string;
   editingScope?: 'full' | 'partial';
   deliveryDays?: number;
@@ -64,6 +77,7 @@ export interface Schedule {
   _id: string;
   customer: string;
   package: string | null;
+  costumes: string[];
   shootDate: string;
   startTime?: string;
   endTime?: string;
@@ -80,10 +94,11 @@ export interface Schedule {
 export interface ScheduleResponse
   extends Omit<
     Schedule,
-    'customer' | 'package' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
+    'customer' | 'package' | 'costumes' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
   > {
   customer: Customer;
   package: Package | null;
+  costumes: Costume[];
   leadPhotographer: User | null;
   supportPhotographers: User[];
   bookedBy: User | null;

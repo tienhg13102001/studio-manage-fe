@@ -35,7 +35,6 @@ interface ImportRow {
 
 const CustomerSizePage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  console.log('🚀 ~ CustomerSizePage ~ customers:', customers);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [schedules, setSchedules] = useState<ScheduleResponse | null>();
@@ -65,7 +64,7 @@ const CustomerSizePage = () => {
   } = useForm<StudentForm>();
 
   const formGender = watch('gender');
-  const scheduleCostumes = schedules?.package?.costumes ?? [];
+  const scheduleCostumes = schedules?.costumes ?? [];
   const visibleCostumes = scheduleCostumes.filter(
     (c) => c.gender === formGender || c.gender === 'unisex',
   );
@@ -171,16 +170,11 @@ const CustomerSizePage = () => {
       return;
     }
 
-    // Build costume lines if package has costumes[]
+    // Build costume lines from costumes selected on the schedule
     let costumeLines = '';
-    if (schedule?.package) {
-      const costumes = schedule.package.costumes ?? [];
-      costumeLines = costumes
-        .map((c) => {
-          if (c.gender === 'male') return `- ${totalMale} bộ ${c.name}`;
-          if (c.gender === 'female') return `- ${totalFemale} bộ ${c.name}`;
-          return `- ${totalMale + totalFemale} bộ ${c.name}`;
-        })
+    if (schedule?.costumes && schedule.costumes.length > 0) {
+      costumeLines = schedule.costumes
+        .map((c) => `- ${totalMale + totalFemale} bộ ${c.name}`)
         .join('\n');
     }
 
@@ -953,11 +947,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="label">Họ tên *</label>
+              <label className="label">Họ tên <span className="text-red-500">*</span></label>
               <input {...register('name', { required: true })} className="input" />
             </div>
             <div>
-              <label className="label">Giới tính *</label>
+              <label className="label">Giới tính <span className="text-red-500">*</span></label>
               <Controller
                 name="gender"
                 control={control}
@@ -975,7 +969,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               />
             </div>
             <div>
-              <label className="label">Chiều cao (cm) *</label>
+              <label className="label">Chiều cao (cm) <span className="text-red-500">*</span></label>
               <input
                 {...register('height', {
                   required: 'Vui lòng nhập chiều cao',
@@ -991,7 +985,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               )}
             </div>
             <div>
-              <label className="label">Cân nặng (kg) *</label>
+              <label className="label">Cân nặng (kg) <span className="text-red-500">*</span></label>
               <input
                 {...register('weight', {
                   required: 'Vui lòng nhập cân nặng',
@@ -1011,7 +1005,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               {visibleCostumes.length === 0 ? (
                 <p className="text-xs text-gray-400">
                   {scheduleCostumes.length === 0
-                    ? 'Gói dịch vụ của lịch chụp này chưa cấu hình trang phục.'
+                    ? 'Lịch chụp này chưa cấu hình trang phục.'
                     : 'Không có trang phục phù hợp với giới tính đã chọn.'}
                 </p>
               ) : (

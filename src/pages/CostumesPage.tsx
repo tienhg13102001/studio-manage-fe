@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { costumeService } from '../services/costumeService';
+import { costumeTypeService } from '../services/costumeTypeService';
 import { ConfirmModal, DataTable, Modal } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { toast } from 'react-toastify';
-import type { Costume } from '../types';
+import type { Costume, CostumeResponse, CostumeType } from '../types';
 
 interface CostumeFormValues {
   name: string;
   description?: string;
   gender: 'male' | 'female' | 'unisex';
+  type?: string;
 }
 
 const GENDER_LABEL: Record<Costume['gender'], string> = {
@@ -18,11 +20,16 @@ const GENDER_LABEL: Record<Costume['gender'], string> = {
   unisex: 'Nam / Nữ',
 };
 
+const getTypeId = (type: CostumeType | undefined): string => type?._id ?? '';
+
+const getTypeName = (type: CostumeType | undefined): string => type?.name ?? '—';
+
 const CostumesPage = () => {
-  const [costumes, setCostumes] = useState<Costume[]>([]);
+  const [costumes, setCostumes] = useState<CostumeResponse[]>([]);
+  const [costumeTypes, setCostumeTypes] = useState<CostumeType[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Costume | null>(null);
+  const [editing, setEditing] = useState<CostumeResponse | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const {
@@ -43,20 +50,22 @@ const CostumesPage = () => {
 
   useEffect(() => {
     load();
+    costumeTypeService.getAll().then(setCostumeTypes);
   }, []);
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: '', description: '', gender: 'unisex' });
+    reset({ name: '', description: '', gender: 'unisex', type: '' });
     setModalOpen(true);
   };
 
-  const openEdit = (costume: Costume) => {
+  const openEdit = (costume: CostumeResponse) => {
     setEditing(costume);
     reset({
       name: costume.name,
       description: costume.description ?? '',
       gender: costume.gender ?? 'unisex',
+      type: getTypeId(costume.type),
     });
     setModalOpen(true);
   };
@@ -98,7 +107,7 @@ const CostumesPage = () => {
         </button>
       </div>
 
-      <DataTable<Costume>
+      <DataTable<CostumeResponse>
         loading={loading}
         data={costumes}
         keyExtractor={(c) => c._id}
@@ -114,6 +123,13 @@ const CostumesPage = () => {
             header: 'Giới tính',
             render: (c) => (
               <span className="text-gray-600">{GENDER_LABEL[c.gender] ?? '—'}</span>
+            ),
+          },
+          {
+            key: 'type',
+            header: 'Loại',
+            render: (c) => (
+              <span className="text-gray-600">{getTypeName(c.type)}</span>
             ),
           },
           {
@@ -142,7 +158,7 @@ const CostumesPage = () => {
                 </button>
               </span>
             ),
-          } satisfies Column<Costume>,
+          } satisfies Column<CostumeResponse>,
         ]}
       />
 
@@ -171,6 +187,17 @@ const CostumesPage = () => {
               <option value="male">Nam</option>
               <option value="female">Nữ</option>
               <option value="unisex">Nam / Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Loại trang phục</label>
+            <select {...register('type')} className="input">
+              <option value="">-- Không phân loại --</option>
+              {costumeTypes.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>

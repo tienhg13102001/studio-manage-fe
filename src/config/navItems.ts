@@ -7,6 +7,7 @@ import SchedulesPage from '../pages/SchedulesPage';
 import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
 import CostumesPage from '../pages/CostumesPage';
+import CostumeTypesPage from '../pages/CostumeTypesPage';
 import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
@@ -114,6 +115,13 @@ export const adminItems: NavItem[] = [
         icon: '👗',
         allowedRoles: [0, 1],
         component: CostumesPage,
+      },
+      {
+        to: '/costume-types',
+        label: 'Loại trang phục',
+        icon: '🏷️',
+        allowedRoles: [0, 1],
+        component: CostumeTypesPage,
       },
       {
         to: '/packages',

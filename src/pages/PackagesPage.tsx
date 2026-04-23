@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { packageService } from '../services/packageService';
-import { costumeService } from '../services/costumeService';
+import { costumeTypeService } from '../services/costumeTypeService';
 import { ConfirmModal, DataTable, Modal } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { TableSkeleton, Select } from '../components/atoms';
 import { toast } from 'react-toastify';
-import type { Costume, Package } from '../types';
+import type { CostumeType, Package } from '../types';
 
 const editingScopeLabel: Record<string, string> = {
   full: 'Toàn bộ',
@@ -36,7 +36,7 @@ interface PackageFormValues {
 const PackagesPage = () => {
   const dispatch = useAppDispatch();
   const { list: packages, loading } = useAppSelector((s) => s.packages);
-  const [allCostumes, setAllCostumes] = useState<Costume[]>([]);
+  const [allCostumes, setAllCostumes] = useState<CostumeType[]>([]);
   const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Package | null>(null);
@@ -52,7 +52,7 @@ const PackagesPage = () => {
 
   useEffect(() => {
     dispatch(fetchPackages());
-    costumeService.getAll().then(setAllCostumes);
+    costumeTypeService.getAll().then(setAllCostumes);
   }, [dispatch]);
 
   const openCreate = () => {
@@ -328,7 +328,7 @@ const PackagesPage = () => {
                 value={selectedCostumes}
                 onChange={(v) => setSelectedCostumes(v as string[])}
                 placeholder={
-                  allCostumes.length === 0 ? 'Chưa có trang phục nào' : 'Chọn trang phục...'
+                  allCostumes.length === 0 ? 'Chưa có loại trang phục nào' : 'Chọn loại trang phục...'
                 }
                 disabled={allCostumes.length === 0}
               />

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
+import { costumeService } from '../services/costumeService';
 import { ConfirmModal, DataTable, Modal, ScheduleCalendar } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { scheduleService } from '../services/scheduleService';
-import type { ScheduleResponse } from '../types';
+import type { ScheduleResponse, CostumeResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
 import { TableSkeleton, Select } from '../components/atoms';
@@ -47,6 +48,8 @@ const SchedulesPage = () => {
   const { list: packages } = useAppSelector((s) => s.packages);
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
+  const [allCostumes, setAllCostumes] = useState<CostumeResponse[]>([]);
+  const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ScheduleResponse | null>(null);
   const [supportIds, setSupportIds] = useState<string[]>([]);
@@ -70,17 +73,28 @@ const SchedulesPage = () => {
     return params;
   };
 
+  const selectedPackageId = watch('package');
+  const selectedPackage = packages.find((p) => p._id === selectedPackageId);
+  // IDs of CostumeTypes linked to the selected package
+  const packageTypeIds = new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id));
+  // Costumes whose type belongs to the selected package
+  const availableCostumes = allCostumes.filter(
+    (c) => c.type && packageTypeIds.has(c.type._id),
+  );
+
   useEffect(() => {
     dispatch(fetchSchedules({}));
     dispatch(fetchCustomers({ limit: 200 }));
     dispatch(fetchPackages());
     dispatch(fetchPhotographers());
     dispatch(fetchSales());
+    costumeService.getAll().then(setAllCostumes);
   }, [dispatch]);
 
   const openCreate = () => {
     setEditing(null);
     setSupportIds([]);
+    setSelectedCostumes([]);
     reset({ status: 'pending' });
     setModalOpen(true);
   };
@@ -90,6 +104,7 @@ const SchedulesPage = () => {
     const leadId = s.leadPhotographer?._id ?? '';
     const supIds = s.supportPhotographers.map((u) => u._id);
     setSupportIds(supIds);
+    setSelectedCostumes(s.costumes?.map((c) => c._id) ?? []);
     reset({
       customer: s.customer._id,
       package: s.package?._id ?? '',
@@ -108,6 +123,7 @@ const SchedulesPage = () => {
   const onSubmit = async (data: ScheduleFormValues) => {
     const payload = {
       ...data,
+      costumes: selectedCostumes,
       leadPhotographer: data.leadPhotographer || undefined,
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
@@ -175,7 +191,7 @@ const SchedulesPage = () => {
     {
       key: 'date',
       header: 'Ngày chụp',
-      className: 'font-medium',
+      className: 'font-medium max-w-14',
       render: (s) => (
         <div className="flex flex-col">
           <span>{formatDate(s.shootDate)} </span>
@@ -466,6 +482,42 @@ const SchedulesPage = () => {
                 )}
               />
             </div>
+            {selectedPackageId && (
+              <div className="sm:col-span-2">
+                <label className="label">Trang phục</label>
+                {availableCostumes.length === 0 ? (
+                  <p className="text-xs text-gray-400">
+                    Gói chụp này chưa có trang phục nào được liên kết.
+                  </p>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
+                    {availableCostumes.map((c) => (
+                      <label
+                        key={c._id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 accent-primary-600"
+                          checked={selectedCostumes.includes(c._id)}
+                          onChange={(e) =>
+                            setSelectedCostumes((prev) =>
+                              e.target.checked
+                                ? [...prev, c._id]
+                                : prev.filter((id) => id !== c._id),
+                            )
+                          }
+                        />
+                        <span className="text-sm text-gray-700">{c.name}</span>
+                        {c.type && (
+                          <span className="text-xs text-gray-400">— {c.type.name}</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <label className="label">Ngày chụp *</label>
               <input {...register('shootDate', { required: true })} type="date" className="input" />
