@@ -11,8 +11,7 @@ export const transactionService = {
     api
       .get<PaginatedResponse<TransactionResponse>>('/transactions', { params })
       .then((r) => r.data),
-  getOne: (id: string) =>
-    api.get<TransactionResponse>(`/transactions/${id}`).then((r) => r.data),
+  getOne: (id: string) => api.get<TransactionResponse>(`/transactions/${id}`).then((r) => r.data),
   create: (data: Partial<Transaction>) =>
     api.post<TransactionResponse>('/transactions', data).then((r) => r.data),
   update: (id: string, data: Partial<Transaction>) =>

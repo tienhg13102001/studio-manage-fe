@@ -10,16 +10,13 @@ export const scheduleService = {
   getAll: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<ScheduleResponse>>('/schedules', { params }).then((r) => r.data),
   getByCustomer: (customer: string) =>
-    api
-      .get<ScheduleResponse | null>(`/schedules/customer/${customer}`)
-      .then((r) => r.data),
+    api.get<ScheduleResponse | null>(`/schedules/customer/${customer}`).then((r) => r.data),
   /** Public (no-auth) endpoint — used by the student self-entry form */
   getPublicByCustomer: (customer: string) =>
     api
       .get<PublicScheduleResponse | null>(`/public/schedules/customer/${customer}`)
       .then((r) => r.data),
-  getOne: (id: string) =>
-    api.get<ScheduleResponse>(`/schedules/${id}`).then((r) => r.data),
+  getOne: (id: string) => api.get<ScheduleResponse>(`/schedules/${id}`).then((r) => r.data),
   create: (data: Partial<Schedule>) =>
     api.post<ScheduleResponse>('/schedules', data).then((r) => r.data),
   update: (id: string, data: Partial<Schedule>) =>

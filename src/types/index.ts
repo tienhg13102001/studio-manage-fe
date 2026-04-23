@@ -91,11 +91,10 @@ export interface Schedule {
 }
 
 /** Populated Schedule returned by GET endpoints (backend uses `.populate`). */
-export interface ScheduleResponse
-  extends Omit<
-    Schedule,
-    'customer' | 'package' | 'costumes' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
-  > {
+export interface ScheduleResponse extends Omit<
+  Schedule,
+  'customer' | 'package' | 'costumes' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
+> {
   customer: Customer;
   package: Package | null;
   costumes: Costume[];
@@ -131,8 +130,10 @@ export interface Transaction {
 }
 
 /** Populated Transaction returned by GET endpoints. */
-export interface TransactionResponse
-  extends Omit<Transaction, 'customer' | 'categoryId' | 'createdBy'> {
+export interface TransactionResponse extends Omit<
+  Transaction,
+  'customer' | 'categoryId' | 'createdBy'
+> {
   customer: Customer | null;
   categoryId: Category;
   createdBy: User | null;

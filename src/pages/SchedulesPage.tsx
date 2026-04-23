@@ -78,9 +78,7 @@ const SchedulesPage = () => {
   // IDs of CostumeTypes linked to the selected package
   const packageTypeIds = new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id));
   // Costumes whose type belongs to the selected package
-  const availableCostumes = allCostumes.filter(
-    (c) => c.type && packageTypeIds.has(c.type._id),
-  );
+  const availableCostumes = allCostumes.filter((c) => c.type && packageTypeIds.has(c.type._id));
 
   useEffect(() => {
     dispatch(fetchSchedules({}));
@@ -232,8 +230,7 @@ const SchedulesPage = () => {
       key: 'support',
       header: 'Support',
       className: 'text-gray-600 max-w-24',
-      render: (s) =>
-        s.supportPhotographers.map((u) => u.name ?? u.username).join(', ') || '—',
+      render: (s) => s.supportPhotographers.map((u) => u.name ?? u.username).join(', ') || '—',
     },
     {
       key: 'status',
@@ -369,9 +366,7 @@ const SchedulesPage = () => {
               const customer = s.customer;
               const leadName = s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? null;
               const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
-              const supports = s.supportPhotographers
-                .map((u) => u.name ?? u.username)
-                .join(', ');
+              const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
               return (
                 <div key={s._id} className="card p-4">
                   <div className="flex items-start justify-between mb-2">
@@ -509,9 +504,7 @@ const SchedulesPage = () => {
                           }
                         />
                         <span className="text-sm text-gray-700">{c.name}</span>
-                        {c.type && (
-                          <span className="text-xs text-gray-400">— {c.type.name}</span>
-                        )}
+                        {c.type && <span className="text-xs text-gray-400">— {c.type.name}</span>}
                       </label>
                     ))}
                   </div>
@@ -639,12 +632,7 @@ const SchedulesPage = () => {
       />
 
       {/* Detail modal */}
-      <Modal
-        isOpen={!!detail}
-        onClose={() => setDetail(null)}
-        title="Chi tiết lịch chụp"
-        size="lg"
-      >
+      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết lịch chụp" size="lg">
         {detail &&
           (() => {
             const customer = detail.customer;
@@ -736,11 +724,7 @@ const SchedulesPage = () => {
                 <Row
                   label="Ghi chú"
                   value={
-                    detail.notes ? (
-                      <span className="whitespace-pre-line">{detail.notes}</span>
-                    ) : (
-                      '—'
-                    )
+                    detail.notes ? <span className="whitespace-pre-line">{detail.notes}</span> : '—'
                   }
                 />
 

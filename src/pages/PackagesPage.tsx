@@ -328,7 +328,9 @@ const PackagesPage = () => {
                 value={selectedCostumes}
                 onChange={(v) => setSelectedCostumes(v as string[])}
                 placeholder={
-                  allCostumes.length === 0 ? 'Chưa có loại trang phục nào' : 'Chọn loại trang phục...'
+                  allCostumes.length === 0
+                    ? 'Chưa có loại trang phục nào'
+                    : 'Chọn loại trang phục...'
                 }
                 disabled={allCostumes.length === 0}
               />

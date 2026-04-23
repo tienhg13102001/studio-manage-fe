@@ -125,7 +125,9 @@ function DataTable<T>({
             onClick={
               onRowClick
                 ? (e) => {
-                    if ((e.target as HTMLElement).closest('button, a, input, label, select, textarea')) {
+                    if (
+                      (e.target as HTMLElement).closest('button, a, input, label, select, textarea')
+                    ) {
                       return;
                     }
                     onRowClick(row, i);

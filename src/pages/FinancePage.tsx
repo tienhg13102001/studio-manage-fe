@@ -208,9 +208,7 @@ const FinancePage = () => {
       header: 'Số tiền',
       align: 'right',
       render: (t) => (
-        <span
-          className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
-        >
+        <span className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
           {t.type === 'expense' ? '-' : '+'}
           {formatCurrency(t.amount)}
         </span>
@@ -239,7 +237,10 @@ const FinancePage = () => {
           <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline text-xs">
             Sửa
           </button>
-          <button onClick={() => handleDelete(t._id)} className="text-red-600 hover:underline text-xs">
+          <button
+            onClick={() => handleDelete(t._id)}
+            className="text-red-600 hover:underline text-xs"
+          >
             Xoá
           </button>
         </span>

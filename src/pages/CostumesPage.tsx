@@ -121,16 +121,12 @@ const CostumesPage = () => {
           {
             key: 'gender',
             header: 'Giới tính',
-            render: (c) => (
-              <span className="text-gray-600">{GENDER_LABEL[c.gender] ?? '—'}</span>
-            ),
+            render: (c) => <span className="text-gray-600">{GENDER_LABEL[c.gender] ?? '—'}</span>,
           },
           {
             key: 'type',
             header: 'Loại',
-            render: (c) => (
-              <span className="text-gray-600">{getTypeName(c.type)}</span>
-            ),
+            render: (c) => <span className="text-gray-600">{getTypeName(c.type)}</span>,
           },
           {
             key: 'description',

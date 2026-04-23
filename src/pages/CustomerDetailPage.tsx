@@ -169,9 +169,7 @@ const CustomerDetailPage = () => {
           {
             key: 'category',
             header: 'Danh mục',
-            render: (t) => (
-              <span className="text-gray-600">{t.categoryId?.name ?? '—'}</span>
-            ),
+            render: (t) => <span className="text-gray-600">{t.categoryId?.name ?? '—'}</span>,
           },
           {
             key: 'description',

@@ -947,11 +947,15 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="label">Họ tên <span className="text-red-500">*</span></label>
+              <label className="label">
+                Họ tên <span className="text-red-500">*</span>
+              </label>
               <input {...register('name', { required: true })} className="input" />
             </div>
             <div>
-              <label className="label">Giới tính <span className="text-red-500">*</span></label>
+              <label className="label">
+                Giới tính <span className="text-red-500">*</span>
+              </label>
               <Controller
                 name="gender"
                 control={control}
@@ -969,7 +973,9 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               />
             </div>
             <div>
-              <label className="label">Chiều cao (cm) <span className="text-red-500">*</span></label>
+              <label className="label">
+                Chiều cao (cm) <span className="text-red-500">*</span>
+              </label>
               <input
                 {...register('height', {
                   required: 'Vui lòng nhập chiều cao',
@@ -985,7 +991,9 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               )}
             </div>
             <div>
-              <label className="label">Cân nặng (kg) <span className="text-red-500">*</span></label>
+              <label className="label">
+                Cân nặng (kg) <span className="text-red-500">*</span>
+              </label>
               <input
                 {...register('weight', {
                   required: 'Vui lòng nhập cân nặng',
