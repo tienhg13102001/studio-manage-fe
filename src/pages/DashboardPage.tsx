@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { FaCalendarAlt, FaTable } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { Select } from '../components/atoms';
 import {
@@ -364,15 +365,19 @@ const DashboardPage = () => {
               <div className="flex rounded-lg border border-gray-200 overflow-hidden">
                 <button
                   onClick={() => setScheduleViewMode('table')}
-                  className={`px-3 py-1 text-xs font-medium transition-colors ${scheduleViewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 ${scheduleViewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                 >
-                  ☰ Bảng
+                  <FaTable className={scheduleViewMode === 'table' ? 'text-white' : 'text-slate-500'} />
+                  <span>Bảng</span>
                 </button>
                 <button
                   onClick={() => setScheduleViewMode('calendar')}
-                  className={`px-3 py-1 text-xs font-medium transition-colors border-l border-gray-200 ${scheduleViewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-3 py-1 text-xs font-medium transition-colors border-l border-gray-200 inline-flex items-center gap-1.5 ${scheduleViewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                 >
-                  ◫ Lịch
+                  <FaCalendarAlt
+                    className={scheduleViewMode === 'calendar' ? 'text-white' : 'text-slate-500'}
+                  />
+                  <span>Lịch</span>
                 </button>
               </div>
               <Link to="/schedules" className="text-sm text-blue-600 hover:underline">

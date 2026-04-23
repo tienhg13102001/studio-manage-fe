@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FaCamera, FaFilm, FaLightbulb, FaPhoneAlt, FaSchool } from 'react-icons/fa';
+import { FiAlertCircle, FiMessageCircle } from 'react-icons/fi';
+import { IoCheckmarkCircle } from 'react-icons/io5';
+import { MdPhotoLibrary } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
@@ -149,7 +153,9 @@ const FeedbackFormPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="text-center max-w-sm">
-          <div className="text-6xl mb-4">😕</div>
+          <div className="text-6xl mb-4 flex justify-center">
+            <FiAlertCircle className="text-amber-500" />
+          </div>
           <p className="text-slate-800 font-semibold" style={{ fontSize: '18px' }}>
             Không tìm thấy thông tin
           </p>
@@ -219,7 +225,7 @@ const FeedbackFormPage = () => {
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200/70">
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-sm">
-            <span style={{ fontSize: '18px' }}>📸</span>
+            <FaCamera className="text-white text-lg" />
           </div>
           <div className="flex-1 min-w-0">
             <p
@@ -254,11 +260,14 @@ const FeedbackFormPage = () => {
           </h1>
           {fixedClass?.school ? (
             <p className="text-slate-500 mt-1" style={{ fontSize: '15px' }}>
-              🏫 {fixedClass.school}
+              <span className="inline-flex items-center gap-1.5">
+                <FaSchool className="text-sky-500" />
+                <span>{fixedClass.school}</span>
+              </span>
             </p>
           ) : (
             <p className="text-slate-500 mt-1" style={{ fontSize: '15px' }}>
-              Ý kiến của bạn giúp studio phục vụ tốt hơn ✨
+              Ý kiến của bạn giúp studio phục vụ tốt hơn
             </p>
           )}
         </div>
@@ -297,7 +306,7 @@ const FeedbackFormPage = () => {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <span style={{ fontSize: '20px' }}>🎬</span>
+                <FaFilm className="text-blue-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
@@ -332,7 +341,7 @@ const FeedbackFormPage = () => {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                <span style={{ fontSize: '20px' }}>🖼️</span>
+                <MdPhotoLibrary className="text-purple-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
@@ -367,7 +376,7 @@ const FeedbackFormPage = () => {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                <span style={{ fontSize: '20px' }}>💬</span>
+                <FiMessageCircle className="text-teal-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
@@ -391,7 +400,7 @@ const FeedbackFormPage = () => {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                <span style={{ fontSize: '20px' }}>💡</span>
+                <FaLightbulb className="text-amber-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
@@ -417,7 +426,10 @@ const FeedbackFormPage = () => {
               className="flex items-center gap-2 font-semibold text-slate-800 mb-2"
               style={{ fontSize: '14px' }}
             >
-              <span>📞 Số điện thoại</span>
+              <span className="inline-flex items-center gap-1.5">
+                <FaPhoneAlt className="text-emerald-500" />
+                <span>Số điện thoại</span>
+              </span>
               <span className="text-slate-400 font-normal" style={helperStyle}>
                 · tuỳ chọn
               </span>
@@ -439,7 +451,10 @@ const FeedbackFormPage = () => {
               className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-rose-700"
               style={{ fontSize: '14px' }}
             >
-              ⚠️ Có lỗi xảy ra, vui lòng thử lại.
+              <span className="inline-flex items-center gap-1.5">
+                <FiAlertCircle className="text-rose-500" />
+                <span>Có lỗi xảy ra, vui lòng thử lại.</span>
+              </span>
             </div>
           )}
 
@@ -452,9 +467,14 @@ const FeedbackFormPage = () => {
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-700" style={{ fontSize: '13px' }}>
-              {completionCount === totalSteps
-                ? '✓ Sẵn sàng gửi'
-                : `Hoàn thành ${completionCount}/${totalSteps} mục bắt buộc`}
+              {completionCount === totalSteps ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <IoCheckmarkCircle className="text-emerald-500" />
+                  <span>Sẵn sàng gửi</span>
+                </span>
+              ) : (
+                `Hoàn thành ${completionCount}/${totalSteps} mục bắt buộc`
+              )}
             </p>
           </div>
           <button

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import dayjs from 'dayjs';
+import { FaCalendarCheck, FaGift, FaMars, FaSchool, FaVenus } from 'react-icons/fa';
+import { FiAlertCircle } from 'react-icons/fi';
+import { IoCheckmarkCircle } from 'react-icons/io5';
 import { PageLoader } from '../components/atoms';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
@@ -86,7 +89,9 @@ const StudentFormPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
-          <div className="text-5xl mb-4">😕</div>
+          <div className="mb-4 flex justify-center">
+            <FiAlertCircle className="text-5xl text-amber-500" />
+          </div>
           <p className="text-gray-600 font-medium">Không tìm thấy lớp học</p>
           <p className="text-sm text-gray-400 mt-1">Link có thể không còn hợp lệ</p>
         </div>
@@ -106,7 +111,9 @@ const StudentFormPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
-          <div className="text-5xl mb-4">🎉</div>
+          <div className="mb-4 flex justify-center">
+            <IoCheckmarkCircle className="text-5xl text-emerald-500" />
+          </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Đã ghi nhận!</h2>
           <p className="text-gray-500 text-sm mb-6">Thông tin của bạn đã được lưu thành công.</p>
           <button
@@ -128,15 +135,32 @@ const StudentFormPage = () => {
           <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
             Nhập thông tin học sinh
           </p>
-          <h1 className="text-xl font-bold text-gray-900">{schedule.customer.className}</h1>
-          {schedule.customer.school && (
-            <p className="text-sm text-gray-500 mt-0.5">🏫 {schedule.customer.school}</p>
-          )}
-          {schedule && (
-            <p className="text-sm text-primary-600 mt-1.5 font-medium">
-              📅 Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}
-            </p>
-          )}
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span>{schedule.customer.className}</span>{' '}
+            {schedule.customer.school && (
+              <span className="text-sm text-gray-500 mt-0.5 h-full font-light">
+                <span className="inline-flex items-center gap-1">
+                  <FaSchool className="text-sky-500" />
+                  <span>{schedule.customer.school}</span>
+                </span>
+              </span>
+            )}
+          </h1>
+
+          <div className='flex flex-col'>
+            {schedule && (
+              <p className="text-sm text-primary-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
+                <FaCalendarCheck className="text-primary-500" />
+                <span>Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}</span>
+              </p>
+            )}
+            {schedule.package && (
+              <p className="text-sm text-green-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
+                <FaGift className="text-green-500" />
+                <span>Gói chụp: {schedule.package.name}</span>
+              </p>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
@@ -168,7 +192,19 @@ const StudentFormPage = () => {
                     {...register('gender', { required: true })}
                     className="accent-primary-600"
                   />
-                  <span className="text-sm">{g === 'male' ? '👦 Nam' : '👧 Nữ'}</span>
+                  <span className="text-sm inline-flex items-center gap-1.5">
+                    {g === 'male' ? (
+                      <>
+                        <FaMars className="text-sky-600" />
+                        <span>Nam</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaVenus className="text-pink-500" />
+                        <span>Nữ</span>
+                      </>
+                    )}
+                  </span>
                 </label>
               ))}
             </div>
@@ -216,7 +252,7 @@ const StudentFormPage = () => {
               )}
             </div>
           </div>
-          <div>
+          <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Trang phục</label>
             <div className="flex flex-wrap gap-3">
               {visibleCostumes.map((c) => (
@@ -234,6 +270,9 @@ const StudentFormPage = () => {
                 </label>
               ))}
             </div>
+            <p className="text-xs text-gray-400 ml-1">
+              đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
+            </p>
           </div>
 
           <div>

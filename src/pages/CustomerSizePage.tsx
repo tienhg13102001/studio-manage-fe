@@ -10,6 +10,8 @@ import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import dayjs from 'dayjs';
+import { FaCalendarAlt, FaClipboardCheck, FaCopy, FaFileImport, FaGraduationCap, FaRulerVertical, FaSchool, FaWeight } from 'react-icons/fa';
+import { FiAlertTriangle } from 'react-icons/fi';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
 
@@ -508,28 +510,40 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
           className={`btn-secondary text-sm shrink-0 ${disabledAll ? 'opacity-40 cursor-not-allowed' : ''}`}
           title={publicUrl}
         >
-          {copied ? '✅ Đã copy link nhập liệu!' : '🔗 Copy link nhập liệu'}
+          <span className="inline-flex items-center gap-1.5">
+            {copied ? <FaClipboardCheck className="text-emerald-500" /> : <FaCopy className="text-primary-500" />}
+            <span>{copied ? 'Đã copy link nhập liệu!' : 'Copy link nhập liệu'}</span>
+          </span>
         </button>
         <button
           onClick={handleCopyInfo}
           disabled={disabledAll || students.length === 0}
           className={`btn-secondary text-sm shrink-0 ${disabledAll || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          {copiedInfo ? '✅ Đã copy thông tin gửi đồ!' : '🔗 Copy thông tin gửi đồ'}
+          <span className="inline-flex items-center gap-1.5">
+            {copiedInfo ? <FaClipboardCheck className="text-emerald-500" /> : <FaCopy className="text-primary-500" />}
+            <span>{copiedInfo ? 'Đã copy thông tin gửi đồ!' : 'Copy thông tin gửi đồ'}</span>
+          </span>
         </button>
         <button
           onClick={handleExportExcel}
           disabled={disabledAll || students.length === 0}
           className={`btn-secondary text-sm shrink-0 ${disabledAll || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          📅 Xuất Excel
+          <span className="inline-flex items-center gap-1.5">
+            <FaCalendarAlt className="text-green-500" />
+            <span>Xuất Excel</span>
+          </span>
         </button>
         <button
           onClick={() => importFileRef.current?.click()}
           disabled={disabledAll}
           className={`btn-secondary text-sm shrink-0 ${disabledAll ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          📥 Nhập từ Excel
+          <span className="inline-flex items-center gap-1.5">
+            <FaFileImport className="text-indigo-500" />
+            <span>Nhập từ Excel</span>
+          </span>
         </button>
         <input
           ref={importFileRef}
@@ -543,7 +557,9 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Empty state */}
       {!selectedCustomer && (
         <div className="card py-16 text-center text-gray-400">
-          <div className="text-4xl mb-3">🏫</div>
+          <div className="text-4xl mb-3 flex justify-center">
+            <FaSchool className="text-sky-500" />
+          </div>
           <p className="text-base font-medium">Xin mời chọn lớp để xem danh sách học sinh</p>
           <p className="text-sm mt-1">Sau đó bạn có thể copy link để học sinh tự nhập thông tin</p>
         </div>
@@ -551,9 +567,12 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
       {/* No-schedule warning */}
       {selectedCustomer && noSchedule && (
-        <div className="card p-4 mb-4 border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
-          ⚠ Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
-          thông tin.
+        <div className="card p-4 mb-4 border-yellow-300 bg-yellow-50 text-yellow-800 text-sm inline-flex items-center gap-2">
+          <FiAlertTriangle className="text-yellow-600 shrink-0" />
+          <span>
+            Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
+            thông tin.
+          </span>
         </div>
       )}
 
@@ -570,8 +589,8 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
               </span>
               {duplicateNorms.size > 0 && (
-                <span className="ml-2 text-yellow-600 font-medium">
-                  ⚠{' '}
+                <span className="ml-2 text-yellow-600 font-medium inline-flex items-center gap-1">
+                  <FiAlertTriangle className="text-yellow-600" />
                   {[...duplicateNorms].reduce(
                     (acc, norm) =>
                       acc + students.filter((s) => normalizeName(s.name) === norm).length,
@@ -591,7 +610,10 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       : 'bg-white border-gray-200 text-gray-600 hover:bg-yellow-50 hover:border-yellow-300'
                   }`}
                 >
-                  ⚠ {showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng tên'}
+                  <span className="inline-flex items-center gap-1.5">
+                    <FiAlertTriangle className="text-yellow-600" />
+                    <span>{showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng tên'}</span>
+                  </span>
                 </button>
               )}
               <button
@@ -628,7 +650,10 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       <>
                         {s.name}
                         {isDup && (
-                          <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>
+                          <span className="ml-1.5 text-yellow-600 text-xs inline-flex items-center gap-1">
+                            <FiAlertTriangle className="text-yellow-600" />
+                            <span>trùng tên</span>
+                          </span>
                         )}
                       </>
                     );
@@ -716,7 +741,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       emptyDescription={
                         showDupOnly ? 'Bỏ lọc để xem toàn bộ danh sách.' : undefined
                       }
-                      emptyIcon="🧑‍🎓"
+                      emptyIcon={<FaGraduationCap className="text-violet-500" />}
                     />
                     {showDupOnly && displayedStudents.length === 0 && (
                       <div className="text-center mt-2">
@@ -747,13 +772,26 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                                 {GENDER_LABEL[s.gender]}
                               </span>
                               {isDup && (
-                                <span className="ml-1.5 text-yellow-600 text-xs">⚠ trùng tên</span>
+                                <span className="ml-1.5 text-yellow-600 text-xs inline-flex items-center gap-1">
+                                  <FiAlertTriangle className="text-yellow-600" />
+                                  <span>trùng tên</span>
+                                </span>
                               )}
                             </div>
                           </div>
                           <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                            {s.height && <span>📏 {s.height} cm</span>}
-                            {s.weight && <span>⚖️ {s.weight} kg</span>}
+                            {s.height && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <FaRulerVertical className="text-sky-500" />
+                                <span>{s.height} cm</span>
+                              </span>
+                            )}
+                            {s.weight && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <FaWeight className="text-amber-500" />
+                                <span>{s.weight} kg</span>
+                              </span>
+                            )}
                           </div>
                           {s.costumes?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
@@ -893,7 +931,12 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     <>
                       {r.notes ?? ''}
                       {r.error && <span className="text-red-500 ml-1">({r.error})</span>}
-                      {r.warning && <span className="text-yellow-600 ml-1">⚠ {r.warning}</span>}
+                      {r.warning && (
+                        <span className="text-yellow-600 ml-1 inline-flex items-center gap-1">
+                          <FiAlertTriangle className="text-yellow-600" />
+                          <span>{r.warning}</span>
+                        </span>
+                      )}
                     </>
                   ),
                 },

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FaChevronRight } from 'react-icons/fa';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS } from '../../types';
@@ -51,6 +52,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       if (visibleChildren.length === 0) return null;
       const isOpen = openGroups[item.to];
 
+      const ParentIcon = item.icon;
       return (
         <div key={item.to}>
           <button
@@ -58,15 +60,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
           >
             <span className="flex items-center gap-3">
-              <span>{item.icon}</span>
+              {ParentIcon && <ParentIcon className={item.iconClassName} />}
               {item.label}
             </span>
-            <span className={`text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+            <FaChevronRight
+              className={`text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}
+            />
           </button>
           {isOpen && (
             <div className="mt-1 ml-4 space-y-1 border-l border-gray-700 pl-3">
               {visibleChildren.map((child) => {
                 const fullPath = item.to + child.to;
+                const ChildIcon = child.icon;
                 return (
                   <NavLink
                     key={fullPath}
@@ -81,7 +86,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                       }`
                     }
                   >
-                    <span>{child.icon}</span>
+                    {ChildIcon && <ChildIcon className={child.iconClassName} />}
                     {child.label}
                   </NavLink>
                 );
@@ -92,6 +97,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       );
     }
 
+    const ItemIcon = item.icon;
     return (
       <NavLink
         key={item.to}
@@ -106,7 +112,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           }`
         }
       >
-        <span>{item.icon}</span>
+        {ItemIcon && <ItemIcon className={item.iconClassName} />}
         {item.label}
       </NavLink>
     );
