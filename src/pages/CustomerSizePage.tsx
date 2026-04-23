@@ -598,29 +598,36 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Student list */}
       {selectedCustomer && (
         <>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-gray-500">
-              Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span>
-              <span className="ml-2 text-gray-600">
-                (<span className="text-blue-600 font-medium">Nam: {totalMale}</span>
-                {' / '}
-                <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
-              </span>{' '}
-              — {students.length} học sinh đã điền thông tin /{' '}
-              <span className="text-gray-800 font-medium">{selectedCustomer?.total} học sinh đăng ký</span>
-              {duplicateNorms.size > 0 && (
-                <span className="ml-2 text-yellow-600 font-medium inline-flex items-center gap-1">
-                  <FiAlertTriangle className="text-yellow-600" />
-                  {[...duplicateNorms].reduce(
-                    (acc, norm) =>
-                      acc + students.filter((s) => normalizeName(s.name) === norm).length,
-                    0,
-                  )}{' '}
-                  trùng tên
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <p className="text-sm text-gray-500 space-y-1">
+              <p className="text-gray-800 font-medium">
+                Tổng cộng có {selectedCustomer?.total} học sinh đăng ký
+              </p>
+              {/* Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span> */}
+              <p>
+                {' '}
+                {students.length} học sinh đã điền thông tin -{' '}
+                <span className="text-gray-600">
+                  (<span className="text-blue-600 font-medium">Nam: {totalMale}</span>
+                  {' / '}
+                  <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
                 </span>
-              )}
+              </p>
+              <p>
+                {duplicateNorms.size > 0 && (
+                  <span className="text-yellow-600 font-medium inline-flex items-center gap-1">
+                    <FiAlertTriangle className="text-yellow-600" />
+                    {[...duplicateNorms].reduce(
+                      (acc, norm) =>
+                        acc + students.filter((s) => normalizeName(s.name) === norm).length,
+                      0,
+                    )}{' '}
+                    trùng tên
+                  </span>
+                )}
+              </p>
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex  sm:flex-row flex-col-reverse items-center gap-2">
               {duplicateNorms.size > 0 && (
                 <button
                   onClick={() => setShowDupOnly((v) => !v)}
@@ -632,16 +639,16 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 >
                   <span className="inline-flex items-center gap-1.5">
                     <FiAlertTriangle className="text-yellow-600" />
-                    <span>{showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng tên'}</span>
+                    <span>{showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng'}</span>
                   </span>
                 </button>
               )}
               <button
                 onClick={openCreate}
                 disabled={noSchedule}
-                className={`btn-primary text-sm ${noSchedule ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`btn-primary text-sm whitespace-nowrap shrink-0 ${noSchedule ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                + Thêm học sinh
+                Thêm học sinh
               </button>
             </div>
           </div>
