@@ -29,25 +29,21 @@ const StudentFormPage = () => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-    watch,
     setValue,
   } = useForm<FormValues>({
     defaultValues: { name: '', gender: 'male', height: '', weight: '', notes: '', costumes: [] },
   });
 
-  const gender = watch('gender');
-  const visibleCostumes = (schedule?.package?.costumes ?? []).filter(
-    (c) => c.gender === gender || c.gender === 'unisex',
-  );
+  const visibleCostumes = schedule?.package?.costumes ?? [];
 
-  // Default: tick all visible costumes whenever schedule loads hoặc gender thay đổi
+  // Default: tick all costumes once schedule/package data is loaded.
   useEffect(() => {
     setValue(
       'costumes',
       visibleCostumes.map((c) => c._id),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schedule, gender]);
+  }, [schedule]);
 
   useEffect(() => {
     if (!customer) return;
