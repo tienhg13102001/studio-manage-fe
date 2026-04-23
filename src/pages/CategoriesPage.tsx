@@ -12,7 +12,6 @@ const CategoriesPage = () => {
   const dispatch = useAppDispatch();
   const { list: categories } = useAppSelector((s) => s.categories);
   const [modalOpen, setModalOpen] = useState(false);
-  console.log("🚀 ~ CategoriesPage ~ modalOpen:", modalOpen)
   const [editing, setEditing] = useState<Category | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const {
