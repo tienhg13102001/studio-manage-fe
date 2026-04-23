@@ -268,42 +268,77 @@ const CustomersPage = () => {
         title={editing ? 'Sửa lớp' : 'Thêm lớp mới'}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label className="label">
+                Tên lớp <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('className', { required: 'Vui lòng nhập tên lớp' })}
+                className="input"
+              />
+              {errors.className && (
+                <p className="text-xs text-red-500 mt-1">{errors.className.message}</p>
+              )}
+            </div>
+            <div className="col-span-2 sm:col-span-2">
+              <label className="label">
+                Trường <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('school', { required: 'Vui lòng nhập trường' })}
+                className="input"
+              />
+              {errors.school && (
+                <p className="text-xs text-red-500 mt-1">{errors.school.message}</p>
+              )}
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <label className="label">
+                Sĩ số <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('total', { valueAsNumber: true, required: 'Vui lòng nhập sĩ số' })}
+                type="number"
+                className="input"
+              />
+              {errors.total && <p className="text-xs text-red-500 mt-1">{errors.total.message}</p>}
+            </div>
+            <div>
+              <label className="label">
+                Số nam <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('totalMale', {
+                  valueAsNumber: true,
+                  required: 'Vui lòng nhập số nam',
+                })}
+                type="number"
+                min={0}
+                className="input"
+              />
+              {errors.totalMale && (
+                <p className="text-xs text-red-500 mt-1">{errors.totalMale.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="label">
+                Số nữ <span className="text-rose-500">*</span>
+              </label>
+              <input
+                {...register('totalFemale', {
+                  valueAsNumber: true,
+                  required: 'Vui lòng nhập số nữ',
+                })}
+                type="number"
+                min={0}
+                className="input"
+              />
+              {errors.totalFemale && (
+                <p className="text-xs text-red-500 mt-1">{errors.totalFemale.message}</p>
+              )}
+            </div>
             <div className="sm:col-span-2">
-              <label className="label">Tên lớp *</label>
-              <input {...register('className', { required: true })} className="input" />
-            </div>
-            <div>
-              <label className="label">Trường</label>
-              <input {...register('school')} className="input" />
-            </div>
-            <div>
-              <label className="label">Sĩ số</label>
-              <input
-                {...register('total', { valueAsNumber: true })}
-                type="number"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Số nam</label>
-              <input
-                {...register('totalMale', { valueAsNumber: true })}
-                type="number"
-                min={0}
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Số nữ</label>
-              <input
-                {...register('totalFemale', { valueAsNumber: true })}
-                type="number"
-                min={0}
-                className="input"
-              />
-            </div>
-            <div>
               <label className="label">
                 Người liên hệ <span className="text-rose-500">*</span>
               </label>
@@ -317,7 +352,7 @@ const CustomersPage = () => {
             </div>
             <div>
               <label className="label">
-                Số điện thoại <span className="text-rose-500">*</span>
+                Số điện thoại (người liên hệ) <span className="text-rose-500">*</span>
               </label>
               <input
                 {...register('contactPhone', {
@@ -333,7 +368,7 @@ const CustomersPage = () => {
                 <p className="text-xs text-red-500 mt-1">{errors.contactPhone.message}</p>
               )}
             </div>
-            <div className="sm:col-span-2">
+            <div className=" col-span-2 sm:col-span-3">
               <label className="label">
                 Địa chỉ (người liên hệ) <span className="text-rose-500">*</span>
               </label>
@@ -345,7 +380,7 @@ const CustomersPage = () => {
                 <p className="text-xs text-red-500 mt-1">{errors.contactAddress.message}</p>
               )}
             </div>
-            <div className="sm:col-span-2">
+            <div className="col-span-2 sm:col-span-3">
               <label className="label">Ghi chú</label>
               <textarea {...register('notes')} className="input" rows={2} />
             </div>
