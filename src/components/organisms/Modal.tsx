@@ -8,7 +8,7 @@ interface Props {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const sizeClass = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-2xl' };
+const sizeClass = { sm: 'max-w-md', md: 'max-w-4xl', lg: 'max-w-5xl' };
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }: Props) => {
   if (!isOpen) return null;
