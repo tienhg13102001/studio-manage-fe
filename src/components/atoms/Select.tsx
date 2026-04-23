@@ -141,7 +141,7 @@ const Select = ({
         <input
           ref={searchInputRef}
           type="text"
-          className="input py-1 text-sm"
+          className="input py-1 text-normal"
           placeholder="Tìm kiếm..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
