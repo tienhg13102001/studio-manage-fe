@@ -10,7 +10,16 @@ import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import dayjs from 'dayjs';
-import { FaCalendarAlt, FaClipboardCheck, FaCopy, FaFileImport, FaGraduationCap, FaRulerVertical, FaSchool, FaWeight } from 'react-icons/fa';
+import {
+  FaCalendarAlt,
+  FaClipboardCheck,
+  FaCopy,
+  FaFileImport,
+  FaGraduationCap,
+  FaRulerVertical,
+  FaSchool,
+  FaWeight,
+} from 'react-icons/fa';
 import { FiAlertTriangle } from 'react-icons/fi';
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
@@ -224,7 +233,9 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
     ws.getRow(1).font = { bold: true, size: 13 };
 
     // Row 2: Sĩ số
-    ws.addRow([`Sĩ số: ${students.length} học sinh`]);
+    ws.addRow([
+      `Sĩ số: ${students.length} học sinh đã điền / ${selectedCustomer.total} học sinh đăng ký`,
+    ]);
     ws.getRow(2).font = { italic: true, size: 11 };
 
     // Row 3: trống
@@ -511,7 +522,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
           title={publicUrl}
         >
           <span className="inline-flex items-center gap-1.5">
-            {copied ? <FaClipboardCheck className="text-emerald-500" /> : <FaCopy className="text-primary-500" />}
+            {copied ? (
+              <FaClipboardCheck className="text-emerald-500" />
+            ) : (
+              <FaCopy className="text-primary-500" />
+            )}
             <span>{copied ? 'Đã copy link nhập liệu!' : 'Copy link nhập liệu'}</span>
           </span>
         </button>
@@ -521,7 +536,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
           className={`btn-secondary text-sm shrink-0 ${disabledAll || students.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
           <span className="inline-flex items-center gap-1.5">
-            {copiedInfo ? <FaClipboardCheck className="text-emerald-500" /> : <FaCopy className="text-primary-500" />}
+            {copiedInfo ? (
+              <FaClipboardCheck className="text-emerald-500" />
+            ) : (
+              <FaCopy className="text-primary-500" />
+            )}
             <span>{copiedInfo ? 'Đã copy thông tin gửi đồ!' : 'Copy thông tin gửi đồ'}</span>
           </span>
         </button>
@@ -581,13 +600,14 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         <>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-gray-500">
-              Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span>{' '}
-              — {students.length} học sinh
+              Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span>
               <span className="ml-2 text-gray-600">
                 (<span className="text-blue-600 font-medium">Nam: {totalMale}</span>
                 {' / '}
                 <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
-              </span>
+              </span>{' '}
+              — {students.length} học sinh đã điền thông tin /{' '}
+              <span className="text-gray-800 font-medium">{selectedCustomer?.total} học sinh đăng ký</span>
               {duplicateNorms.size > 0 && (
                 <span className="ml-2 text-yellow-600 font-medium inline-flex items-center gap-1">
                   <FiAlertTriangle className="text-yellow-600" />
