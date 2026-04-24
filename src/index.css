@@ -11,28 +11,28 @@
 
   /* Sidebar */
   --sidebar-bg: #ffffff;
-  --sidebar-border: rgba(0,0,0,0.06);
-  --sidebar-shadow: 4px 0 20px rgba(0,0,0,0.06);
-  --sidebar-header-border: rgba(0,0,0,0.06);
-  --sidebar-logo-shadow: 0 0 10px rgba(245,158,11,0.24);
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-shadow: 4px 0 20px rgba(0, 0, 0, 0.06);
+  --sidebar-header-border: rgba(0, 0, 0, 0.06);
+  --sidebar-logo-shadow: 0 0 10px rgba(245, 158, 11, 0.24);
 
   /* Nav items */
   --nav-text: #4b5563;
-  --nav-hover-bg: rgba(245,158,11,0.12);
+  --nav-hover-bg: rgba(245, 158, 11, 0.12);
   --nav-hover-text: #b45309;
-  --nav-child-border: rgba(245,158,11,0.32);
-  --nav-section-label: rgba(180,83,9,0.75);
+  --nav-child-border: rgba(245, 158, 11, 0.32);
+  --nav-section-label: rgba(180, 83, 9, 0.75);
 
   /* User section */
-  --user-border: rgba(0,0,0,0.06);
+  --user-border: rgba(0, 0, 0, 0.06);
   --user-name-color: #111827;
-  --user-role-bg: rgba(245,158,11,0.16);
+  --user-role-bg: rgba(245, 158, 11, 0.16);
   --user-role-text: #92400e;
   --user-logout-color: #94a3b8;
 
   /* Topbar (mobile) */
-  --topbar-bg: rgba(255,255,255,0.95);
-  --topbar-border: rgba(0,0,0,0.06);
+  --topbar-bg: rgba(255, 255, 255, 0.95);
+  --topbar-border: rgba(0, 0, 0, 0.06);
   --topbar-icon-color: #374151;
 
   /* Card */
@@ -75,11 +75,11 @@
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #fffbeb 0%, #fff7ed 40%, #fef3c7 100%);
-  --login-blob1: rgba(245,158,11,0.16);
-  --login-blob2: rgba(6,182,212,0.06);
-  --login-card-bg: rgba(255,255,255,0.9);
-  --login-card-border: rgba(0,0,0,0.08);
-  --login-card-shadow: 0 24px 60px rgba(245,158,11,0.14), 0 2px 16px rgba(0,0,0,0.06);
+  --login-blob1: rgba(245, 158, 11, 0.16);
+  --login-blob2: rgba(6, 182, 212, 0.06);
+  --login-card-bg: rgba(255, 255, 255, 0.9);
+  --login-card-border: rgba(0, 0, 0, 0.08);
+  --login-card-shadow: 0 24px 60px rgba(245, 158, 11, 0.14), 0 2px 16px rgba(0, 0, 0, 0.06);
 }
 
 :root.dark {
@@ -88,49 +88,49 @@
 
   /* Sidebar */
   --sidebar-bg: linear-gradient(180deg, #0d0d1f 0%, #0a0a14 100%);
-  --sidebar-border: rgba(255,255,255,0.06);
-  --sidebar-shadow: 4px 0 24px rgba(0,0,0,0.4);
-  --sidebar-header-border: rgba(255,255,255,0.06);
-  --sidebar-logo-shadow: 0 0 16px rgba(245,158,11,0.55);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  --sidebar-header-border: rgba(255, 255, 255, 0.06);
+  --sidebar-logo-shadow: 0 0 16px rgba(245, 158, 11, 0.55);
 
   /* Nav items */
   --nav-text: #94a3b8;
-  --nav-hover-bg: rgba(255,255,255,0.05);
+  --nav-hover-bg: rgba(255, 255, 255, 0.05);
   --nav-hover-text: #f1f5f9;
-  --nav-child-border: rgba(245,158,11,0.34);
-  --nav-section-label: rgba(245,158,11,0.66);
+  --nav-child-border: rgba(245, 158, 11, 0.34);
+  --nav-section-label: rgba(245, 158, 11, 0.66);
 
   /* User section */
-  --user-border: rgba(255,255,255,0.06);
+  --user-border: rgba(255, 255, 255, 0.06);
   --user-name-color: #f1f5f9;
-  --user-role-bg: rgba(245,158,11,0.28);
+  --user-role-bg: rgba(245, 158, 11, 0.28);
   --user-role-text: #fcd34d;
   --user-logout-color: #475569;
 
   /* Topbar (mobile) */
-  --topbar-bg: rgba(10,10,18,0.9);
-  --topbar-border: rgba(255,255,255,0.06);
+  --topbar-bg: rgba(10, 10, 18, 0.9);
+  --topbar-border: rgba(255, 255, 255, 0.06);
   --topbar-icon-color: #94a3b8;
 
   /* Card */
-  --card-bg: rgba(255,255,255,0.04);
-  --card-border: rgba(255,255,255,0.08);
-  --card-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 
   /* Modal */
   --modal-bg: #121424;
   --modal-border: rgba(148, 163, 184, 0.28);
-  --modal-shadow: 0 30px 80px rgba(0,0,0,0.65);
+  --modal-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
 
   /* Table */
-  --table-head-bg: rgba(255,255,255,0.04);
+  --table-head-bg: rgba(255, 255, 255, 0.04);
   --table-row-hover: rgba(245, 158, 11, 0.16);
   --table-row-warning-bg: rgba(245, 158, 11, 0.14);
 
   /* Chips */
   --chip-bg: rgba(245, 158, 11, 0.22);
   --chip-text: #fde68a;
-  --costume-chip-bg: rgba(255,255,255,0.05);
+  --costume-chip-bg: rgba(255, 255, 255, 0.05);
   --costume-chip-border: rgba(148, 163, 184, 0.24);
   --costume-chip-text: #cbd5e1;
   --costume-chip-checked-bg: rgba(245, 158, 11, 0.26);
@@ -138,7 +138,7 @@
   --costume-chip-checked-text: #fef3c7;
 
   /* Input */
-  --input-bg: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%);
+  --input-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.03) 100%);
   --input-border: rgba(148, 163, 184, 0.18);
   --input-color: #f1f5f9;
   --input-placeholder: #64748b;
@@ -152,11 +152,11 @@
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #0a0a12 0%, #2a1a05 40%, #0c1a2e 100%);
-  --login-blob1: rgba(245,158,11,0.22);
-  --login-blob2: rgba(6,182,212,0.1);
-  --login-card-bg: rgba(255,255,255,0.04);
-  --login-card-border: rgba(255,255,255,0.1);
-  --login-card-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.18);
+  --login-blob1: rgba(245, 158, 11, 0.22);
+  --login-blob2: rgba(6, 182, 212, 0.1);
+  --login-card-bg: rgba(255, 255, 255, 0.04);
+  --login-card-border: rgba(255, 255, 255, 0.1);
+  --login-card-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(245, 158, 11, 0.18);
 }
 
 @layer base {
@@ -168,29 +168,57 @@
     background: var(--page-bg);
     color: var(--text-primary);
     font-size: 0.875rem;
-    transition: background 0.3s, color 0.3s;
+    transition:
+      background 0.3s,
+      color 0.3s;
   }
 
   /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.35); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #d97706; }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.35);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+  }
 
-  .theme-page { background: var(--page-bg); }
-  .theme-text-primary { color: var(--text-primary); }
-  .theme-text-muted { color: var(--text-muted); }
-  .theme-text-faint { color: var(--text-faint); }
-  .theme-card-border { border-color: var(--card-border); }
-  .theme-card-bg { background: var(--card-bg); }
+  .theme-page {
+    background: var(--page-bg);
+  }
+  .theme-text-primary {
+    color: var(--text-primary);
+  }
+  .theme-text-muted {
+    color: var(--text-muted);
+  }
+  .theme-text-faint {
+    color: var(--text-faint);
+  }
+  .theme-card-border {
+    border-color: var(--card-border);
+  }
+  .theme-card-bg {
+    background: var(--card-bg);
+  }
   .theme-topbar {
     background: var(--topbar-bg);
     border-color: var(--topbar-border);
   }
 
   /* ── Recharts ── */
-  .recharts-cartesian-axis-tick-value { fill: var(--text-muted) !important; }
-  .recharts-legend-item-text { color: var(--text-primary) !important; }
+  .recharts-cartesian-axis-tick-value {
+    fill: var(--text-muted) !important;
+  }
+  .recharts-legend-item-text {
+    color: var(--text-primary) !important;
+  }
   .recharts-tooltip-wrapper .recharts-default-tooltip {
     background: var(--card-bg) !important;
     border: 1px solid var(--card-border) !important;
@@ -200,7 +228,6 @@
 }
 
 @layer components {
-
   /* ──────────────────────────────────────────────
      BUTTONS
   ────────────────────────────────────────────── */
@@ -212,18 +239,26 @@
   .btn-primary {
     @apply btn text-white;
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: 0 8px 18px rgba(245, 158, 11, 0.28), 0 2px 6px rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 8px 18px rgba(245, 158, 11, 0.28),
+      0 2px 6px rgba(15, 23, 42, 0.08);
   }
   .btn-primary:hover:not(:disabled) {
     background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-    box-shadow: 0 12px 24px rgba(245, 158, 11, 0.34), 0 4px 10px rgba(15, 23, 42, 0.12);
+    box-shadow:
+      0 12px 24px rgba(245, 158, 11, 0.34),
+      0 4px 10px rgba(15, 23, 42, 0.12);
     transform: translateY(-1px);
   }
   :root.dark .btn-primary {
-    box-shadow: 0 0 14px rgba(245,158,11,0.42), 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow:
+      0 0 14px rgba(245, 158, 11, 0.42),
+      0 2px 8px rgba(0, 0, 0, 0.2);
   }
   :root.dark .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 0 22px rgba(251,191,36,0.54), 0 2px 12px rgba(0,0,0,0.3);
+    box-shadow:
+      0 0 22px rgba(251, 191, 36, 0.54),
+      0 2px 12px rgba(0, 0, 0, 0.3);
   }
   .btn-secondary {
     @apply btn;
@@ -232,16 +267,16 @@
     color: var(--text-primary);
   }
   .btn-secondary:hover:not(:disabled) {
-    border-color: rgba(245,158,11,0.45);
+    border-color: rgba(245, 158, 11, 0.45);
     color: var(--text-primary);
   }
   .btn-danger {
     @apply btn text-white;
     background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-    box-shadow: 0 0 14px rgba(220,38,38,0.25);
+    box-shadow: 0 0 14px rgba(220, 38, 38, 0.25);
   }
   .btn-danger:hover:not(:disabled) {
-    box-shadow: 0 0 22px rgba(220,38,38,0.4);
+    box-shadow: 0 0 22px rgba(220, 38, 38, 0.4);
     transform: translateY(-1px);
   }
 
@@ -253,37 +288,53 @@
     background: var(--input-bg);
     border: 1px solid var(--input-border);
     color: var(--input-color);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
     padding: 0.5rem 0.875rem;
     min-height: 40px;
     line-height: 1.5;
     font-size: 1rem;
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, transform 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background 0.3s,
+      transform 0.2s;
     -webkit-appearance: none;
     appearance: none;
   }
-  .input::placeholder { color: var(--input-placeholder); }
+  .input::placeholder {
+    color: var(--input-placeholder);
+  }
   .input:focus {
     border-color: var(--input-focus-border);
     background: #ffffff;
-    box-shadow: 0 0 0 3px var(--input-focus-ring), 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow:
+      0 0 0 3px var(--input-focus-ring),
+      0 1px 2px rgba(15, 23, 42, 0.04);
   }
   :root.dark .input {
     border-radius: 1rem;
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.05),
-      inset 0 -1px 0 rgba(0,0,0,0.28),
-      0 1px 0 rgba(255,255,255,0.02);
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+      0 1px 0 rgba(255, 255, 255, 0.02);
   }
   :root.dark .input:hover {
     border-color: rgba(148, 163, 184, 0.28);
-    background: linear-gradient(180deg, rgba(255,255,255,0.065) 0%, rgba(255,255,255,0.04) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.065) 0%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
   }
   :root.dark .input:focus {
-    background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.045) 100%
+    );
     box-shadow:
       0 0 0 3px var(--input-focus-ring),
-      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 0 0 1px rgba(139, 92, 246, 0.18);
   }
 
@@ -300,7 +351,10 @@
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow);
-    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    transition:
+      background 0.3s,
+      border-color 0.3s,
+      box-shadow 0.3s;
   }
   .card:hover {
     box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
@@ -409,9 +463,9 @@ input[type='date'] {
 :root.dark input[type='date'] {
   border-radius: 1rem;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    inset 0 -1px 0 rgba(0,0,0,0.28),
-    0 1px 0 rgba(255,255,255,0.02);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.02);
   color-scheme: dark;
 }
 :root.dark input[type='date']::-webkit-calendar-picker-indicator {
@@ -422,10 +476,13 @@ input[type='date'] {
   color: var(--input-color);
 }
 
-input[type='date']::-webkit-date-and-time-value { text-align: left; }
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
 
 /* ── Select ── */
-select.input, select {
+select.input,
+select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
@@ -444,4 +501,3 @@ select.input, select {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-

@@ -7,18 +7,22 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen" style={{background:'var(--page-bg)'}}>
+    <div className="flex min-h-screen" style={{ background: 'var(--page-bg)' }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Mobile top bar */}
       <div
         className="fixed top-0 left-0 right-0 z-20 flex items-center h-14 px-4 md:hidden"
-        style={{background:'var(--topbar-bg)', backdropFilter:'blur(16px)', borderBottom:'1px solid var(--topbar-border)'}}
+        style={{
+          background: 'var(--topbar-bg)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--topbar-border)',
+        }}
       >
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-1 mr-3 transition-colors"
-          style={{color:'var(--topbar-icon-color)'}}
+          style={{ color: 'var(--topbar-icon-color)' }}
           aria-label="Mở menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

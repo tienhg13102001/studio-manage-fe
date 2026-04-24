@@ -115,13 +115,8 @@ const StudentFormPage = () => {
             <IoCheckmarkCircle className="text-5xl text-emerald-500" />
           </div>
           <h2 className="text-xl font-bold mb-2 theme-text-primary">Đã ghi nhận!</h2>
-          <p className="text-sm mb-6 theme-text-muted">
-            Thông tin của bạn đã được lưu thành công.
-          </p>
-          <button
-            onClick={() => setSubmitStatus('idle')}
-            className="btn-primary w-full py-2.5"
-          >
+          <p className="text-sm mb-6 theme-text-muted">Thông tin của bạn đã được lưu thành công.</p>
+          <button onClick={() => setSubmitStatus('idle')} className="btn-primary w-full py-2.5">
             Nhập thêm học sinh khác
           </button>
         </div>
@@ -149,7 +144,7 @@ const StudentFormPage = () => {
             )}
           </h1>
 
-          <div className='flex flex-col'>
+          <div className="flex flex-col">
             {schedule && (
               <p className="text-sm text-primary-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
                 <FaCalendarCheck className="text-primary-500" />
@@ -184,10 +179,7 @@ const StudentFormPage = () => {
             </label>
             <div className="flex gap-3">
               {(['male', 'female'] as const).map((g) => (
-                <label
-                  key={g}
-                  className="costume-option flex-1 justify-center py-2.5"
-                >
+                <label key={g} className="costume-option flex-1 justify-center py-2.5">
                   <input
                     type="radio"
                     value={g}
@@ -288,11 +280,7 @@ const StudentFormPage = () => {
             <p className="text-red-500 text-sm">Có lỗi xảy ra, vui lòng thử lại.</p>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-primary w-full py-3"
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3">
             {isSubmitting ? 'Đang gửi…' : 'Gửi thông tin'}
           </button>
         </form>

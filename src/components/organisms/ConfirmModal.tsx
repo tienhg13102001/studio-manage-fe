@@ -20,7 +20,9 @@ const ConfirmModal = ({ isOpen, message, onConfirm, onCancel, confirmLabel = 'Xo
           boxShadow: 'var(--modal-shadow)',
         }}
       >
-        <p className="text-sm mb-6" style={{color:'var(--text-primary)'}}>{message}</p>
+        <p className="text-sm mb-6" style={{ color: 'var(--text-primary)' }}>
+          {message}
+        </p>
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className="btn-secondary">
             Huỷ

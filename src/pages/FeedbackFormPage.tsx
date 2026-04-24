@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FaCamera, FaFilm, FaLightbulb, FaPhoneAlt, FaSchool } from 'react-icons/fa';
+import { FaFilm, FaLightbulb, FaPhoneAlt, FaSchool } from 'react-icons/fa';
 import { FiAlertCircle, FiMessageCircle } from 'react-icons/fi';
 import { IoCheckmarkCircle } from 'react-icons/io5';
 import { MdPhotoLibrary } from 'react-icons/md';

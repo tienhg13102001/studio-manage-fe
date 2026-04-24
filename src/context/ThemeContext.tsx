@@ -25,7 +25,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
 
     const applyTheme = () => {
-      const nextTheme: Theme = themeMode === 'system' ? (media.matches ? 'dark' : 'light') : themeMode;
+      const nextTheme: Theme =
+        themeMode === 'system' ? (media.matches ? 'dark' : 'light') : themeMode;
       setResolvedTheme(nextTheme);
 
       const root = document.documentElement;
@@ -60,7 +61,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <ThemeContext.Provider
-      value={{ themeMode, resolvedTheme, setThemeMode, toggleTheme, isDark: resolvedTheme === 'dark' }}
+      value={{
+        themeMode,
+        resolvedTheme,
+        setThemeMode,
+        toggleTheme,
+        isDark: resolvedTheme === 'dark',
+      }}
     >
       {children}
     </ThemeContext.Provider>

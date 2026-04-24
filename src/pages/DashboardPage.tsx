@@ -292,16 +292,34 @@ const DashboardPage = () => {
             />
           </div>
           <div className="mb-2 flex flex-wrap items-center gap-4 px-1">
-            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e', boxShadow: '0 0 10px rgba(34,197,94,0.5)' }} />
+            <span
+              className="inline-flex items-center gap-2 text-xs"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: '#22c55e', boxShadow: '0 0 10px rgba(34,197,94,0.5)' }}
+              />
               Thu
             </span>
-            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }} />
+            <span
+              className="inline-flex items-center gap-2 text-xs"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: '#ef4444', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }}
+              />
               Chi
             </span>
-            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59,130,246,0.5)' }} />
+            <span
+              className="inline-flex items-center gap-2 text-xs"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59,130,246,0.5)' }}
+              />
               Lợi nhuận
             </span>
           </div>
@@ -362,70 +380,70 @@ const DashboardPage = () => {
                   tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                   tickMargin={10}
                 />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tickCount={4}
-                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                tickFormatter={(v) => {
-                  const abs = Math.abs(v);
-                  const fmtd =
-                    abs >= 1_000_000
-                      ? `${(abs / 1_000_000).toFixed(0)}M`
-                      : abs >= 1000
-                        ? `${(abs / 1000).toFixed(0)}K`
-                        : String(abs);
-                  return v < 0 ? `-${fmtd}` : fmtd;
-                }}
-              />
-              <ReferenceLine y={0} stroke="rgba(203,213,225,0.5)" strokeWidth={1.2} />
-              <Tooltip
-                formatter={(value, name) => {
-                  const v = Number(value ?? 0);
-                  // "Chi" được lưu âm trong chart → hiển thị giá trị tuyệt đối
-                  // "Lợi nhuận" giữ nguyên dấu để thấy lời/lỗ
-                  const display = name === 'Chi' ? Math.abs(v) : v;
-                  return [formatCurrency(display), name];
-                }}
-                cursor={false}
-                contentStyle={{
-                  background: 'rgba(15, 23, 42, 0.86)',
-                  border: '1px solid rgba(148,163,184,0.3)',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 28px rgba(15,23,42,0.4)',
-                  backdropFilter: 'blur(12px)',
-                }}
-                labelStyle={{ fontWeight: 700, color: '#e2e8f0' }}
-                itemStyle={{ color: '#cbd5e1' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="Thu"
-                stroke="url(#incomeStroke)"
-                strokeWidth={3}
-                filter="url(#incomeGlow)"
-                dot={{ r: 4, strokeWidth: 2, stroke: '#34d399', fill: '#0f172a' }}
-                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#34d399', fill: '#ecfdf5' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="Chi"
-                stroke="url(#expenseStroke)"
-                strokeWidth={3}
-                filter="url(#expenseGlow)"
-                dot={{ r: 4, strokeWidth: 2, stroke: '#ef4444', fill: '#0f172a' }}
-                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#ef4444', fill: '#fff1f2' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="Lợi nhuận"
-                stroke="url(#profitStroke)"
-                strokeWidth={3}
-                strokeDasharray="6 4"
-                filter="url(#profitGlow)"
-                dot={{ r: 4, strokeWidth: 2, stroke: '#3b82f6', fill: '#0f172a' }}
-                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#3b82f6', fill: '#eff6ff' }}
-              />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickCount={4}
+                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                  tickFormatter={(v) => {
+                    const abs = Math.abs(v);
+                    const fmtd =
+                      abs >= 1_000_000
+                        ? `${(abs / 1_000_000).toFixed(0)}M`
+                        : abs >= 1000
+                          ? `${(abs / 1000).toFixed(0)}K`
+                          : String(abs);
+                    return v < 0 ? `-${fmtd}` : fmtd;
+                  }}
+                />
+                <ReferenceLine y={0} stroke="rgba(203,213,225,0.5)" strokeWidth={1.2} />
+                <Tooltip
+                  formatter={(value, name) => {
+                    const v = Number(value ?? 0);
+                    // "Chi" được lưu âm trong chart → hiển thị giá trị tuyệt đối
+                    // "Lợi nhuận" giữ nguyên dấu để thấy lời/lỗ
+                    const display = name === 'Chi' ? Math.abs(v) : v;
+                    return [formatCurrency(display), name];
+                  }}
+                  cursor={false}
+                  contentStyle={{
+                    background: 'rgba(15, 23, 42, 0.86)',
+                    border: '1px solid rgba(148,163,184,0.3)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 28px rgba(15,23,42,0.4)',
+                    backdropFilter: 'blur(12px)',
+                  }}
+                  labelStyle={{ fontWeight: 700, color: '#e2e8f0' }}
+                  itemStyle={{ color: '#cbd5e1' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Thu"
+                  stroke="url(#incomeStroke)"
+                  strokeWidth={3}
+                  filter="url(#incomeGlow)"
+                  dot={{ r: 4, strokeWidth: 2, stroke: '#34d399', fill: '#0f172a' }}
+                  activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#34d399', fill: '#ecfdf5' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Chi"
+                  stroke="url(#expenseStroke)"
+                  strokeWidth={3}
+                  filter="url(#expenseGlow)"
+                  dot={{ r: 4, strokeWidth: 2, stroke: '#ef4444', fill: '#0f172a' }}
+                  activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#ef4444', fill: '#fff1f2' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Lợi nhuận"
+                  stroke="url(#profitStroke)"
+                  strokeWidth={3}
+                  strokeDasharray="6 4"
+                  filter="url(#profitGlow)"
+                  dot={{ r: 4, strokeWidth: 2, stroke: '#3b82f6', fill: '#0f172a' }}
+                  activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#3b82f6', fill: '#eff6ff' }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>

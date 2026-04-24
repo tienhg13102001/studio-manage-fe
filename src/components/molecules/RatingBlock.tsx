@@ -15,9 +15,7 @@ interface RatingBlockProps {
 const RatingBlock = ({ label, item }: RatingBlockProps) => (
   <div className="rounded-lg px-3 py-2.5 bg-[var(--input-bg)] border border-[color:var(--input-border)]">
     <div className="flex items-center justify-between gap-2 mb-1">
-      <span className="text-xs font-medium uppercase tracking-wide theme-text-muted">
-        {label}
-      </span>
+      <span className="text-xs font-medium uppercase tracking-wide theme-text-muted">{label}</span>
       <div className="flex items-center gap-1.5">
         <Stars value={item.rating} />
         <span className={`text-xs font-semibold ${ratingColor(item.rating)}`}>{item.rating}/5</span>

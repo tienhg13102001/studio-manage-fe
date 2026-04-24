@@ -230,7 +230,9 @@ const Select = ({
         ) : (
           <span
             className={`flex-1 text-sm ${
-              !singleLabel ? 'text-[color:var(--input-placeholder)]' : 'text-[color:var(--input-color)]'
+              !singleLabel
+                ? 'text-[color:var(--input-placeholder)]'
+                : 'text-[color:var(--input-color)]'
             }`}
           >
             {singleLabel ?? placeholder ?? 'Chọn...'}

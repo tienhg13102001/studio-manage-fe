@@ -713,10 +713,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     s.costumes?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {s.costumes.map((c) => (
-                          <span
-                            key={c._id}
-                            className="theme-chip"
-                          >
+                          <span key={c._id} className="theme-chip">
                             {c.name}
                           </span>
                         ))}
@@ -825,10 +822,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           {s.costumes?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {s.costumes.map((c) => (
-                                <span
-                                  key={c._id}
-                                  className="theme-chip"
-                                >
+                                <span key={c._id} className="theme-chip">
                                   {c.name}
                                 </span>
                               ))}
@@ -1092,11 +1086,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 <div className="flex flex-wrap gap-2">
                   {visibleCostumes.map((c) => (
                     <label key={c._id} className="costume-option">
-                      <input
-                        type="checkbox"
-                        value={c._id}
-                        {...register('costumes')}
-                      />
+                      <input type="checkbox" value={c._id} {...register('costumes')} />
                       <span className="text-sm">{c.name}</span>
                     </label>
                   ))}

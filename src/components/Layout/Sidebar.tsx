@@ -89,9 +89,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <button
             onClick={() => toggleGroup(item.to)}
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
-            style={{color:'var(--nav-text)'}}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--nav-hover-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--nav-hover-text)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = 'var(--nav-text)'; }}
+            style={{ color: 'var(--nav-text)' }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = 'var(--nav-hover-bg)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--nav-hover-text)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = '';
+              (e.currentTarget as HTMLElement).style.color = 'var(--nav-text)';
+            }}
           >
             <span className="flex items-center gap-3">
               {ParentIcon && <ParentIcon className="w-4 h-4" />}
@@ -102,7 +108,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             />
           </button>
           {isOpen && (
-            <div className="mt-1 ml-4 space-y-1 border-l pl-3" style={{borderColor:'var(--nav-child-border)'}}>
+            <div
+              className="mt-1 ml-4 space-y-1 border-l pl-3"
+              style={{ borderColor: 'var(--nav-child-border)' }}
+            >
               {visibleChildren.map((child) => {
                 const fullPath = item.to + child.to;
                 const ChildIcon = child.icon;
@@ -119,8 +128,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     }
                     style={({ isActive }) =>
                       isActive
-                        ? {background:'linear-gradient(135deg,#f59e0b,#b45309)', boxShadow:'0 0 12px rgba(245,158,11,0.42)', color:'#fff'}
-                        : {color:'var(--nav-text)'}
+                        ? {
+                            background: 'linear-gradient(135deg,#f59e0b,#b45309)',
+                            boxShadow: '0 0 12px rgba(245,158,11,0.42)',
+                            color: '#fff',
+                          }
+                        : { color: 'var(--nav-text)' }
                     }
                   >
                     {ChildIcon && <ChildIcon className="w-4 h-4" />}
@@ -148,8 +161,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         }
         style={({ isActive }) =>
           isActive
-            ? {background:'linear-gradient(135deg,#f59e0b,#b45309)', boxShadow:'0 0 12px rgba(245,158,11,0.42)', color:'#fff'}
-            : {color:'var(--nav-text)'}
+            ? {
+                background: 'linear-gradient(135deg,#f59e0b,#b45309)',
+                boxShadow: '0 0 12px rgba(245,158,11,0.42)',
+                color: '#fff',
+              }
+            : { color: 'var(--nav-text)' }
         }
       >
         {ItemIcon && <ItemIcon className="w-4 h-4" />}
@@ -180,14 +197,19 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         }}
       >
         {/* Logo area */}
-        <div className="px-5 py-4" style={{borderBottom:'1px solid var(--sidebar-header-border)'}}>
+        <div
+          className="px-5 py-4"
+          style={{ borderBottom: '1px solid var(--sidebar-header-border)' }}
+        >
           <div className="flex items-center gap-3">
             <div className="rounded-xl overflow-hidden flex-shrink-0">
               <Logo size={32} />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-sm font-bold leading-tight text-gradient">Yume Studio</h1>
-              <p className="text-xs mt-0.5" style={{color:'var(--text-faint)'}}>Quản lý chụp ảnh</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
+                Quản lý chụp ảnh
+              </p>
             </div>
             <div className="relative" ref={themeMenuRef}>
               <button
@@ -195,7 +217,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 title="Chế độ giao diện"
                 className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
                 style={{
-                  background: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(245,158,11,0.12)',
+                  background:
+                    resolvedTheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(245,158,11,0.12)',
                   color: resolvedTheme === 'dark' ? '#cbd5e1' : '#d97706',
                   border: `1px solid ${resolvedTheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(245,158,11,0.2)'}`,
                 }}
@@ -251,7 +274,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
           {user?.roles?.some((r) => adminItems.some((item) => item.allowedRoles?.includes(r))) && (
             <>
-              <div className="pt-4 pb-1 px-3 text-xs font-bold uppercase tracking-widest" style={{color:'var(--nav-section-label)'}}>
+              <div
+                className="pt-4 pb-1 px-3 text-xs font-bold uppercase tracking-widest"
+                style={{ color: 'var(--nav-section-label)' }}
+              >
                 Admin
               </div>
               {adminItems.map(renderNavItem)}
@@ -259,19 +285,31 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           )}
         </nav>
 
-        <div className="px-4 py-4" style={{borderTop:'1px solid var(--user-border)'}}>
+        <div className="px-4 py-4" style={{ borderTop: '1px solid var(--user-border)' }}>
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-              style={{background:'linear-gradient(135deg,#f59e0b,#06b6d4)', boxShadow:'0 0 12px rgba(245,158,11,0.42)'}}
+              style={{
+                background: 'linear-gradient(135deg,#f59e0b,#06b6d4)',
+                boxShadow: '0 0 12px rgba(245,158,11,0.42)',
+              }}
             >
               {(user?.name || user?.username || '?')[0].toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{color:'var(--user-name-color)'}}>{user?.name || user?.username}</p>
+              <p
+                className="text-sm font-semibold truncate"
+                style={{ color: 'var(--user-name-color)' }}
+              >
+                {user?.name || user?.username}
+              </p>
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {user?.roles?.map((r) => (
-                  <span key={r} className="text-xs px-1.5 py-0.5 rounded-md" style={{background:'var(--user-role-bg)',color:'var(--user-role-text)'}}>
+                  <span
+                    key={r}
+                    className="text-xs px-1.5 py-0.5 rounded-md"
+                    style={{ background: 'var(--user-role-bg)', color: 'var(--user-role-text)' }}
+                  >
                     {ROLE_LABELS[r]}
                   </span>
                 ))}
@@ -281,9 +319,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <button
             onClick={handleLogout}
             className="w-full text-left text-xs transition-colors"
-            style={{color:'var(--user-logout-color)'}}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#d97706'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--user-logout-color)'; }}
+            style={{ color: 'var(--user-logout-color)' }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.color = '#d97706';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color = 'var(--user-logout-color)';
+            }}
           >
             Đăng xuất →
           </button>

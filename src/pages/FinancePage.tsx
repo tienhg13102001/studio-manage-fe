@@ -382,7 +382,10 @@ const FinancePage = () => {
             <button onClick={applyFilter} className="btn-primary flex-1 md:flex-none min-w-[96px]">
               Lọc
             </button>
-            <button onClick={resetFilter} className="btn-secondary flex-1 md:flex-none min-w-[88px]">
+            <button
+              onClick={resetFilter}
+              className="btn-secondary flex-1 md:flex-none min-w-[88px]"
+            >
               Xoá
             </button>
           </div>

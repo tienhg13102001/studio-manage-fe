@@ -24,12 +24,17 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: Props) => {
           boxShadow: 'var(--modal-shadow)',
         }}
       >
-        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{borderBottom:'1px solid var(--modal-border)'}}>
-          <h2 className="text-lg font-semibold" style={{color:'var(--text-primary)'}}>{title}</h2>
+        <div
+          className="flex items-center justify-between px-6 py-4 shrink-0"
+          style={{ borderBottom: '1px solid var(--modal-border)' }}
+        >
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="text-2xl leading-none transition-colors"
-            style={{color:'var(--text-muted)'}}
+            style={{ color: 'var(--text-muted)' }}
           >
             &times;
           </button>

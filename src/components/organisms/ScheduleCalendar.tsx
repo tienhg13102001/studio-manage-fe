@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { MdAccessTime, MdChevronLeft, MdChevronRight } from 'react-icons/md';
-import {
-  DOW_VN,
-  SCHEDULE_STATUS_LABEL,
-} from '../../utils/scheduleConstants';
+import { DOW_VN, SCHEDULE_STATUS_LABEL } from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
   _id: string;
@@ -26,10 +23,13 @@ interface Props {
 }
 
 const STATUS_BADGE: Record<string, { bg: string; dot: string }> = {
-  pending:   { bg: 'bg-amber-400/15 text-amber-300 dark:text-amber-300',  dot: 'bg-amber-400' },
-  confirmed: { bg: 'bg-sky-400/15 text-sky-300 dark:text-sky-300',        dot: 'bg-sky-400' },
-  completed: { bg: 'bg-emerald-400/15 text-emerald-300 dark:text-emerald-300', dot: 'bg-emerald-400' },
-  cancelled: { bg: 'bg-red-400/15 text-red-300 dark:text-red-300',        dot: 'bg-red-400' },
+  pending: { bg: 'bg-amber-400/15 text-amber-300 dark:text-amber-300', dot: 'bg-amber-400' },
+  confirmed: { bg: 'bg-sky-400/15 text-sky-300 dark:text-sky-300', dot: 'bg-sky-400' },
+  completed: {
+    bg: 'bg-emerald-400/15 text-emerald-300 dark:text-emerald-300',
+    dot: 'bg-emerald-400',
+  },
+  cancelled: { bg: 'bg-red-400/15 text-red-300 dark:text-red-300', dot: 'bg-red-400' },
 };
 
 const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => {
@@ -125,26 +125,20 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                 !day
                   ? 'bg-[var(--table-head-bg)] cursor-default'
                   : isSelected
-                  ? 'cursor-pointer bg-amber-500/10'
-                  : isToday
-                  ? 'cursor-pointer bg-amber-500/5'
-                  : 'cursor-pointer hover:bg-[var(--table-row-hover)]',
+                    ? 'cursor-pointer bg-amber-500/10'
+                    : isToday
+                      ? 'cursor-pointer bg-amber-500/5'
+                      : 'cursor-pointer hover:bg-[var(--table-row-hover)]',
               ].join(' ')}
             >
-              {isSelected && (
-                <span className="absolute inset-x-0 top-0 h-0.5 bg-amber-400" />
-              )}
+              {isSelected && <span className="absolute inset-x-0 top-0 h-0.5 bg-amber-400" />}
               {day && (
                 <>
                   <div className="flex justify-end mb-1">
                     <span
                       className={[
                         'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                        isToday
-                          ? 'text-white'
-                          : isWeekend
-                          ? 'text-rose-400'
-                          : 'theme-text-primary',
+                        isToday ? 'text-white' : isWeekend ? 'text-rose-400' : 'theme-text-primary',
                       ].join(' ')}
                       style={isToday ? { background: '#d97706' } : undefined}
                     >
@@ -182,7 +176,8 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
       {selectedDay && (byDay[selectedDay] ?? []).length > 0 && (
         <div className="border-t theme-card-border p-4">
           <p className="text-xs font-semibold theme-text-faint uppercase tracking-wider mb-3">
-            {parseInt(selectedDay.slice(8))} tháng {parseInt(selectedDay.slice(5, 7))}, {selectedDay.slice(0, 4)}
+            {parseInt(selectedDay.slice(8))} tháng {parseInt(selectedDay.slice(5, 7))},{' '}
+            {selectedDay.slice(0, 4)}
           </p>
           <div className="space-y-2">
             {(byDay[selectedDay] ?? []).map((s) => {
@@ -193,11 +188,14 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                   className="flex items-start justify-between rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2.5 hover:bg-[var(--table-row-hover)] transition-colors"
                 >
                   <div className="space-y-1 min-w-0">
-                    <div className="font-semibold text-sm theme-text-primary truncate">{s.className}</div>
+                    <div className="font-semibold text-sm theme-text-primary truncate">
+                      {s.className}
+                    </div>
                     {(s.startTime || s.endTime) && (
                       <div className="text-xs theme-text-muted flex items-center gap-1">
                         <MdAccessTime className="text-sky-400 shrink-0" />
-                        {s.startTime}{s.endTime ? ` – ${s.endTime}` : ''}
+                        {s.startTime}
+                        {s.endTime ? ` – ${s.endTime}` : ''}
                       </div>
                     )}
                     {s.location && (
@@ -211,18 +209,26 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg}`}>
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg}`}
+                    >
                       {SCHEDULE_STATUS_LABEL[s.status] ?? s.status}
                     </span>
                     {(onEdit || onDelete) && (
                       <div className="flex gap-2">
                         {onEdit && (
-                          <button onClick={() => onEdit(s._id)} className="text-xs theme-text-muted hover:text-amber-400 transition-colors">
+                          <button
+                            onClick={() => onEdit(s._id)}
+                            className="text-xs theme-text-muted hover:text-amber-400 transition-colors"
+                          >
                             Sửa
                           </button>
                         )}
                         {onDelete && (
-                          <button onClick={() => onDelete(s._id)} className="text-xs theme-text-muted hover:text-red-400 transition-colors">
+                          <button
+                            onClick={() => onDelete(s._id)}
+                            className="text-xs theme-text-muted hover:text-red-400 transition-colors"
+                          >
                             Xoá
                           </button>
                         )}

@@ -117,7 +117,9 @@ const UsersPage = () => {
         <div>
           <span className="page-kicker">Users</span>
           <h2 className="page-title">Quản lý người dùng</h2>
-          <p className="page-subtitle">Quản lý tài khoản và phân quyền người dùng trong hệ thống.</p>
+          <p className="page-subtitle">
+            Quản lý tài khoản và phân quyền người dùng trong hệ thống.
+          </p>
         </div>
         <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm người dùng

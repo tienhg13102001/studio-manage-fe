@@ -32,16 +32,22 @@ const LoginPage = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{background:'var(--login-bg)'}}
+      style={{ background: 'var(--login-bg)' }}
     >
       {/* Ambient glow blobs */}
       <div
         className="absolute top-0 left-1/4 w-96 h-96 rounded-full pointer-events-none"
-        style={{background:`radial-gradient(circle, var(--login-blob1) 0%, transparent 70%)`, filter:'blur(40px)'}}
+        style={{
+          background: `radial-gradient(circle, var(--login-blob1) 0%, transparent 70%)`,
+          filter: 'blur(40px)',
+        }}
       />
       <div
         className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full pointer-events-none"
-        style={{background:`radial-gradient(circle, var(--login-blob2) 0%, transparent 70%)`, filter:'blur(40px)'}}
+        style={{
+          background: `radial-gradient(circle, var(--login-blob2) 0%, transparent 70%)`,
+          filter: 'blur(40px)',
+        }}
       />
 
       {/* Glass card */}
@@ -56,11 +62,16 @@ const LoginPage = () => {
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="mb-4 rounded-2xl overflow-hidden" style={{boxShadow:'0 0 24px rgba(124,58,237,0.6)'}}>
+          <div
+            className="mb-4 rounded-2xl overflow-hidden"
+            style={{ boxShadow: '0 0 24px rgba(124,58,237,0.6)' }}
+          >
             <Logo size={56} />
           </div>
           <h1 className="text-2xl font-bold text-gradient">Yume Studio</h1>
-          <p className="text-sm mt-1" style={{color:'#475569'}}>Đăng nhập để tiếp tục</p>
+          <p className="text-sm mt-1" style={{ color: '#475569' }}>
+            Đăng nhập để tiếp tục
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -87,7 +98,11 @@ const LoginPage = () => {
           {error && (
             <p
               className="text-sm rounded-xl px-3 py-2"
-              style={{color:'#fca5a5', background:'rgba(220,38,38,0.1)', border:'1px solid rgba(220,38,38,0.2)'}}
+              style={{
+                color: '#fca5a5',
+                background: 'rgba(220,38,38,0.1)',
+                border: '1px solid rgba(220,38,38,0.2)',
+              }}
             >
               {error}
             </p>
