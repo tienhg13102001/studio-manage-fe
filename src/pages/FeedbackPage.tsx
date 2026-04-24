@@ -249,9 +249,9 @@ const FeedbackPage = () => {
                 )}
 
                 {fb.suggestion && (
-                  <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
-                      <MdLightbulbOutline className="text-amber-500" />
+                  <div className="mt-2 rounded-lg p-3 border border-amber-400/40 bg-amber-500/10">
+                    <p className="text-xs font-semibold text-amber-500 dark:text-amber-300 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
+                      <MdLightbulbOutline className="text-amber-500 dark:text-amber-300" />
                       <span>Đề xuất cải thiện</span>
                     </p>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed theme-text-primary">

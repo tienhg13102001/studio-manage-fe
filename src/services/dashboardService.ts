@@ -12,9 +12,8 @@ export interface UpcomingSchedule {
 }
 
 export interface DashboardStats {
-  thisMonth: { income: number; expense: number; profit: number };
-  monthly: Array<{ label: string; income: number; expense: number }>;
-  granularity: 'week' | 'month';
+  totals: { income: number; expense: number; profit: number };
+  daily: Array<{ label: string; income: number; expense: number }>;
   customerCount: number;
   scheduleCount: number;
   showSchedules: boolean;

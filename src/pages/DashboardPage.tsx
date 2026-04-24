@@ -15,7 +15,6 @@ import {
 import type { UpcomingSchedule } from '../services/dashboardService';
 import { formatCurrency, formatDate } from '../utils/format';
 import {
-  shortLabel,
   SCHEDULE_STATUS_LABEL,
   SCHEDULE_STATUS_COLOR,
 } from '../utils/scheduleConstants';
@@ -47,20 +46,14 @@ const DashboardPage = () => {
       ),
     );
     if (isAdmin) dispatch(fetchUsers());
-  }, [dispatch, isAdmin]);
+  }, [dispatch, isAdmin, filterUserId, chartMonths]);
 
   const handleChartMonthsChange = (m: number) => {
     setChartMonths(m);
-    dispatch(
-      fetchDashboardStats(filterUserId ? { userId: filterUserId, months: m } : { months: m }),
-    );
   };
 
   const handleFilterChange = (uid: string) => {
     setFilterUserId(uid);
-    dispatch(
-      fetchDashboardStats(uid ? { userId: uid, months: chartMonths } : { months: chartMonths }),
-    );
   };
 
   const displayName = user?.name ?? user?.username ?? '';
@@ -139,9 +132,8 @@ const DashboardPage = () => {
   if (!stats) return <PageLoader />;
 
   const {
-    thisMonth,
-    monthly,
-    granularity,
+    totals,
+    daily,
     customerCount,
     scheduleCount,
     showSchedules,
@@ -151,83 +143,69 @@ const DashboardPage = () => {
   const STATUS_LABEL = SCHEDULE_STATUS_LABEL;
   const STATUS_COLOR = SCHEDULE_STATUS_COLOR;
 
+  const periodLabel =
+    chartMonths === 1 ? '1 tháng gần đây' : `${chartMonths} tháng gần đây`;
+
   const cards = [
     {
-      label: 'Tổng lớp đã tạo',
+      label: `Lớp mới (${periodLabel})`,
       value: customerCount,
       color: 'text-blue-600',
       link: '/customers',
       show: showTotalCustomers,
     },
     {
-      label: 'Lịch chụp tháng này',
+      label: `Lịch chụp (${periodLabel})`,
       value: scheduleCount,
       color: 'text-purple-600',
       link: '/schedules',
       show: showSchedules,
     },
     {
-      label: 'Tổng thu',
-      value: formatCurrency(thisMonth.income),
+      label: `Tổng thu (${periodLabel})`,
+      value: formatCurrency(totals.income),
       color: 'text-green-600',
       link: '/finance',
       show: showFinance,
     },
     {
-      label: 'Tổng chi',
-      value: formatCurrency(thisMonth.expense),
+      label: `Tổng chi (${periodLabel})`,
+      value: formatCurrency(totals.expense),
       color: 'text-red-600',
       link: '/finance',
       show: showFinance,
     },
     {
-      label: 'Tổng lợi nhuận',
-      value: formatCurrency(thisMonth.profit),
-      color: thisMonth.profit >= 0 ? 'text-green-600' : 'text-red-600',
+      label: `Lợi nhuận (${periodLabel})`,
+      value: formatCurrency(totals.profit),
+      color: totals.profit >= 0 ? 'text-green-600' : 'text-red-600',
       link: '/finance',
       show: showFinance,
     },
   ];
 
   const formatChartLabel = (label: string) => {
-    console.log("🚀 ~ formatChartLabel ~ label:", label)
-    if (granularity === 'week') {
-      // label = YYYY-MM-DD (ngày bắt đầu tuần) → hiển thị dd/MM
-      const [, mo, dd] = label.split('-');
-      return `${dd}/${mo}`;
-    }
-    // label = YYYY-MM. Từ 3 tháng trở lên hiển thị kèm năm: "T3 - 2026"
-    if (chartMonths >= 3) {
-      const [yr] = label.split('-');
-      return `${shortLabel(label)} - ${yr}`;
-    }
-    return shortLabel(label);
+    // label = YYYY-MM-DD → hiển thị dd/MM (thêm năm khi khoảng thời gian ≥ 12 tháng)
+    const [yr, mo, dd] = label.split('-');
+    if (chartMonths >= 12) return `${dd}/${mo}/${yr.slice(2)}`;
+    return `${dd}/${mo}`;
   };
 
-  const chartData = (() => {
-    if (granularity === 'week') {
-      // Chế độ tuần: cộng dồn theo thời gian (cumulative)
-      let cumThu = 0;
-      let cumChi = 0;
-      return monthly.map((m) => {
-        cumThu += m.income;
-        cumChi += m.expense;
-        return {
-          name: formatChartLabel(m.label),
-          Thu: cumThu,
-          Chi: -cumChi,
-          'Lợi nhuận': cumThu - cumChi,
-        };
-      });
-    }
-    // Chế độ tháng: hiển thị theo từng tháng riêng lẻ
-    return monthly.map((m) => ({
-      name: formatChartLabel(m.label),
-      Thu: m.income,
-      Chi: -m.expense,
-      'Lợi nhuận': m.income - m.expense,
-    }));
-  })();
+  const chartData = daily.reduce<
+    Array<{ name: string; Thu: number; Chi: number; 'Lợi nhuận': number }>
+  >((acc, d) => {
+    const prev = acc[acc.length - 1];
+    const thu = (prev?.Thu ?? 0) + d.income;
+    const chiAbs = Math.abs(prev?.Chi ?? 0) + d.expense;
+    const profit = (prev?.['Lợi nhuận'] ?? 0) + (d.income - d.expense);
+    acc.push({
+      name: formatChartLabel(d.label),
+      Thu: thu,
+      Chi: -chiAbs,
+      'Lợi nhuận': profit,
+    });
+    return acc;
+  }, []);
 
   return (
     <div className="space-y-6">
