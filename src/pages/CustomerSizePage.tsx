@@ -75,9 +75,10 @@ const CustomerSizePage = () => {
   } = useForm<StudentForm>();
 
   const formGender = watch('gender');
-  const scheduleCostumes = schedules?.costumes ?? [];
-  const visibleCostumes = scheduleCostumes.filter(
-    (c) => c.gender === formGender || c.gender === 'unisex',
+  const scheduleCostumes = useMemo(() => schedules?.costumes ?? [], [schedules]);
+  const visibleCostumes = useMemo(
+    () => scheduleCostumes.filter((c) => c.gender === formGender || c.gender === 'unisex'),
+    [scheduleCostumes, formGender],
   );
 
   // When user changes gender inside the modal, re-tick all visible costumes.
@@ -193,7 +194,6 @@ const CustomerSizePage = () => {
         .map((c) => `- ${counts.get(c._id) ?? 0} bộ ${c.name}`)
         .join('\n');
     }
-
 
     const info = `
 Ngày chụp: ${schedule ? dayjs(schedule.shootDate).format('DD/MM/YYYY') : 'N/A'}
