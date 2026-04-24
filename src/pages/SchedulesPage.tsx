@@ -61,7 +61,7 @@ const SchedulesPage = () => {
     handleSubmit,
     reset,
     control,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
     watch,
   } = useForm<ScheduleFormValues>();
 
@@ -77,9 +77,15 @@ const SchedulesPage = () => {
   const selectedPackageId = watch('package');
   const selectedPackage = packages.find((p) => p._id === selectedPackageId);
   // IDs of CostumeTypes linked to the selected package
-  const packageTypeIds = new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id));
+  const packageTypeIds = useMemo(
+    () => new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id)),
+    [selectedPackage],
+  );
   // Costumes whose type belongs to the selected package
-  const availableCostumes = allCostumes.filter((c) => c.type && packageTypeIds.has(c.type._id));
+  const availableCostumes = useMemo(
+    () => allCostumes.filter((c) => c.type && packageTypeIds.has(c.type._id)),
+    [allCostumes, packageTypeIds],
+  );
 
   useEffect(() => {
     dispatch(fetchSchedules({}));
@@ -94,6 +100,7 @@ const SchedulesPage = () => {
     setEditing(null);
     setSupportIds([]);
     setSelectedCostumes([]);
+    setCostumeTouched(false);
     reset({ status: 'pending' });
     setModalOpen(true);
   };
@@ -104,6 +111,7 @@ const SchedulesPage = () => {
     const supIds = s.supportPhotographers.map((u) => u._id);
     setSupportIds(supIds);
     setSelectedCostumes(s.costumes?.map((c) => c._id) ?? []);
+    setCostumeTouched(false);
     reset({
       customer: s.customer._id,
       package: s.package?._id ?? '',
@@ -119,7 +127,14 @@ const SchedulesPage = () => {
     setModalOpen(true);
   };
 
+  const [costumeTouched, setCostumeTouched] = useState(false);
+
   const onSubmit = async (data: ScheduleFormValues) => {
+    if (selectedCostumes.length === 0) {
+      setCostumeTouched(true);
+      toast.error('Vui lòng chọn ít nhất một trang phục.');
+      return;
+    }
     const payload = {
       ...data,
       costumes: selectedCostumes,
@@ -438,81 +453,58 @@ const SchedulesPage = () => {
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className="label">Lớp *</label>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="label">
+                Lớp <span className="text-red-500">*</span>
+              </label>
               <Controller
                 name="customer"
                 control={control}
                 rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    options={customers.map((c) => ({
-                      value: c._id,
-                      label: `${c.className} – ${c.school}`,
-                    }))}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v)}
-                    placeholder="-- Chọn lớp --"
-                  />
+                render={({ field, fieldState }) => (
+                  <>
+                    <Select
+                      options={customers.map((c) => ({
+                        value: c._id,
+                        label: `${c.className} – ${c.school}`,
+                      }))}
+                      value={field.value ?? ''}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder="-- Chọn lớp --"
+                    />
+                    {fieldState.error && (
+                      <p className="text-xs text-red-500 mt-1">Vui lòng chọn lớp.</p>
+                    )}
+                  </>
                 )}
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="label">Gói chụp</label>
+            <div>
+              <label className="label">
+                Gói chụp <span className="text-red-500">*</span>
+              </label>
               <Controller
                 name="package"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    options={packages.map((p) => ({
-                      value: p._id,
-                      label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
-                    }))}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v || undefined)}
-                    placeholder="-- Không chọn gói --"
-                  />
+                rules={{ required: true }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Select
+                      options={packages.map((p) => ({
+                        value: p._id,
+                        label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
+                      }))}
+                      value={field.value ?? ''}
+                      onChange={(v) => field.onChange(v || undefined)}
+                      placeholder="-- Chọn gói chụp --"
+                    />
+                    {fieldState.error && (
+                      <p className="text-xs text-red-500 mt-1">Vui lòng chọn gói chụp.</p>
+                    )}
+                  </>
                 )}
               />
-            </div>
-            {selectedPackageId && (
-              <div className="sm:col-span-2">
-                <label className="label">Trang phục</label>
-                {availableCostumes.length === 0 ? (
-                  <p className="text-xs text-gray-400">
-                    Gói chụp này chưa có trang phục nào được liên kết.
-                  </p>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
-                    {availableCostumes.map((c) => (
-                      <label
-                        key={c._id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded"
-                      >
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 accent-primary-600"
-                          checked={selectedCostumes.includes(c._id)}
-                          onChange={(e) =>
-                            setSelectedCostumes((prev) =>
-                              e.target.checked
-                                ? [...prev, c._id]
-                                : prev.filter((id) => id !== c._id),
-                            )
-                          }
-                        />
-                        <span className="text-sm text-gray-700">{c.name}</span>
-                        {c.type && <span className="text-xs text-gray-400">— {c.type.name}</span>}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            <div>
-              <label className="label">Ngày chụp *</label>
-              <input {...register('shootDate', { required: true })} type="date" className="input" />
             </div>
             <div>
               <label className="label">Trạng thái</label>
@@ -528,6 +520,60 @@ const SchedulesPage = () => {
                 )}
               />
             </div>
+            {selectedPackageId && (
+              <div className="lg:col-span-3">
+                <label className="label">
+                  Trang phục <span className="text-red-500">*</span>
+                </label>
+                {availableCostumes.length === 0 ? (
+                  <p className="text-xs text-red-500">
+                    Gói chụp này chưa có trang phục nào được liên kết.
+                  </p>
+                ) : (
+                  <div className="border border-[color:var(--card-border)] rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
+                    {availableCostumes.map((c) => (
+                      <label
+                        key={c._id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-[var(--table-row-hover)] px-1 py-0.5 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 accent-primary-600"
+                          checked={selectedCostumes.includes(c._id)}
+                          onChange={(e) =>
+                            setSelectedCostumes((prev) =>
+                              e.target.checked
+                                ? [...prev, c._id]
+                                : prev.filter((id) => id !== c._id),
+                            )
+                          }
+                        />
+                        <span className="text-sm theme-text-primary">{c.name}</span>
+                        {c.type && (
+                          <span className="text-xs theme-text-muted">— {c.type.name}</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {availableCostumes.length > 0 &&
+                  selectedCostumes.length === 0 &&
+                  costumeTouched && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Vui lòng chọn ít nhất một trang phục.
+                    </p>
+                  )}
+              </div>
+            )}
+            <div>
+              <label className="label">
+                Ngày chụp <span className="text-red-500">*</span>
+              </label>
+              <input {...register('shootDate', { required: true })} type="date" className="input" />
+              {errors.shootDate && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng chọn ngày chụp.</p>
+              )}
+            </div>
             <div>
               <label className="label">Giờ bắt đầu</label>
               <input {...register('startTime')} type="time" className="input" />
@@ -536,11 +582,11 @@ const SchedulesPage = () => {
               <label className="label">Giờ kết thúc</label>
               <input {...register('endTime')} type="time" className="input" />
             </div>
-            <div className="sm:col-span-2">
+            <div className="lg:col-span-3">
               <label className="label">Địa điểm</label>
               <input {...register('location')} className="input" />
             </div>
-            <div className="sm:col-span-2">
+            <div className="lg:col-span-1">
               <label className="label">Người chốt lớp (Sale)</label>
               <Controller
                 name="bookedBy"
@@ -558,7 +604,7 @@ const SchedulesPage = () => {
                 )}
               />
             </div>
-            <div className="sm:col-span-2">
+            <div className="lg:col-span-2">
               <label className="label">Thợ leader</label>
               <Controller
                 name="leadPhotographer"
@@ -576,39 +622,44 @@ const SchedulesPage = () => {
                 )}
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="label">Thợ support</label>
-              <div className="border border-gray-200 rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
-                {photographers
-                  .filter((u) => u._id !== watch('leadPhotographer'))
-                  .map((u) => (
-                    <label
-                      key={u._id}
-                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded"
-                    >
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300"
-                        checked={supportIds.includes(u._id)}
-                        onChange={(e) =>
-                          setSupportIds((prev) =>
-                            e.target.checked ? [...prev, u._id] : prev.filter((id) => id !== u._id),
-                          )
-                        }
-                      />
-                      <span className="text-sm text-gray-700">
-                        {u.username}
-                        {u.name ? ` (${u.name})` : ''}
-                      </span>
-                      -<span className="text-xs text-gray-400">{ROLE_LABELS[3]}</span>
-                    </label>
-                  ))}
-                {photographers.length === 0 && (
-                  <p className="text-sm text-gray-400 px-1">Không có người dùng phù hợp</p>
-                )}
+            {/* khi có thợ lead mới chọn thợ support */}
+            {watch('leadPhotographer') && (
+              <div className="lg:col-span-3">
+                <label className="label">Thợ support</label>
+                <div className="border border-[color:var(--card-border)] rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
+                  {photographers
+                    .filter((u) => u._id !== watch('leadPhotographer'))
+                    .map((u) => (
+                      <label
+                        key={u._id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-[var(--table-row-hover)] px-1 py-0.5 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300"
+                          checked={supportIds.includes(u._id)}
+                          onChange={(e) =>
+                            setSupportIds((prev) =>
+                              e.target.checked
+                                ? [...prev, u._id]
+                                : prev.filter((id) => id !== u._id),
+                            )
+                          }
+                        />
+                        <span className="text-sm theme-text-primary">
+                          {u.username}
+                          {u.name ? ` (${u.name})` : ''}
+                        </span>
+                        -<span className="text-xs theme-text-muted">{ROLE_LABELS[3]}</span>
+                      </label>
+                    ))}
+                  {photographers.length === 0 && (
+                    <p className="text-sm theme-text-muted px-1">Không có người dùng phù hợp</p>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="sm:col-span-2">
+            )}
+            <div className="lg:col-span-3">
               <label className="label">Ghi chú</label>
               <textarea {...register('notes')} className="input" rows={2} />
             </div>

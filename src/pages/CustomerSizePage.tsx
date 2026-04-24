@@ -174,7 +174,7 @@ const CustomerSizePage = () => {
       toast.error('Vui lòng tạo lịch chụp cho lớp này trước khi lấy thông tin gửi đồ.');
       return;
     }
-    if (totalFemale + totalFemale < selectedCustomer.total) {
+    if (totalMale + totalFemale < selectedCustomer.total) {
       toast.error(
         'Sĩ số nam/nữ hiện tại nhỏ hơn sĩ số đã đăng ký. Vui lòng cập nhật đầy đủ thông tin học sinh trước khi lấy thông tin gửi đồ.',
       );
@@ -187,7 +187,8 @@ const CustomerSizePage = () => {
       costumeLines = schedule.costumes
         .map((c) => `- ${totalMale + totalFemale} bộ ${c.name}`)
         .join('\n');
-    }
+      }
+      console.log("🚀 ~ handleCopyInfo ~ costumeLines:", costumeLines)
 
     const info = `
 Ngày chụp: ${schedule ? dayjs(schedule.shootDate).format('DD/MM/YYYY') : 'N/A'}
