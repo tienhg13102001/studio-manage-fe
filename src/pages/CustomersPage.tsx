@@ -214,39 +214,61 @@ const CustomersPage = () => {
           <div className="md:hidden space-y-3">
             {customers.map((c) => (
               <div key={c._id} className="card p-4">
-                <div className="flex items-start justify-between mb-1">
-                  <Link
-                    to={`/customers/${c._id}`}
-                    className="font-semibold text-primary-600 hover:underline text-base"
-                  >
-                    {c.className}
-                  </Link>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <Link
+                      to={`/customers/${c._id}`}
+                      className="font-semibold text-primary-500 hover:underline text-base block truncate"
+                    >
+                      {c.className}
+                    </Link>
+                    {c.school && (
+                      <div className="text-sm theme-text-muted inline-flex items-center gap-1.5 mt-0.5">
+                        <FaSchool className="text-sky-500 shrink-0" />
+                        <span className="truncate">{c.school}</span>
+                      </div>
+                    )}
+                  </div>
                   {c.total != null && (
-                    <span className="text-sm text-gray-500 ml-2">{c.total} hs</span>
+                    <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-primary-500/15 text-primary-500">
+                      {c.total} hs
+                      {(c.totalMale != null || c.totalFemale != null) && (
+                        <span className="font-normal opacity-70">
+                          (<span className="text-blue-500">{c.totalMale ?? 0}</span>/
+                          <span className="text-red-500">{c.totalFemale ?? 0}</span>)
+                        </span>
+                      )}
+                    </span>
                   )}
                 </div>
-                {c.school && (
-                  <div className="text-sm text-gray-600 inline-flex items-center gap-1.5">
-                    <FaSchool className="text-sky-500" />
-                    <span>{c.school}</span>
+
+                {(c.contactName || c.contactPhone) && (
+                  <div className="space-y-1 pt-2 theme-divider-top">
+                    {c.contactName && (
+                      <div className="text-sm theme-text-primary">{c.contactName}</div>
+                    )}
+                    {c.contactPhone && (
+                      <a
+                        href={`tel:${c.contactPhone}`}
+                        className="text-sm theme-text-muted inline-flex items-center gap-1.5 hover:text-emerald-500"
+                      >
+                        <FaPhoneAlt className="text-emerald-500" />
+                        <span>{c.contactPhone}</span>
+                      </a>
+                    )}
                   </div>
                 )}
-                {c.contactName && (
-                  <div className="text-sm text-gray-600 mt-0.5">{c.contactName}</div>
-                )}
-                {c.contactPhone && (
-                  <div className="text-sm text-gray-600 inline-flex items-center gap-1.5">
-                    <FaPhoneAlt className="text-emerald-500" />
-                    <span>{c.contactPhone}</span>
-                  </div>
-                )}
-                <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
-                  <button onClick={() => openEdit(c)} className="text-blue-600 text-xs font-medium">
+
+                <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
+                  <button
+                    onClick={() => openEdit(c)}
+                    className="text-xs font-medium text-blue-500 hover:underline"
+                  >
                     Sửa
                   </button>
                   <button
                     onClick={() => handleDelete(c._id)}
-                    className="text-red-600 text-xs font-medium"
+                    className="text-xs font-medium text-red-500 hover:underline"
                   >
                     Xoá
                   </button>
@@ -254,7 +276,7 @@ const CustomersPage = () => {
               </div>
             ))}
             {customers.length === 0 && (
-              <div className="card py-10 text-center text-gray-400">Chưa có dữ liệu</div>
+              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
             )}
           </div>
         </>

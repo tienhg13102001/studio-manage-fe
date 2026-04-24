@@ -202,16 +202,18 @@ const UsersPage = () => {
       <div className="md:hidden space-y-3">
         {users.map((u) => (
           <div key={u._id} className="card p-4">
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <div className="font-semibold text-gray-900">
+            <div className="flex items-start justify-between mb-1 gap-2">
+              <div className="min-w-0">
+                <div className="font-semibold theme-text-primary truncate">
                   {u.username}
-                  {u._id === me?._id && <span className="ml-2 text-xs text-gray-400">(bạn)</span>}
+                  {u._id === me?._id && (
+                    <span className="ml-2 text-xs theme-text-muted">(bạn)</span>
+                  )}
                 </div>
-                {u.name && <div className="text-sm text-gray-600">{u.name}</div>}
+                {u.name && <div className="text-sm theme-text-muted">{u.name}</div>}
               </div>
               <span
-                className={`badge ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                className={`badge shrink-0 ${u.isActive ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500'}`}
               >
                 {u.isActive ? 'Hoạt động' : 'Đã khoá'}
               </span>
@@ -223,14 +225,17 @@ const UsersPage = () => {
                 </span>
               ))}
             </div>
-            <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
-              <button onClick={() => openEdit(u)} className="text-blue-600 text-xs font-medium">
+            <div className="flex gap-4 mt-3 pt-3 theme-divider-top">
+              <button
+                onClick={() => openEdit(u)}
+                className="text-blue-500 text-xs font-medium hover:underline"
+              >
                 Sửa
               </button>
               {u._id !== me?._id && (
                 <button
                   onClick={() => handleDelete(u._id)}
-                  className="text-red-600 text-xs font-medium"
+                  className="text-red-500 text-xs font-medium hover:underline"
                 >
                   Xoá
                 </button>

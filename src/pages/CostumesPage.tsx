@@ -111,56 +111,114 @@ const CostumesPage = () => {
         </button>
       </div>
 
-      <DataTable<CostumeResponse>
-        loading={loading}
-        data={costumes}
-        keyExtractor={(c) => c._id}
-        emptyTitle="Chưa có trang phục nào"
-        columns={[
-          {
-            key: 'name',
-            header: 'Tên trang phục',
-            render: (c) => <span className="font-medium">{c.name}</span>,
-          },
-          {
-            key: 'gender',
-            header: 'Giới tính',
-            render: (c) => <span className="text-gray-600">{GENDER_LABEL[c.gender] ?? '—'}</span>,
-          },
-          {
-            key: 'type',
-            header: 'Loại',
-            render: (c) => <span className="text-gray-600">{getTypeName(c.type)}</span>,
-          },
-          {
-            key: 'description',
-            header: 'Mô tả',
-            render: (c) => <span className="text-gray-600">{c.description ?? '—'}</span>,
-          },
-          {
-            key: 'actions',
-            header: '',
-            align: 'right',
-            className: 'whitespace-nowrap',
-            render: (c) => (
-              <span className="space-x-2">
-                <button
-                  onClick={() => openEdit(c)}
-                  className="text-blue-600 hover:underline text-xs"
-                >
-                  Sửa
-                </button>
-                <button
-                  onClick={() => setConfirmId(c._id)}
-                  className="text-red-600 hover:underline text-xs"
-                >
-                  Xoá
-                </button>
-              </span>
-            ),
-          } satisfies Column<CostumeResponse>,
-        ]}
-      />
+      <div className="hidden md:block">
+        <DataTable<CostumeResponse>
+          loading={loading}
+          data={costumes}
+          keyExtractor={(c) => c._id}
+          emptyTitle="Chưa có trang phục nào"
+          columns={[
+            {
+              key: 'name',
+              header: 'Tên trang phục',
+              render: (c) => <span className="font-medium">{c.name}</span>,
+            },
+            {
+              key: 'gender',
+              header: 'Giới tính',
+              render: (c) => (
+                <span className="theme-text-muted">{GENDER_LABEL[c.gender] ?? '—'}</span>
+              ),
+            },
+            {
+              key: 'type',
+              header: 'Loại',
+              render: (c) => <span className="theme-text-muted">{getTypeName(c.type)}</span>,
+            },
+            {
+              key: 'description',
+              header: 'Mô tả',
+              render: (c) => <span className="theme-text-muted">{c.description ?? '—'}</span>,
+            },
+            {
+              key: 'actions',
+              header: '',
+              align: 'right',
+              className: 'whitespace-nowrap',
+              render: (c) => (
+                <span className="space-x-2">
+                  <button
+                    onClick={() => openEdit(c)}
+                    className="text-blue-500 hover:underline text-xs"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(c._id)}
+                    className="text-red-500 hover:underline text-xs"
+                  >
+                    Xoá
+                  </button>
+                </span>
+              ),
+            } satisfies Column<CostumeResponse>,
+          ]}
+        />
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="card py-10 text-center theme-text-muted">Đang tải…</div>
+        ) : costumes.length === 0 ? (
+          <div className="card py-10 text-center theme-text-muted">Chưa có trang phục nào</div>
+        ) : (
+          costumes.map((c) => {
+            const genderStyle =
+              c.gender === 'male'
+                ? 'bg-blue-500/15 text-blue-500'
+                : c.gender === 'female'
+                  ? 'bg-pink-500/15 text-pink-500'
+                  : 'bg-purple-500/15 text-purple-500';
+            return (
+              <div key={c._id} className="card p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold theme-text-primary truncate">{c.name}</div>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      <span className={`badge text-xs ${genderStyle}`}>
+                        {GENDER_LABEL[c.gender] ?? '—'}
+                      </span>
+                      {c.type && (
+                        <span className="badge text-xs bg-[var(--input-bg)] theme-text-muted border border-[color:var(--input-border)]">
+                          {getTypeName(c.type)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {c.description && (
+                  <p className="text-sm theme-text-muted italic">{c.description}</p>
+                )}
+                <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
+                  <button
+                    onClick={() => openEdit(c)}
+                    className="text-blue-500 text-xs font-medium hover:underline"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(c._id)}
+                    className="text-red-500 text-xs font-medium hover:underline"
+                  >
+                    Xoá
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
       <Modal
         isOpen={modalOpen}

@@ -427,41 +427,41 @@ const FinancePage = () => {
             <div className="md:hidden space-y-3">
               {transactions.map((t) => (
                 <div key={t._id} className="card p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="text-sm text-gray-500">{formatDate(t.date)}</div>
-                      <div className="text-sm text-gray-600 mt-0.5">
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm theme-text-muted">{formatDate(t.date)}</div>
+                      <div className="text-sm theme-text-primary font-medium mt-0.5">
                         {t.categoryId?.name ?? '—'}
                       </div>
                       {t.customer && (
-                        <div className="text-xs text-gray-400">{t.customer.className}</div>
+                        <div className="text-xs theme-text-muted">{t.customer.className}</div>
                       )}
                       {t.description && (
-                        <div className="text-xs text-gray-400 mt-0.5">{t.description}</div>
+                        <div className="text-xs theme-text-muted mt-0.5">{t.description}</div>
                       )}
                       {t.createdBy && (
-                        <div className="text-xs text-gray-400 mt-0.5 inline-flex items-center gap-1.5">
+                        <div className="text-xs theme-text-muted mt-0.5 inline-flex items-center gap-1.5">
                           <FaUserCircle className="text-indigo-400" />
                           <span>{t.createdBy.name ?? t.createdBy.username}</span>
                         </div>
                       )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <span
-                        className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                        className={`badge ${t.type === 'income' ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500'}`}
                       >
                         {t.type === 'income' ? 'Thu' : 'Chi'}
                       </span>
                       <div
-                        className={`font-semibold text-sm mt-1 ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
+                        className={`font-semibold text-sm mt-1 ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}
                       >
                         {t.type === 'expense' ? '-' : '+'}
                         {formatCurrency(t.amount)}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-4 pt-2 border-t border-gray-100">
-                    <label className="flex items-center gap-1.5 text-xs text-gray-600 mr-auto">
+                  <div className="flex gap-4 pt-2 theme-divider-top">
+                    <label className="flex items-center gap-1.5 text-xs theme-text-muted mr-auto">
                       <input
                         type="checkbox"
                         className="rounded border-gray-300"
@@ -473,13 +473,13 @@ const FinancePage = () => {
                     </label>
                     <button
                       onClick={() => openEdit(t)}
-                      className="text-blue-600 text-xs font-medium"
+                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
                     </button>
                     <button
                       onClick={() => handleDelete(t._id)}
-                      className="text-red-600 text-xs font-medium"
+                      className="text-red-500 text-xs font-medium hover:underline"
                     >
                       Xoá
                     </button>
@@ -487,7 +487,7 @@ const FinancePage = () => {
                 </div>
               ))}
               {transactions.length === 0 && (
-                <div className="card py-10 text-center text-gray-400">Chưa có dữ liệu</div>
+                <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
               )}
             </div>
           </>
@@ -529,28 +529,28 @@ const FinancePage = () => {
           <div className="md:hidden space-y-3">
             {summary.map((row) => (
               <div key={row._id ?? 'unknown'} className="card p-4">
-                <div className="font-semibold text-gray-900 mb-0.5">
+                <div className="font-semibold theme-text-primary mb-0.5">
                   {row.customer?.className ?? '(Không có lớp)'}
                 </div>
                 {row.customer?.school && (
-                  <div className="text-sm text-gray-500 mb-2 inline-flex items-center gap-1.5">
+                  <div className="text-sm theme-text-muted mb-2 inline-flex items-center gap-1.5">
                     <FaSchool className="text-sky-500" />
                     <span>{row.customer.school}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <div className="text-xs text-gray-400">Thu</div>
-                    <div className="text-green-600 font-medium">{formatCurrency(row.income)}</div>
+                    <div className="text-xs theme-text-muted">Thu</div>
+                    <div className="text-green-500 font-medium">{formatCurrency(row.income)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Chi</div>
-                    <div className="text-red-600 font-medium">{formatCurrency(row.expense)}</div>
+                    <div className="text-xs theme-text-muted">Chi</div>
+                    <div className="text-red-500 font-medium">{formatCurrency(row.expense)}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Lợi nhuận</div>
+                    <div className="text-xs theme-text-muted">Lợi nhuận</div>
                     <div
-                      className={`font-semibold ${row.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      className={`font-semibold ${row.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}
                     >
                       {formatCurrency(row.profit)}
                     </div>
@@ -559,25 +559,25 @@ const FinancePage = () => {
               </div>
             ))}
             {summary.length > 0 && (
-              <div className="card p-4 bg-gray-50">
-                <div className="font-semibold text-gray-900 mb-2">Tổng cộng</div>
+              <div className="card p-4 bg-[var(--input-bg)]">
+                <div className="font-semibold theme-text-primary mb-2">Tổng cộng</div>
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <div className="text-xs text-gray-400">Thu</div>
-                    <div className="text-green-600 font-semibold">
+                    <div className="text-xs theme-text-muted">Thu</div>
+                    <div className="text-green-500 font-semibold">
                       {formatCurrency(grandTotal.income)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Chi</div>
-                    <div className="text-red-600 font-semibold">
+                    <div className="text-xs theme-text-muted">Chi</div>
+                    <div className="text-red-500 font-semibold">
                       {formatCurrency(grandTotal.expense)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Lợi nhuận</div>
+                    <div className="text-xs theme-text-muted">Lợi nhuận</div>
                     <div
-                      className={`font-semibold ${grandTotal.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      className={`font-semibold ${grandTotal.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}
                     >
                       {formatCurrency(grandTotal.profit)}
                     </div>
@@ -586,7 +586,7 @@ const FinancePage = () => {
               </div>
             )}
             {summary.length === 0 && (
-              <div className="card py-10 text-center text-gray-400">Chưa có dữ liệu</div>
+              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
             )}
           </div>
         </>

@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { FaArrowDown, FaArrowUp, FaPencilAlt, FaPlus, FaRegFolderOpen, FaTrash } from 'react-icons/fa';
+import {
+  FaArrowDown,
+  FaArrowUp,
+  FaPencilAlt,
+  FaPlus,
+  FaRegFolderOpen,
+  FaTrash,
+} from 'react-icons/fa';
 import { categoryService } from '../services/categoryService';
 import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -80,7 +87,10 @@ const CategoriesPage = () => {
           <h2 className="page-title">Danh mục thu / chi</h2>
           <p className="page-subtitle">Quản lý các danh mục khoản thu và khoản chi.</p>
         </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto inline-flex items-center gap-2">
+        <button
+          onClick={openCreate}
+          className="btn-primary self-start md:self-auto inline-flex items-center gap-2"
+        >
           <FaPlus className="text-xs" />
           Thêm danh mục
         </button>
@@ -131,9 +141,7 @@ const CategoriesPage = () => {
                   </span>
                   <div>
                     <h3 className="text-sm font-semibold theme-text-primary">{label}</h3>
-                    <p className="text-xs theme-text-muted">
-                      {list.length} danh mục
-                    </p>
+                    <p className="text-xs theme-text-muted">{list.length} danh mục</p>
                   </div>
                 </div>
               </div>

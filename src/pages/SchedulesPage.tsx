@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FaCalendarAlt, FaTable } from 'react-icons/fa';
+import {
+  FaCalendarAlt,
+  FaTable,
+  FaRegClock,
+  FaMapMarkerAlt,
+  FaRegStickyNote,
+  FaUserTie,
+  FaUsers,
+} from 'react-icons/fa';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { costumeService } from '../services/costumeService';
@@ -383,55 +391,80 @@ const SchedulesPage = () => {
               const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
               return (
                 <div key={s._id} className="card p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="font-semibold text-gray-900">{formatDate(s.shootDate)}</div>
-                      <div className="text-primary-600 text-sm mt-0.5">
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold theme-text-primary">
+                        {formatDate(s.shootDate)}
+                      </div>
+                      <div className="text-primary-500 text-sm mt-0.5 truncate">
                         {customer?.className ?? '—'}
+                        {customer?.school && (
+                          <span className="theme-text-muted"> · {customer.school}</span>
+                        )}
                       </div>
                     </div>
-                    <span className={`badge ${statusColor[s.status]}`}>
+                    <span className={`badge shrink-0 ${statusColor[s.status]}`}>
                       {statusLabel[s.status]}
                     </span>
                   </div>
-                  <div className="space-y-1 text-sm text-gray-600">
+                  <div className="space-y-1 text-sm theme-text-muted">
                     {(s.startTime || s.endTime) && (
-                      <div>
-                        ⏰ {s.startTime}
-                        {s.endTime ? ` – ${s.endTime}` : ''}
+                      <div className="flex items-center gap-2">
+                        <FaRegClock className="shrink-0 text-primary-500" />
+                        <span>
+                          {s.startTime}
+                          {s.endTime ? ` – ${s.endTime}` : ''}
+                        </span>
                       </div>
                     )}
-                    {s.location && <div>📍 {s.location}</div>}
-                    {leadName && <div>Leader: {leadName}</div>}
-                    {supports && <div>Support: {supports}</div>}
+                    {s.location && (
+                      <div className="flex items-center gap-2">
+                        <FaMapMarkerAlt className="shrink-0 text-rose-500" />
+                        <span>{s.location}</span>
+                      </div>
+                    )}
+                    {leadName && (
+                      <div className="flex items-center gap-2">
+                        <FaUserTie className="shrink-0 text-blue-500" />
+                        <span className="theme-text-muted">Leader:</span>{' '}
+                        <span className="theme-text-primary">{leadName}</span>
+                      </div>
+                    )}
+                    {supports && (
+                      <div className="flex items-center gap-2">
+                        <FaUsers className="shrink-0 text-violet-500" />
+                        <span className="theme-text-muted">Support:</span>{' '}
+                        <span className="theme-text-primary">{supports}</span>
+                      </div>
+                    )}
                     {s.notes && (
-                      <div className="bg-yellow-50 text-yellow-800 text-xs font-medium px-2 py-1 rounded-md border border-yellow-200 mt-1 whitespace-pre-line">
-                        📝 <br />
-                        {s.notes}
+                      <div className="mt-1 flex items-start gap-2 rounded-md border border-yellow-400/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300 text-xs font-medium px-2 py-1 whitespace-pre-line">
+                        <FaRegStickyNote className="shrink-0 mt-0.5" />
+                        <span>{s.notes}</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-4 mt-3 pt-3 theme-divider-top">
                     <button
                       onClick={() => handleDownloadContract(s)}
-                      className="text-green-600 text-xs font-medium"
+                      className="text-green-500 text-xs font-medium hover:underline"
                     >
                       Hợp đồng
                     </button>
                     <button
                       onClick={() => openEdit(s)}
-                      className="text-blue-600 text-xs font-medium"
+                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
                     </button>
                     <button
                       onClick={() => handleDelete(s._id)}
-                      className="text-red-600 text-xs font-medium"
+                      className="text-red-500 text-xs font-medium hover:underline"
                     >
                       Xoá
                     </button>
                     {bookedByName && (
-                      <span className="ml-auto bg-primary-50 text-primary-700 text-xs font-medium px-2 py-0.5 rounded-full border border-primary-200">
+                      <span className="ml-auto bg-primary-500/15 text-primary-500 text-xs font-medium px-2 py-0.5 rounded-full border border-primary-500/30">
                         {bookedByName}
                       </span>
                     )}
@@ -440,7 +473,7 @@ const SchedulesPage = () => {
               );
             })}
             {schedules.length === 0 && (
-              <div className="card py-10 text-center text-gray-400">Chưa có dữ liệu</div>
+              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
             )}
           </div>
         </>

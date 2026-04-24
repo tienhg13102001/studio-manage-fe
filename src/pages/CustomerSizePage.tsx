@@ -586,7 +586,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
       {/* Empty state */}
       {!selectedCustomer && (
-        <div className="card py-16 text-center text-gray-400">
+        <div className="card py-16 text-center theme-text-muted">
           <div className="text-4xl mb-3 flex justify-center">
             <FaSchool className="text-sky-500" />
           </div>
@@ -597,8 +597,8 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
       {/* No-schedule warning */}
       {selectedCustomer && noSchedule && (
-        <div className="card p-4 mb-4 border-yellow-300 bg-yellow-50 text-yellow-800 text-sm inline-flex items-center gap-2">
-          <FiAlertTriangle className="text-yellow-600 shrink-0" />
+        <div className="card p-4 mb-4 border border-yellow-400/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300 text-sm inline-flex items-center gap-2">
+          <FiAlertTriangle className="shrink-0" />
           <span>
             Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
             thông tin.
@@ -609,47 +609,44 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Student list */}
       {selectedCustomer && (
         <>
-          <div className="flex items-center justify-between mb-3 gap-2">
-            <p className="text-sm text-gray-500 space-y-1">
-              <p className="text-green-600 font-medium">
+          <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
+            <div className="text-sm theme-text-muted space-y-1">
+              <div className="text-emerald-500 font-semibold">
                 Tổng cộng có {selectedCustomer?.total} học sinh đăng ký
-              </p>
-              {/* Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span> */}
-              <p>
-                {' '}
-                {students.length} học sinh đã điền thông tin -{' '}
-                <span className="text-gray-600">
-                  (<span className="text-blue-600 font-medium">Nam: {totalMale}</span>
+              </div>
+              <div>
+                <span className="theme-text-primary font-medium">{students.length}</span> học sinh
+                đã điền thông tin{' '}
+                <span>
+                  (<span className="text-blue-500 font-medium">Nam: {totalMale}</span>
                   {' / '}
-                  <span className="text-pink-600 font-medium">Nữ: {totalFemale}</span>)
+                  <span className="text-pink-500 font-medium">Nữ: {totalFemale}</span>)
                 </span>
-              </p>
-              <p>
-                {duplicateNorms.size > 0 && (
-                  <span className="text-yellow-600 font-medium inline-flex items-center gap-1">
-                    <FiAlertTriangle className="text-yellow-600" />
-                    {[...duplicateNorms].reduce(
-                      (acc, norm) =>
-                        acc + students.filter((s) => normalizeName(s.name) === norm).length,
-                      0,
-                    )}{' '}
-                    trùng tên
-                  </span>
-                )}
-              </p>
-            </p>
-            <div className="flex  sm:flex-row flex-col-reverse items-center gap-2">
+              </div>
+              {duplicateNorms.size > 0 && (
+                <div className="text-yellow-500 dark:text-yellow-400 font-medium inline-flex items-center gap-1">
+                  <FiAlertTriangle />
+                  {[...duplicateNorms].reduce(
+                    (acc, norm) =>
+                      acc + students.filter((s) => normalizeName(s.name) === norm).length,
+                    0,
+                  )}{' '}
+                  trùng tên
+                </div>
+              )}
+            </div>
+            <div className="flex sm:flex-row flex-col-reverse items-center gap-2">
               {duplicateNorms.size > 0 && (
                 <button
                   onClick={() => setShowDupOnly((v) => !v)}
                   className={`text-sm px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     showDupOnly
-                      ? 'bg-yellow-100 border-yellow-400 text-yellow-800'
-                      : 'bg-white border-gray-200 text-gray-600 hover:bg-yellow-50 hover:border-yellow-300'
+                      ? 'bg-yellow-500/15 border-yellow-400/50 text-yellow-600 dark:text-yellow-300'
+                      : 'bg-[var(--input-bg)] border-[color:var(--input-border)] theme-text-muted hover:bg-yellow-500/10 hover:border-yellow-400/40'
                   }`}
                 >
                   <span className="inline-flex items-center gap-1.5">
-                    <FiAlertTriangle className="text-yellow-600" />
+                    <FiAlertTriangle />
                     <span>{showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng'}</span>
                   </span>
                 </button>
@@ -792,40 +789,56 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   <div className="md:hidden space-y-3">
                     {displayedStudents.map((s, i) => {
                       const isDup = duplicateNorms.has(normalizeName(s.name));
+                      const isMale = s.gender === 'male';
                       return (
                         <div
                           key={s._id}
-                          className={`card p-4 ${isDup ? 'border-yellow-300 bg-yellow-50' : ''}`}
+                          onClick={() => openEdit(s)}
+                          className={`card p-4 cursor-pointer ${
+                            isDup ? 'border-yellow-400/50 bg-yellow-500/10' : ''
+                          }`}
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span className="text-xs text-gray-400 mr-1">{i + 1}.</span>
-                              <span className="font-semibold">{s.name}</span>
-                              <span className="ml-2 text-sm text-gray-500">
-                                {GENDER_LABEL[s.gender]}
-                              </span>
-                              {isDup && (
-                                <span className="ml-1.5 text-yellow-600 text-xs inline-flex items-center gap-1">
-                                  <FiAlertTriangle className="text-yellow-600" />
-                                  <span>trùng tên</span>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs theme-text-muted">{i + 1}.</span>
+                                <span className="font-semibold theme-text-primary truncate">
+                                  {s.name}
+                                </span>
+                                <span
+                                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                    isMale
+                                      ? 'bg-blue-500/15 text-blue-500'
+                                      : 'bg-pink-500/15 text-pink-500'
+                                  }`}
+                                >
+                                  {GENDER_LABEL[s.gender]}
+                                </span>
+                                {isDup && (
+                                  <span className="text-yellow-500 dark:text-yellow-400 text-xs inline-flex items-center gap-1">
+                                    <FiAlertTriangle />
+                                    <span>trùng tên</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {(s.height || s.weight) && (
+                            <div className="flex gap-4 text-sm theme-text-muted">
+                              {s.height && (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <FaRulerVertical className="text-sky-500" />
+                                  <span>{s.height} cm</span>
+                                </span>
+                              )}
+                              {s.weight && (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <FaWeight className="text-amber-500" />
+                                  <span>{s.weight} kg</span>
                                 </span>
                               )}
                             </div>
-                          </div>
-                          <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                            {s.height && (
-                              <span className="inline-flex items-center gap-1.5">
-                                <FaRulerVertical className="text-sky-500" />
-                                <span>{s.height} cm</span>
-                              </span>
-                            )}
-                            {s.weight && (
-                              <span className="inline-flex items-center gap-1.5">
-                                <FaWeight className="text-amber-500" />
-                                <span>{s.weight} kg</span>
-                              </span>
-                            )}
-                          </div>
+                          )}
                           {s.costumes?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {s.costumes.map((c) => (
@@ -835,17 +848,22 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                               ))}
                             </div>
                           )}
-                          {s.notes && <p className="text-xs text-gray-400 mt-1">{s.notes}</p>}
-                          <div className="flex gap-4 mt-3 pt-3 border-t border-gray-100">
+                          {s.notes && (
+                            <p className="text-xs theme-text-muted mt-2 italic">{s.notes}</p>
+                          )}
+                          <div
+                            className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
                               onClick={() => openEdit(s)}
-                              className="text-blue-600 text-xs font-medium"
+                              className="text-blue-500 text-xs font-medium hover:underline"
                             >
                               Sửa
                             </button>
                             <button
                               onClick={() => handleDelete(s._id)}
-                              className="text-red-600 text-xs font-medium"
+                              className="text-red-500 text-xs font-medium hover:underline"
                             >
                               Xoá
                             </button>
@@ -854,7 +872,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       );
                     })}
                     {displayedStudents.length === 0 && (
-                      <div className="card py-10 text-center text-gray-400">
+                      <div className="card py-10 text-center theme-text-muted">
                         {showDupOnly ? (
                           <span>
                             Không còn học sinh trùng tên —{' '}

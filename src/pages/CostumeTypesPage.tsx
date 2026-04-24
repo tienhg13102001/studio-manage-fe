@@ -87,7 +87,7 @@ const CostumeTypesPage = () => {
     {
       key: 'description',
       header: 'Mô tả',
-      render: (t) => <span className="text-gray-600">{t.description ?? '—'}</span>,
+      render: (t) => <span className="theme-text-muted">{t.description ?? '—'}</span>,
     },
     {
       key: 'actions',
@@ -96,12 +96,12 @@ const CostumeTypesPage = () => {
       className: 'whitespace-nowrap',
       render: (t) => (
         <span className="space-x-2">
-          <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline text-xs">
+          <button onClick={() => openEdit(t)} className="text-blue-500 hover:underline text-xs">
             Sửa
           </button>
           <button
             onClick={() => setConfirmId(t._id)}
-            className="text-red-600 hover:underline text-xs"
+            className="text-red-500 hover:underline text-xs"
           >
             Xoá
           </button>
@@ -123,14 +123,48 @@ const CostumeTypesPage = () => {
         </button>
       </div>
 
-      <DataTable<CostumeType>
-        loading={loading}
-        data={types}
-        keyExtractor={(t) => t._id}
-        emptyTitle="Chưa có loại trang phục nào"
-        columns={columns}
-        onRowClick={openEdit}
-      />
+      <div className="hidden md:block">
+        <DataTable<CostumeType>
+          loading={loading}
+          data={types}
+          keyExtractor={(t) => t._id}
+          emptyTitle="Chưa có loại trang phục nào"
+          columns={columns}
+          onRowClick={openEdit}
+        />
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="card py-10 text-center theme-text-muted">Đang tải…</div>
+        ) : types.length === 0 ? (
+          <div className="card py-10 text-center theme-text-muted">Chưa có loại trang phục nào</div>
+        ) : (
+          types.map((t) => (
+            <div key={t._id} className="card p-4">
+              <div className="font-semibold theme-text-primary">{t.name}</div>
+              {t.description && (
+                <p className="text-sm theme-text-muted italic mt-1">{t.description}</p>
+              )}
+              <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
+                <button
+                  onClick={() => openEdit(t)}
+                  className="text-blue-500 text-xs font-medium hover:underline"
+                >
+                  Sửa
+                </button>
+                <button
+                  onClick={() => setConfirmId(t._id)}
+                  className="text-red-500 text-xs font-medium hover:underline"
+                >
+                  Xoá
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       <ConfirmModal
         isOpen={!!confirmId}

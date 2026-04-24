@@ -14,10 +14,7 @@ import {
 } from 'recharts';
 import type { UpcomingSchedule } from '../services/dashboardService';
 import { formatCurrency, formatDate } from '../utils/format';
-import {
-  SCHEDULE_STATUS_LABEL,
-  SCHEDULE_STATUS_COLOR,
-} from '../utils/scheduleConstants';
+import { SCHEDULE_STATUS_LABEL, SCHEDULE_STATUS_COLOR } from '../utils/scheduleConstants';
 import { DataTable, ScheduleCalendar } from '../components/organisms';
 import type { Column } from '../components/organisms';
 import { useAuth } from '../context/AuthContext';
@@ -131,20 +128,12 @@ const DashboardPage = () => {
 
   if (!stats) return <PageLoader />;
 
-  const {
-    totals,
-    daily,
-    customerCount,
-    scheduleCount,
-    showSchedules,
-    upcomingSchedules,
-  } = stats!;
+  const { totals, daily, customerCount, scheduleCount, showSchedules, upcomingSchedules } = stats!;
 
   const STATUS_LABEL = SCHEDULE_STATUS_LABEL;
   const STATUS_COLOR = SCHEDULE_STATUS_COLOR;
 
-  const periodLabel =
-    chartMonths === 1 ? '1 tháng gần đây' : `${chartMonths} tháng gần đây`;
+  const periodLabel = chartMonths === 1 ? '1 tháng gần đây' : `${chartMonths} tháng gần đây`;
 
   const cards = [
     {

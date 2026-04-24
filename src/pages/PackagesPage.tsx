@@ -224,29 +224,29 @@ const PackagesPage = () => {
           <div className="md:hidden space-y-3">
             {packages.map((pkg) => (
               <div key={pkg._id} className="card p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-semibold text-gray-900">{pkg.name}</div>
-                    <div className="text-primary-600 text-sm mt-0.5">
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold theme-text-primary truncate">{pkg.name}</div>
+                    <div className="text-primary-500 text-sm mt-0.5">
                       {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
                     </div>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 shrink-0">
                     <button
                       onClick={() => openEdit(pkg)}
-                      className="text-blue-600 text-xs font-medium"
+                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
                     </button>
                     <button
                       onClick={() => handleDelete(pkg._id)}
-                      className="text-red-600 text-xs font-medium"
+                      className="text-red-500 text-xs font-medium hover:underline"
                     >
                       Xoá
                     </button>
                   </div>
                 </div>
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-sm theme-text-muted">
                   {pkg.duration && (
                     <div className="inline-flex items-center gap-1.5">
                       <MdOutlineTimer className="text-sky-500" />
@@ -277,12 +277,14 @@ const PackagesPage = () => {
                       <span>Trả file tối đa: {pkg.deliveryDays} ngày</span>
                     </div>
                   )}
-                  {pkg.description && <div className="text-gray-500 italic">{pkg.description}</div>}
+                  {pkg.description && (
+                    <div className="theme-text-muted italic">{pkg.description}</div>
+                  )}
                 </div>
               </div>
             ))}
             {packages.length === 0 && (
-              <div className="card py-10 text-center text-gray-400">Chưa có gói chụp nào</div>
+              <div className="card py-10 text-center theme-text-muted">Chưa có gói chụp nào</div>
             )}
           </div>
         </>
