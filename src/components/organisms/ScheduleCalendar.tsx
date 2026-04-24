@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
-import { MdAccessTime } from 'react-icons/md';
+import { MdAccessTime, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import {
-  MONTH_VN,
   DOW_VN,
   SCHEDULE_STATUS_LABEL,
-  SCHEDULE_STATUS_COLOR,
 } from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
@@ -26,6 +24,13 @@ interface Props {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
+
+const STATUS_BADGE: Record<string, { bg: string; dot: string }> = {
+  pending:   { bg: 'bg-amber-400/15 text-amber-300 dark:text-amber-300',  dot: 'bg-amber-400' },
+  confirmed: { bg: 'bg-sky-400/15 text-sky-300 dark:text-sky-300',        dot: 'bg-sky-400' },
+  completed: { bg: 'bg-emerald-400/15 text-emerald-300 dark:text-emerald-300', dot: 'bg-emerald-400' },
+  cancelled: { bg: 'bg-red-400/15 text-red-300 dark:text-red-300',        dot: 'bg-red-400' },
+};
 
 const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => {
   const [calendarDate, setCalendarDate] = useState(() => {
@@ -59,21 +64,21 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div>
-      {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl overflow-hidden border theme-card-border bg-[var(--card-bg)]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b theme-card-border">
         <button
           onClick={() =>
             setCalendarDate(({ year, month }) =>
               month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 },
             )
           }
-          className="btn-secondary px-3 py-1 text-sm"
+          className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
         >
-          ‹
+          <MdChevronLeft size={20} />
         </button>
-        <span className="font-semibold text-gray-800 text-lg">
-          {MONTH_VN[calendarDate.month]} {calendarDate.year}
+        <span className="font-bold theme-text-primary text-base tracking-wide">
+          Tháng {calendarDate.month + 1} / {calendarDate.year}
         </span>
         <button
           onClick={() =>
@@ -81,59 +86,88 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
               month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 },
             )
           }
-          className="btn-secondary px-3 py-1 text-sm"
+          className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
         >
-          ›
+          <MdChevronRight size={20} />
         </button>
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 mb-1">
-        {DOW_VN.map((d) => (
-          <div key={d} className="text-center text-xs font-semibold text-gray-500 py-1">
+      <div className="grid grid-cols-7 border-b theme-card-border bg-[var(--table-head-bg)]">
+        {DOW_VN.map((d, i) => (
+          <div
+            key={d}
+            className={`text-center text-xs font-semibold py-2 ${
+              i >= 5 ? 'text-rose-400' : 'theme-text-faint'
+            }`}
+          >
             {d}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 divide-x divide-y divide-[color:var(--card-border)]">
         {calendarDays.map((day, i) => {
           const dayItems = day ? (byDay[day] ?? []) : [];
           const isToday = day === today;
           const isSelected = day === selectedDay;
+          const dayNum = day ? parseInt(day.slice(8)) : 0;
+          const colIndex = i % 7;
+          const isWeekend = colIndex >= 5;
+
           return (
             <div
               key={i}
               onClick={() => day && setSelectedDay(isSelected ? null : day)}
-              className={`bg-white min-h-[5rem] p-1.5 transition-colors ${
-                !day ? 'bg-gray-50 cursor-default' : 'cursor-pointer hover:bg-primary-50'
-              } ${isSelected ? 'ring-2 ring-inset ring-primary-400' : ''}`}
+              className={[
+                'min-h-[4.5rem] p-1.5 transition-colors relative',
+                !day
+                  ? 'bg-[var(--table-head-bg)] cursor-default'
+                  : isSelected
+                  ? 'cursor-pointer bg-amber-500/10'
+                  : isToday
+                  ? 'cursor-pointer bg-amber-500/5'
+                  : 'cursor-pointer hover:bg-[var(--table-row-hover)]',
+              ].join(' ')}
             >
+              {isSelected && (
+                <span className="absolute inset-x-0 top-0 h-0.5 bg-amber-400" />
+              )}
               {day && (
                 <>
-                  <div
-                    className={`text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
-                      isToday ? 'bg-primary-600 text-white' : 'text-gray-700'
-                    }`}
-                  >
-                    {parseInt(day.slice(8))}
+                  <div className="flex justify-end mb-1">
+                    <span
+                      className={[
+                        'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
+                        isToday
+                          ? 'text-white'
+                          : isWeekend
+                          ? 'text-rose-400'
+                          : 'theme-text-primary',
+                      ].join(' ')}
+                      style={isToday ? { background: '#d97706' } : undefined}
+                    >
+                      {dayNum}
+                    </span>
                   </div>
                   <div className="space-y-0.5">
-                    {dayItems.slice(0, maxBadges).map((s) => (
-                      <div
-                        key={s._id}
-                        className={`text-xs truncate rounded px-1 py-0.5 leading-tight ${
-                          SCHEDULE_STATUS_COLOR[s.status] ?? 'bg-gray-100 text-gray-700'
-                        }`}
-                        title={s.className}
-                      >
-                        {s.className}
-                      </div>
-                    ))}
+                    {dayItems.slice(0, maxBadges).map((s) => {
+                      const badge = STATUS_BADGE[s.status] ?? STATUS_BADGE.pending;
+                      return (
+                        <div
+                          key={s._id}
+                          className={`flex items-center gap-1 text-[10px] truncate rounded px-1 py-0.5 leading-tight ${badge.bg}`}
+                          title={s.className}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dot}`} />
+                          <span className="truncate">{s.className}</span>
+                        </div>
+                      );
+                    })}
                     {dayItems.length > maxBadges && (
-                      <div className="text-xs text-gray-400 pl-1">
-                        +{dayItems.length - maxBadges}
+                      <div className="text-[10px] theme-text-faint pl-1">
+                        +{dayItems.length - maxBadges} more
                       </div>
                     )}
                   </div>
@@ -146,73 +180,63 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
 
       {/* Selected day detail */}
       {selectedDay && (byDay[selectedDay] ?? []).length > 0 && (
-        <div className="mt-4 border-t pt-4">
-          <h3 className="font-semibold text-gray-800 mb-3">
-            Lịch ngày {parseInt(selectedDay.slice(8))}/{parseInt(selectedDay.slice(5, 7))}/
-            {selectedDay.slice(0, 4)}
-          </h3>
+        <div className="border-t theme-card-border p-4">
+          <p className="text-xs font-semibold theme-text-faint uppercase tracking-wider mb-3">
+            {parseInt(selectedDay.slice(8))} tháng {parseInt(selectedDay.slice(5, 7))}, {selectedDay.slice(0, 4)}
+          </p>
           <div className="space-y-2">
-            {(byDay[selectedDay] ?? []).map((s) => (
-              <div
-                key={s._id}
-                className="flex items-start justify-between rounded-lg border border-gray-100 p-3 hover:bg-gray-50"
-              >
-                <div className="space-y-0.5">
-                  <div className="font-medium text-sm text-gray-900">{s.className}</div>
-                  {(s.startTime || s.endTime) && (
-                    <div className="text-xs text-gray-500 inline-flex items-center gap-1.5">
-                      <MdAccessTime className="text-sky-500" />
-                      <span>
-                        {s.startTime}
-                        {s.endTime ? ` – ${s.endTime}` : ''}
-                      </span>
-                    </div>
-                  )}
-                  {s.location && (
-                    <div className="text-xs text-gray-500 inline-flex items-center gap-1.5">
-                      <FaMapMarkerAlt className="text-rose-500" />
-                      <span>{s.location}</span>
-                    </div>
-                  )}
-                  {s.leadName && <div className="text-xs text-gray-500">Leader: {s.leadName}</div>}
-                  {s.notes && (
-                    <div className="text-xs text-yellow-700 bg-yellow-50 rounded px-1 py-0.5 mt-1">
-                      {s.notes}
-                    </div>
-                  )}
+            {(byDay[selectedDay] ?? []).map((s) => {
+              const badge = STATUS_BADGE[s.status] ?? STATUS_BADGE.pending;
+              return (
+                <div
+                  key={s._id}
+                  className="flex items-start justify-between rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2.5 hover:bg-[var(--table-row-hover)] transition-colors"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="font-semibold text-sm theme-text-primary truncate">{s.className}</div>
+                    {(s.startTime || s.endTime) && (
+                      <div className="text-xs theme-text-muted flex items-center gap-1">
+                        <MdAccessTime className="text-sky-400 shrink-0" />
+                        {s.startTime}{s.endTime ? ` – ${s.endTime}` : ''}
+                      </div>
+                    )}
+                    {s.location && (
+                      <div className="text-xs theme-text-muted flex items-center gap-1">
+                        <FaMapMarkerAlt className="text-rose-400 shrink-0" />
+                        <span className="truncate">{s.location}</span>
+                      </div>
+                    )}
+                    {s.notes && (
+                      <div className="text-[11px] text-amber-400/80 mt-0.5">※ {s.notes}</div>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg}`}>
+                      {SCHEDULE_STATUS_LABEL[s.status] ?? s.status}
+                    </span>
+                    {(onEdit || onDelete) && (
+                      <div className="flex gap-2">
+                        {onEdit && (
+                          <button onClick={() => onEdit(s._id)} className="text-xs theme-text-muted hover:text-amber-400 transition-colors">
+                            Sửa
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button onClick={() => onDelete(s._id)} className="text-xs theme-text-muted hover:text-red-400 transition-colors">
+                            Xoá
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-2 ml-3">
-                  <span className={`badge ${SCHEDULE_STATUS_COLOR[s.status] ?? ''}`}>
-                    {SCHEDULE_STATUS_LABEL[s.status] ?? s.status}
-                  </span>
-                  {(onEdit || onDelete) && (
-                    <div className="flex gap-2">
-                      {onEdit && (
-                        <button
-                          onClick={() => onEdit(s._id)}
-                          className="text-blue-600 hover:underline text-xs"
-                        >
-                          Sửa
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={() => onDelete(s._id)}
-                          className="text-red-600 hover:underline text-xs"
-                        >
-                          Xoá
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
       {selectedDay && (byDay[selectedDay] ?? []).length === 0 && (
-        <div className="mt-4 border-t pt-4 text-center text-gray-400 text-sm">
+        <div className="border-t theme-card-border py-6 text-center theme-text-faint text-sm">
           Không có lịch ngày này
         </div>
       )}

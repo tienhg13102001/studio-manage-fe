@@ -9,7 +9,7 @@ import { scheduleService } from '../services/scheduleService';
 import type { ScheduleResponse, CostumeResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
-import { TableSkeleton, Select } from '../components/atoms';
+import { TableSkeleton, Select, SegmentedControl } from '../components/atoms';
 import {
   SCHEDULE_STATUS_COLOR as statusColor,
   SCHEDULE_STATUS_LABEL as statusLabel,
@@ -268,25 +268,21 @@ const SchedulesPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">Lịch chụp</h2>
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Schedules</span>
+          <h2 className="page-title">Lịch chụp</h2>
+          <p className="page-subtitle">Theo dõi và sắp xếp lịch chụp ảnh theo ngày.</p>
+        </div>
         <div className="flex items-center gap-2 justify-between w-full md:w-auto">
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors inline-flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-            >
-              <FaTable className={viewMode === 'table' ? 'text-white' : 'text-slate-500'} />
-              <span>Bảng</span>
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 inline-flex items-center gap-1.5 ${viewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-            >
-              <FaCalendarAlt className={viewMode === 'calendar' ? 'text-white' : 'text-slate-500'} />
-              <span>Lịch</span>
-            </button>
-          </div>
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            items={[
+              { value: 'table', label: 'Bảng', icon: <FaTable />, tone: 'blue' },
+              { value: 'calendar', label: 'Lịch', icon: <FaCalendarAlt />, tone: 'violet' },
+            ]}
+          />
           <button onClick={openCreate} className="btn-primary">
             + Thêm lịch
           </button>

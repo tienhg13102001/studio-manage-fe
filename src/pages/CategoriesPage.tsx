@@ -73,9 +73,13 @@ const CategoriesPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Danh mục thu / chi</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Settings</span>
+          <h2 className="page-title">Danh mục thu / chi</h2>
+          <p className="page-subtitle">Quản lý các danh mục khoản thu và khoản chi.</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm danh mục
         </button>
       </div>

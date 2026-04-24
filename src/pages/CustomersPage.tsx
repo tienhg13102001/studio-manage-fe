@@ -86,9 +86,13 @@ const CustomersPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Khách hàng (Lớp)</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Customers</span>
+          <h2 className="page-title">Khách hàng (Lớp)</h2>
+          <p className="page-subtitle">Danh sách lớp học, trường và thông tin liên hệ.</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm lớp
         </button>
       </div>
@@ -147,35 +151,35 @@ const CustomersPage = () => {
                 {
                   key: 'school',
                   header: 'Trường',
-                  render: (c) => <span className="text-gray-600">{c.school}</span>,
+                  render: (c) => <span>{c.school}</span>,
                 },
                 {
                   key: 'contactName',
                   header: 'Liên hệ',
-                  render: (c) => <span className="text-gray-600">{c.contactName}</span>,
+                  render: (c) => <span>{c.contactName}</span>,
                 },
                 {
                   key: 'contactPhone',
                   header: 'SĐT',
-                  render: (c) => <span className="text-gray-600">{c.contactPhone}</span>,
+                  render: (c) => <span>{c.contactPhone}</span>,
                 },
                 {
                   key: 'contactAddress',
                   header: 'Địa chỉ',
-                  render: (c) => <span className="text-gray-600">{c.contactAddress}</span>,
+                  render: (c) => <span>{c.contactAddress}</span>,
                 },
                 {
                   key: 'total',
                   header: 'Sĩ số',
                   align: 'right',
-                  render: (c) => <span className="text-gray-600">{c.total}</span>,
+                  render: (c) => <span>{c.total}</span>,
                 },
                 {
                   key: 'gender',
                   header: 'Nam / Nữ',
                   align: 'right',
                   render: (c) => (
-                    <span className="text-gray-600">
+                    <span>
                       {c.totalMale ?? 0} / {c.totalFemale ?? 0}
                     </span>
                   ),

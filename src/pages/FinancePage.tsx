@@ -289,35 +289,48 @@ const FinancePage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Quản lý Thu Chi</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Finance</span>
+          <h2 className="page-title">Quản lý Thu Chi</h2>
+          <p className="page-subtitle">
+            Theo dõi thu chi, lọc theo lớp, danh mục và khoảng thời gian.
+          </p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm giao dịch
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card mb-4 space-y-3">
+      <div className="section-card mb-5 space-y-4">
         {/* Hàng 1: Loại + Lớp + Danh mục */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <Select
-            options={[
-              { value: '', label: 'Tất cả loại' },
-              { value: 'income', label: 'Thu' },
-              { value: 'expense', label: 'Chi' },
-            ]}
-            value={filter.type}
-            onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
-          />
-          <Select
-            options={[
-              { value: '', label: 'Tất cả lớp' },
-              ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
-            ]}
-            value={filter.customer}
-            onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
-          />
-          <div className="col-span-2 md:col-span-1">
+          <div className="field-stack">
+            <label className="field-caption">Loại giao dịch</label>
+            <Select
+              options={[
+                { value: '', label: 'Tất cả loại' },
+                { value: 'income', label: 'Thu' },
+                { value: 'expense', label: 'Chi' },
+              ]}
+              value={filter.type}
+              onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
+            />
+          </div>
+          <div className="field-stack">
+            <label className="field-caption">Lớp</label>
+            <Select
+              options={[
+                { value: '', label: 'Tất cả lớp' },
+                ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
+              ]}
+              value={filter.customer}
+              onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
+            />
+          </div>
+          <div className="field-stack col-span-2 md:col-span-1">
+            <label className="field-caption">Danh mục</label>
             <Select
               options={[
                 { value: '', label: 'Tất cả danh mục' },
@@ -331,23 +344,24 @@ const FinancePage = () => {
 
         {canRefund && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Select
-              options={[
-                { value: '', label: 'Tất cả người thực hiện' },
-                ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
-              ]}
-              value={filter.createdBy}
-              onChange={(v) => setFilter((f) => ({ ...f, createdBy: v as string }))}
-            />
+            <div className="field-stack">
+              <label className="field-caption">Người thực hiện</label>
+              <Select
+                options={[
+                  { value: '', label: 'Tất cả người thực hiện' },
+                  ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
+                ]}
+                value={filter.createdBy}
+                onChange={(v) => setFilter((f) => ({ ...f, createdBy: v as string }))}
+              />
+            </div>
           </div>
         )}
 
         {/* Hàng 2: Từ ngày + Đến ngày + Buttons */}
-        <div className="grid grid-cols-2 md:flex md:items-center gap-3">
-          <div className="md:flex-1 relative">
-            <span className="absolute -top-2 left-2.5 px-1 bg-white text-xs text-gray-400 leading-none z-10 pointer-events-none">
-              Từ ngày
-            </span>
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-end">
+          <div className="field-stack">
+            <label className="field-caption">Từ ngày</label>
             <input
               type="date"
               className="input"
@@ -355,10 +369,8 @@ const FinancePage = () => {
               onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
             />
           </div>
-          <div className="md:flex-1 relative">
-            <span className="absolute -top-2 left-2.5 px-1 bg-white text-xs text-gray-400 leading-none z-10 pointer-events-none">
-              Đến ngày
-            </span>
+          <div className="field-stack">
+            <label className="field-caption">Đến ngày</label>
             <input
               type="date"
               className="input"
@@ -366,11 +378,11 @@ const FinancePage = () => {
               onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
             />
           </div>
-          <div className="col-span-2 md:col-span-1 flex gap-2 md:ml-auto">
-            <button onClick={applyFilter} className="btn-primary flex-1 md:flex-none">
+          <div className="flex gap-2 md:justify-end">
+            <button onClick={applyFilter} className="btn-primary flex-1 md:flex-none min-w-[96px]">
               Lọc
             </button>
-            <button onClick={resetFilter} className="btn-secondary flex-1 md:flex-none">
+            <button onClick={resetFilter} className="btn-secondary flex-1 md:flex-none min-w-[88px]">
               Xoá
             </button>
           </div>
@@ -378,7 +390,7 @@ const FinancePage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <button
           onClick={() => setTab('list')}
           className={tab === 'list' ? 'btn-primary' : 'btn-secondary'}

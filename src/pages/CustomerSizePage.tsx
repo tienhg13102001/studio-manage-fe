@@ -497,13 +497,17 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Thông tin học sinh</h2>
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Customers</span>
+          <h2 className="page-title">Thông tin học sinh</h2>
+          <p className="page-subtitle">Quản lý số đo và thông tin trang phục của từng học sinh.</p>
+        </div>
       </div>
 
       {/* Class selector */}
       <div className="card p-4 mb-4 flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium text-gray-700 shrink-0">Chọn lớp:</label>
+        <label className="text-sm font-medium shrink-0">Chọn lớp:</label>
         <div className="flex-1 min-w-[200px]">
           <Select
             options={customers.map((c) => ({
@@ -600,7 +604,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         <>
           <div className="flex items-center justify-between mb-3 gap-2">
             <p className="text-sm text-gray-500 space-y-1">
-              <p className="text-gray-800 font-medium">
+              <p className="text-green-600 font-medium">
                 Tổng cộng có {selectedCustomer?.total} học sinh đăng ký
               </p>
               {/* Lớp <span className="font-semibold text-gray-800">{selectedCustomer?.className}</span> */}
@@ -664,7 +668,6 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'index',
                   header: '#',
-                  className: 'text-gray-400',
                   render: (_s, i) => i + 1,
                 },
                 {
@@ -689,47 +692,43 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'gender',
                   header: 'Giới tính',
-                  className: 'text-gray-600',
                   render: (s) => GENDER_LABEL[s.gender],
                 },
                 {
                   key: 'height',
                   header: 'Chiều cao (cm)',
                   align: 'right',
-                  className: 'text-gray-600',
                   render: (s) => s.height ?? '—',
                 },
                 {
                   key: 'weight',
                   header: 'Cân nặng (kg)',
                   align: 'right',
-                  className: 'text-gray-600',
                   render: (s) => s.weight ?? '—',
                 },
                 {
                   key: 'costumes',
                   header: 'Trang phục',
-                  className: 'text-gray-600',
                   render: (s) =>
                     s.costumes?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {s.costumes.map((c) => (
                           <span
                             key={c._id}
-                            className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-0.5 rounded"
+                            className="theme-chip"
                           >
                             {c.name}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="theme-text-muted">—</span>
                     ),
                 },
                 {
                   key: 'notes',
                   header: 'Ghi chú',
-                  className: 'text-gray-400 text-xs',
+                  className: 'text-xs',
                   render: (s) => s.notes,
                 },
                 {
@@ -757,10 +756,13 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       keyExtractor={(s) => s._id}
                       columns={studentColumns}
                       onRowClick={(r) => openEdit(r)}
-                      rowClassName={(s) =>
+                      rowStyle={(s) =>
                         duplicateNorms.has(normalizeName(s.name))
-                          ? 'bg-yellow-50'
-                          : 'hover:bg-gray-50'
+                          ? {
+                              background: 'var(--table-row-warning-bg)',
+                              boxShadow: 'inset 2px 0 0 rgba(245, 158, 11, 0.95)',
+                            }
+                          : undefined
                       }
                       emptyTitle={
                         showDupOnly ? 'Không còn học sinh trùng tên' : 'Chưa có học sinh nào'
@@ -768,7 +770,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       emptyDescription={
                         showDupOnly ? 'Bỏ lọc để xem toàn bộ danh sách.' : undefined
                       }
-                      emptyIcon={<FaGraduationCap className="text-violet-500" />}
+                      emptyIcon={<FaGraduationCap className="text-primary-500" />}
                     />
                     {showDupOnly && displayedStudents.length === 0 && (
                       <div className="text-center mt-2">
@@ -825,7 +827,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                               {s.costumes.map((c) => (
                                 <span
                                   key={c._id}
-                                  className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-0.5 rounded"
+                                  className="theme-chip"
                                 >
                                   {c.name}
                                 </span>
@@ -1081,7 +1083,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             <div className="sm:col-span-2">
               <label className="label">Trang phục</label>
               {visibleCostumes.length === 0 ? (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs theme-text-muted">
                   {scheduleCostumes.length === 0
                     ? 'Lịch chụp này chưa cấu hình trang phục.'
                     : 'Không có trang phục phù hợp với giới tính đã chọn.'}
@@ -1089,15 +1091,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {visibleCostumes.map((c) => (
-                    <label
-                      key={c._id}
-                      className="flex items-center gap-2 border rounded-lg py-2 px-3 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 transition-colors"
-                    >
+                    <label key={c._id} className="costume-option">
                       <input
                         type="checkbox"
                         value={c._id}
                         {...register('costumes')}
-                        className="accent-primary-600"
                       />
                       <span className="text-sm">{c.name}</span>
                     </label>

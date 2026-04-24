@@ -2,67 +2,446 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ══════════════════════════════════════════════════
+   CSS Custom Properties — Light / Dark themes
+══════════════════════════════════════════════════ */
+:root {
+  /* Page */
+  --page-bg: #eef2f7;
+
+  /* Sidebar */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: rgba(0,0,0,0.06);
+  --sidebar-shadow: 4px 0 20px rgba(0,0,0,0.06);
+  --sidebar-header-border: rgba(0,0,0,0.06);
+  --sidebar-logo-shadow: 0 0 10px rgba(245,158,11,0.24);
+
+  /* Nav items */
+  --nav-text: #4b5563;
+  --nav-hover-bg: rgba(245,158,11,0.12);
+  --nav-hover-text: #b45309;
+  --nav-child-border: rgba(245,158,11,0.32);
+  --nav-section-label: rgba(180,83,9,0.75);
+
+  /* User section */
+  --user-border: rgba(0,0,0,0.06);
+  --user-name-color: #111827;
+  --user-role-bg: rgba(245,158,11,0.16);
+  --user-role-text: #92400e;
+  --user-logout-color: #94a3b8;
+
+  /* Topbar (mobile) */
+  --topbar-bg: rgba(255,255,255,0.95);
+  --topbar-border: rgba(0,0,0,0.06);
+  --topbar-icon-color: #374151;
+
+  /* Card */
+  --card-bg: #ffffff;
+  --card-border: rgba(148, 163, 184, 0.18);
+  --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  /* Modal */
+  --modal-bg: #ffffff;
+  --modal-border: rgba(148, 163, 184, 0.22);
+  --modal-shadow: 0 28px 72px rgba(15, 23, 42, 0.24);
+
+  /* Table */
+  --table-head-bg: #f8fafc;
+  --table-row-hover: rgba(245, 158, 11, 0.08);
+  --table-row-warning-bg: rgba(245, 158, 11, 0.12);
+
+  /* Chips */
+  --chip-bg: rgba(245, 158, 11, 0.1);
+  --chip-text: #b45309;
+  --costume-chip-bg: #ffffff;
+  --costume-chip-border: rgba(148, 163, 184, 0.32);
+  --costume-chip-text: #334155;
+  --costume-chip-checked-bg: rgba(245, 158, 11, 0.16);
+  --costume-chip-checked-border: rgba(245, 158, 11, 0.52);
+  --costume-chip-checked-text: #92400e;
+
+  /* Input */
+  --input-bg: #f8fafc;
+  --input-border: rgba(148, 163, 184, 0.32);
+  --input-color: #111827;
+  --input-placeholder: #94a3b8;
+  --input-focus-border: rgba(217, 119, 6, 0.52);
+  --input-focus-ring: rgba(245, 158, 11, 0.14);
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+
+  /* Login bg */
+  --login-bg: linear-gradient(135deg, #fffbeb 0%, #fff7ed 40%, #fef3c7 100%);
+  --login-blob1: rgba(245,158,11,0.16);
+  --login-blob2: rgba(6,182,212,0.06);
+  --login-card-bg: rgba(255,255,255,0.9);
+  --login-card-border: rgba(0,0,0,0.08);
+  --login-card-shadow: 0 24px 60px rgba(245,158,11,0.14), 0 2px 16px rgba(0,0,0,0.06);
+}
+
+:root.dark {
+  /* Page */
+  --page-bg: #0a0a12;
+
+  /* Sidebar */
+  --sidebar-bg: linear-gradient(180deg, #0d0d1f 0%, #0a0a14 100%);
+  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-shadow: 4px 0 24px rgba(0,0,0,0.4);
+  --sidebar-header-border: rgba(255,255,255,0.06);
+  --sidebar-logo-shadow: 0 0 16px rgba(245,158,11,0.55);
+
+  /* Nav items */
+  --nav-text: #94a3b8;
+  --nav-hover-bg: rgba(255,255,255,0.05);
+  --nav-hover-text: #f1f5f9;
+  --nav-child-border: rgba(245,158,11,0.34);
+  --nav-section-label: rgba(245,158,11,0.66);
+
+  /* User section */
+  --user-border: rgba(255,255,255,0.06);
+  --user-name-color: #f1f5f9;
+  --user-role-bg: rgba(245,158,11,0.28);
+  --user-role-text: #fcd34d;
+  --user-logout-color: #475569;
+
+  /* Topbar (mobile) */
+  --topbar-bg: rgba(10,10,18,0.9);
+  --topbar-border: rgba(255,255,255,0.06);
+  --topbar-icon-color: #94a3b8;
+
+  /* Card */
+  --card-bg: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.08);
+  --card-shadow: 0 8px 32px rgba(0,0,0,0.35);
+
+  /* Modal */
+  --modal-bg: #121424;
+  --modal-border: rgba(148, 163, 184, 0.28);
+  --modal-shadow: 0 30px 80px rgba(0,0,0,0.65);
+
+  /* Table */
+  --table-head-bg: rgba(255,255,255,0.04);
+  --table-row-hover: rgba(245, 158, 11, 0.16);
+  --table-row-warning-bg: rgba(245, 158, 11, 0.14);
+
+  /* Chips */
+  --chip-bg: rgba(245, 158, 11, 0.22);
+  --chip-text: #fde68a;
+  --costume-chip-bg: rgba(255,255,255,0.05);
+  --costume-chip-border: rgba(148, 163, 184, 0.24);
+  --costume-chip-text: #cbd5e1;
+  --costume-chip-checked-bg: rgba(245, 158, 11, 0.26);
+  --costume-chip-checked-border: rgba(251, 191, 36, 0.72);
+  --costume-chip-checked-text: #fef3c7;
+
+  /* Input */
+  --input-bg: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%);
+  --input-border: rgba(148, 163, 184, 0.18);
+  --input-color: #f1f5f9;
+  --input-placeholder: #64748b;
+  --input-focus-border: rgba(245, 158, 11, 0.58);
+  --input-focus-ring: rgba(245, 158, 11, 0.16);
+
+  /* Text */
+  --text-primary: #e2e8f0;
+  --text-muted: #64748b;
+  --text-faint: #475569;
+
+  /* Login bg */
+  --login-bg: linear-gradient(135deg, #0a0a12 0%, #2a1a05 40%, #0c1a2e 100%);
+  --login-blob1: rgba(245,158,11,0.22);
+  --login-blob2: rgba(6,182,212,0.1);
+  --login-card-bg: rgba(255,255,255,0.04);
+  --login-card-border: rgba(255,255,255,0.1);
+  --login-card-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.18);
+}
+
 @layer base {
   html {
     font-size: 16px;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
-    font-size: 0.875rem; /* 16px */
+    background: var(--page-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.35); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #d97706; }
+
+  .theme-page { background: var(--page-bg); }
+  .theme-text-primary { color: var(--text-primary); }
+  .theme-text-muted { color: var(--text-muted); }
+  .theme-text-faint { color: var(--text-faint); }
+  .theme-card-border { border-color: var(--card-border); }
+  .theme-card-bg { background: var(--card-bg); }
+  .theme-topbar {
+    background: var(--topbar-bg);
+    border-color: var(--topbar-border);
+  }
+
+  /* ── Recharts ── */
+  .recharts-cartesian-axis-tick-value { fill: var(--text-muted) !important; }
+  .recharts-legend-item-text { color: var(--text-primary) !important; }
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 0.75rem !important;
+    backdrop-filter: blur(16px) !important;
   }
 }
 
 @layer components {
+
+  /* ──────────────────────────────────────────────
+     BUTTONS
+  ────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+           focus:ring-primary-500 disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn text-white;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 8px 18px rgba(245, 158, 11, 0.28), 0 2px 6px rgba(15, 23, 42, 0.08);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    box-shadow: 0 12px 24px rgba(245, 158, 11, 0.34), 0 4px 10px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+  }
+  :root.dark .btn-primary {
+    box-shadow: 0 0 14px rgba(245,158,11,0.42), 0 2px 8px rgba(0,0,0,0.2);
+  }
+  :root.dark .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 0 22px rgba(251,191,36,0.54), 0 2px 12px rgba(0,0,0,0.3);
   }
   .btn-secondary {
-    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500;
+    @apply btn;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: rgba(245,158,11,0.45);
+    color: var(--text-primary);
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply btn text-white;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    box-shadow: 0 0 14px rgba(220,38,38,0.25);
   }
+  .btn-danger:hover:not(:disabled) {
+    box-shadow: 0 0 22px rgba(220,38,38,0.4);
+    transform: translateY(-1px);
+  }
+
+  /* ──────────────────────────────────────────────
+     INPUTS
+  ────────────────────────────────────────────── */
   .input {
-    @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
-    /* Normalize appearance trên iOS Safari */
+    @apply block w-full rounded-xl text-sm focus:outline-none;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-color);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    padding: 0.5rem 0.875rem;
+    min-height: 40px;
+    line-height: 1.5;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, transform 0.2s;
     -webkit-appearance: none;
     appearance: none;
-    background-color: #fff;
-    color: #111827; /* text-gray-900 */
-    min-height: 38px;
-    line-height: 1.5;
-    font-size: 1rem; /* 16px — tránh iOS auto-zoom */
   }
+  .input::placeholder { color: var(--input-placeholder); }
+  .input:focus {
+    border-color: var(--input-focus-border);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px var(--input-focus-ring), 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  :root.dark .input {
+    border-radius: 1rem;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      inset 0 -1px 0 rgba(0,0,0,0.28),
+      0 1px 0 rgba(255,255,255,0.02);
+  }
+  :root.dark .input:hover {
+    border-color: rgba(148, 163, 184, 0.28);
+    background: linear-gradient(180deg, rgba(255,255,255,0.065) 0%, rgba(255,255,255,0.04) 100%);
+  }
+  :root.dark .input:focus {
+    background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.045) 100%);
+    box-shadow:
+      0 0 0 3px var(--input-focus-ring),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 0 0 1px rgba(139, 92, 246, 0.18);
+  }
+
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: var(--text-muted);
   }
+
+  /* ──────────────────────────────────────────────
+     CARD
+  ────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply rounded-2xl p-6;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
+  .card:hover {
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+  }
+  :root.dark .card {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  :root.dark .card:hover {
+    box-shadow: var(--card-shadow);
+  }
+
+  /* ──────────────────────────────────────────────
+     BADGE
+  ────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-4 mb-6 md:flex-row md:items-start md:justify-between;
+  }
+
+  .page-kicker {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em];
+    background: rgba(245, 158, 11, 0.12);
+    color: #b45309;
+  }
+
+  .page-title {
+    @apply mt-3 text-3xl font-bold leading-tight;
+    color: var(--text-primary);
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm;
+    color: var(--text-muted);
+  }
+
+  .section-card {
+    @apply rounded-3xl p-5 md:p-6;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+  }
+
+  .field-stack {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .field-caption {
+    @apply text-xs font-semibold uppercase tracking-[0.12em];
+    color: var(--text-muted);
+  }
+  :root.dark .field-caption {
+    color: #7c8aa5;
+    letter-spacing: 0.14em;
+  }
+
+  .costume-option {
+    @apply flex items-center gap-2 rounded-lg py-2 px-3 cursor-pointer transition-all duration-200 text-sm;
+    background: var(--costume-chip-bg);
+    border: 1px solid var(--costume-chip-border);
+    color: var(--costume-chip-text);
+  }
+  .costume-option:hover {
+    border-color: rgba(245, 158, 11, 0.52);
+  }
+  .costume-option:has(input:checked) {
+    background: var(--costume-chip-checked-bg);
+    border-color: var(--costume-chip-checked-border);
+    color: var(--costume-chip-checked-text);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+  }
+  .costume-option input[type='checkbox'] {
+    accent-color: #d97706;
+  }
+
+  .theme-chip {
+    @apply inline-block text-xs px-2 py-0.5 rounded;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+  }
+
+  .theme-divider-top {
+    border-top: 1px solid var(--card-border);
   }
 }
 
-/* Fix đặc biệt cho input[type=date] trên iOS Safari */
+/* ── Date input ── */
 input[type='date'].input,
 input[type='date'] {
   -webkit-appearance: none;
   appearance: none;
-  background-color: #fff;
-  color: #111827;
+  background: var(--input-bg);
+  color: var(--input-color);
   font-size: 1rem;
   line-height: 1.5;
-  min-height: 38px;
+  min-height: 40px;
   display: block;
   width: 100%;
+  border: 1px solid var(--input-border);
+  border-radius: 0.75rem;
+}
+:root.dark input[type='date'].input,
+:root.dark input[type='date'] {
+  border-radius: 1rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.28),
+    0 1px 0 rgba(255,255,255,0.02);
+  color-scheme: dark;
+}
+:root.dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.82) sepia(0.08) saturate(0.6) hue-rotate(185deg);
+  opacity: 0.85;
+}
+:root.dark input[type='date']::-webkit-datetime-edit {
+  color: var(--input-color);
 }
 
-/* Khắc phục placeholder màu xám nhạt trên iOS Safari */
-input[type='date']::-webkit-date-and-time-value {
-  text-align: left;
+input[type='date']::-webkit-date-and-time-value { text-align: left; }
+
+/* ── Select ── */
+select.input, select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25em;
+  padding-right: 2.5rem;
 }
+:root.dark select.input,
+:root.dark select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23879ab8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* ── Gradient text ── */
+.text-gradient {
+  background: linear-gradient(135deg, #f59e0b 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+

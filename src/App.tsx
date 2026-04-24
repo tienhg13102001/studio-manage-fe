@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/LoginPage';
@@ -54,28 +55,30 @@ function renderRouteItem(item: NavItem) {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/form/:customer" element={<StudentFormPage />} />
-          <Route path="/feedback" element={<FeedbackFormPage />} />
-          <Route path="/feedback/:customer" element={<FeedbackFormPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            {[...navItems, ...adminItems].map(renderRouteItem)}
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/form/:customer" element={<StudentFormPage />} />
+            <Route path="/feedback" element={<FeedbackFormPage />} />
+            <Route path="/feedback/:customer" element={<FeedbackFormPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              {[...navItems, ...adminItems].map(renderRouteItem)}
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

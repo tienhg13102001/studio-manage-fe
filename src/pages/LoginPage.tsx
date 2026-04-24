@@ -30,14 +30,37 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="card w-full max-w-sm">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-3">
-            <Logo size={52} />
+    <div
+      className="min-h-screen flex items-center justify-center relative overflow-hidden"
+      style={{background:'var(--login-bg)'}}
+    >
+      {/* Ambient glow blobs */}
+      <div
+        className="absolute top-0 left-1/4 w-96 h-96 rounded-full pointer-events-none"
+        style={{background:`radial-gradient(circle, var(--login-blob1) 0%, transparent 70%)`, filter:'blur(40px)'}}
+      />
+      <div
+        className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full pointer-events-none"
+        style={{background:`radial-gradient(circle, var(--login-blob2) 0%, transparent 70%)`, filter:'blur(40px)'}}
+      />
+
+      {/* Glass card */}
+      <div
+        className="relative w-full max-w-sm mx-4 rounded-2xl p-8"
+        style={{
+          background: 'var(--login-card-bg)',
+          border: '1px solid var(--login-card-border)',
+          backdropFilter: 'blur(24px)',
+          boxShadow: 'var(--login-card-shadow)',
+        }}
+      >
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="mb-4 rounded-2xl overflow-hidden" style={{boxShadow:'0 0 24px rgba(124,58,237,0.6)'}}>
+            <Logo size={56} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Yume Studio</h1>
-          <p className="text-sm text-gray-500 mt-1">Đăng nhập để tiếp tục</p>
+          <h1 className="text-2xl font-bold text-gradient">Yume Studio</h1>
+          <p className="text-sm mt-1" style={{color:'#475569'}}>Đăng nhập để tiếp tục</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -61,9 +84,16 @@ const LoginPage = () => {
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p
+              className="text-sm rounded-xl px-3 py-2"
+              style={{color:'#fca5a5', background:'rgba(220,38,38,0.1)', border:'1px solid rgba(220,38,38,0.2)'}}
+            >
+              {error}
+            </p>
+          )}
 
-          <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
+          <button type="submit" disabled={isSubmitting} className="btn-primary w-full mt-2 py-3">
             {isSubmitting ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </button>
         </form>

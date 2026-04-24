@@ -87,13 +87,13 @@ const StudentFormPage = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 theme-page">
+        <div className="text-center card max-w-sm w-full py-10">
           <div className="mb-4 flex justify-center">
             <FiAlertCircle className="text-5xl text-amber-500" />
           </div>
-          <p className="text-gray-600 font-medium">Không tìm thấy lớp học</p>
-          <p className="text-sm text-gray-400 mt-1">Link có thể không còn hợp lệ</p>
+          <p className="font-medium theme-text-primary">Không tìm thấy lớp học</p>
+          <p className="text-sm mt-1 theme-text-muted">Link có thể không còn hợp lệ</p>
         </div>
       </div>
     );
@@ -101,7 +101,7 @@ const StudentFormPage = () => {
 
   if (!schedule) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center theme-page">
         <PageLoader />
       </div>
     );
@@ -109,16 +109,18 @@ const StudentFormPage = () => {
 
   if (submitStatus === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 theme-page">
+        <div className="card p-8 max-w-sm w-full text-center">
           <div className="mb-4 flex justify-center">
             <IoCheckmarkCircle className="text-5xl text-emerald-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Đã ghi nhận!</h2>
-          <p className="text-gray-500 text-sm mb-6">Thông tin của bạn đã được lưu thành công.</p>
+          <h2 className="text-xl font-bold mb-2 theme-text-primary">Đã ghi nhận!</h2>
+          <p className="text-sm mb-6 theme-text-muted">
+            Thông tin của bạn đã được lưu thành công.
+          </p>
           <button
             onClick={() => setSubmitStatus('idle')}
-            className="w-full py-2.5 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
+            className="btn-primary w-full py-2.5"
           >
             Nhập thêm học sinh khác
           </button>
@@ -128,17 +130,17 @@ const StudentFormPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center py-10 px-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-start justify-center py-10 px-4 theme-page">
+      <div className="card w-full max-w-md p-0 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+        <div className="px-6 py-5 border-b theme-card-border">
+          <p className="text-xs uppercase tracking-wider mb-1 theme-text-faint">
             Nhập thông tin học sinh
           </p>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2 theme-text-primary">
             <span>{schedule.customer.className}</span>{' '}
             {schedule.customer.school && (
-              <span className="text-sm text-gray-500 mt-0.5 h-full font-light">
+              <span className="text-sm mt-0.5 h-full font-light theme-text-muted">
                 <span className="inline-flex items-center gap-1">
                   <FaSchool className="text-sky-500" />
                   <span>{schedule.customer.school}</span>
@@ -165,26 +167,26 @@ const StudentFormPage = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="label">
               Họ và tên <span className="text-red-500">*</span>
             </label>
             <input
               {...register('name', { required: 'Vui lòng nhập họ tên' })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="input"
               placeholder="Nguyễn Văn A"
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="label">
               Giới tính <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-3">
               {(['male', 'female'] as const).map((g) => (
                 <label
                   key={g}
-                  className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2.5 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 transition-colors"
+                  className="costume-option flex-1 justify-center py-2.5"
                 >
                   <input
                     type="radio"
@@ -212,7 +214,7 @@ const StudentFormPage = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 Chiều cao (cm) <span className="text-red-500">*</span>
               </label>
               <input
@@ -224,7 +226,7 @@ const StudentFormPage = () => {
                 step="0.1"
                 min="50"
                 max="250"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="input"
                 placeholder="165"
               />
               {errors.height && (
@@ -232,7 +234,7 @@ const StudentFormPage = () => {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="label">
                 Cân nặng (kg) <span className="text-red-500">*</span>
               </label>
               <input
@@ -244,7 +246,7 @@ const StudentFormPage = () => {
                 step="0.1"
                 min="10"
                 max="200"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="input"
                 placeholder="55"
               />
               {errors.weight && (
@@ -253,13 +255,10 @@ const StudentFormPage = () => {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Trang phục</label>
+            <label className="label">Trang phục</label>
             <div className="flex flex-wrap gap-3">
               {visibleCostumes.map((c) => (
-                <label
-                  key={c._id}
-                  className="flex items-center gap-2 border rounded-lg py-2.5 px-3 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50 transition-colors"
-                >
+                <label key={c._id} className="costume-option py-2.5">
                   <input
                     type="checkbox"
                     value={c._id}
@@ -270,16 +269,16 @@ const StudentFormPage = () => {
                 </label>
               ))}
             </div>
-            <p className="text-xs text-gray-400 ml-1">
+            <p className="text-xs ml-1 theme-text-muted">
               đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+            <label className="label">Ghi chú</label>
             <textarea
               {...register('notes')}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="input resize-none"
               rows={2}
               placeholder="Tuỳ chọn…"
             />
@@ -292,7 +291,7 @@ const StudentFormPage = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-60 transition-colors"
+            className="btn-primary w-full py-3"
           >
             {isSubmitting ? 'Đang gửi…' : 'Gửi thông tin'}
           </button>

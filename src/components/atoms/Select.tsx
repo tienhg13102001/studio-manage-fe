@@ -133,11 +133,11 @@ const Select = ({
   const dropdown = open && (
     <div
       ref={dropdownRef}
+      className="rounded-xl bg-[var(--input-bg)] border border-[color:var(--card-border)] shadow-[0_8px_24px_rgba(0,0,0,0.15)] backdrop-blur"
       style={dropdownStyle}
-      className="bg-white border border-gray-200 rounded-md shadow-lg"
     >
       {/* Search */}
-      <div className="p-2 border-b border-gray-100">
+      <div className="p-2 border-b border-[color:var(--card-border)]">
         <input
           ref={searchInputRef}
           type="text"
@@ -152,7 +152,7 @@ const Select = ({
       {/* Options list */}
       <ul className="max-h-52 overflow-y-auto py-1">
         {filtered.length === 0 && (
-          <li className="px-3 py-2 text-sm text-gray-400">Không có kết quả</li>
+          <li className="px-3 py-2 text-sm theme-text-faint">Không có kết quả</li>
         )}
         {filtered.map((opt) => {
           const isSelected = multiple
@@ -163,10 +163,11 @@ const Select = ({
               key={opt.value}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(opt.value)}
-              className={[
-                'px-3 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-gray-50',
-                isSelected ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700',
-              ].join(' ')}
+              className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between ${
+                isSelected
+                  ? 'bg-primary-100/80 text-primary-700 font-medium'
+                  : 'theme-text-primary hover:bg-[var(--table-row-hover)]'
+              }`}
             >
               <span>{opt.label}</span>
               {isSelected && (
@@ -212,7 +213,7 @@ const Select = ({
               selectedOptions.map((opt) => (
                 <span
                   key={opt.value}
-                  className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 rounded px-2 py-0.5 text-xs font-medium"
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-primary-100/70 text-primary-700"
                 >
                   {opt.label}
                   <button
@@ -227,14 +228,18 @@ const Select = ({
             )}
           </>
         ) : (
-          <span className={`flex-1 text-sm ${!singleLabel ? 'text-gray-400' : 'text-gray-900'}`}>
+          <span
+            className={`flex-1 text-sm ${
+              !singleLabel ? 'text-[color:var(--input-placeholder)]' : 'text-[color:var(--input-color)]'
+            }`}
+          >
             {singleLabel ?? placeholder ?? 'Chọn...'}
           </span>
         )}
 
         {/* Chevron */}
         <svg
-          className={`ml-auto shrink-0 w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`ml-auto shrink-0 w-4 h-4 transition-transform theme-text-muted ${open ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

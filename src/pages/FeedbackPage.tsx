@@ -33,13 +33,13 @@ const getInitials = (customer: Customer | null, phone?: string): string => {
 
 const avatarColor = (seed: string): string => {
   const colors = [
-    'bg-blue-100 text-blue-700',
-    'bg-purple-100 text-purple-700',
-    'bg-pink-100 text-pink-700',
-    'bg-teal-100 text-teal-700',
-    'bg-amber-100 text-amber-700',
-    'bg-indigo-100 text-indigo-700',
-    'bg-rose-100 text-rose-700',
+    'bg-blue-500/20 text-blue-200',
+    'bg-amber-500/20 text-amber-200',
+    'bg-pink-500/20 text-pink-200',
+    'bg-teal-500/20 text-teal-200',
+    'bg-amber-500/20 text-amber-200',
+    'bg-sky-500/20 text-sky-200',
+    'bg-rose-500/20 text-rose-200',
   ];
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;
@@ -127,12 +127,11 @@ const FeedbackPage = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+      <div className="page-header">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Phản hồi khách hàng</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Xem và quản lý các đánh giá từ khách hàng của bạn.
-          </p>
+          <span className="page-kicker">Feedback</span>
+          <h2 className="page-title">Phản hồi khách hàng</h2>
+          <p className="page-subtitle">Xem và quản lý các đánh giá từ khách hàng của bạn.</p>
         </div>
         <button
           onClick={copyLink}
@@ -144,7 +143,7 @@ const FeedbackPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto">
+      <div className="flex gap-2 mb-4 overflow-x-auto rounded-xl p-2 theme-card-bg border theme-card-border">
         {(
           [
             { v: 'all', label: 'Tất cả', count: total },
@@ -159,14 +158,16 @@ const FeedbackPage = () => {
               onClick={() => setFilter(opt.v)}
               className={`shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary-600 text-white shadow-[0_8px_20px_rgba(245,158,11,0.28)]'
+                  : 'bg-[var(--input-bg)] text-[color:var(--text-muted)] border border-[color:var(--input-border)]'
               }`}
             >
               <span className="leading-none">{opt.label}</span>
               <span
                 className={`inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold leading-none ${
-                  active ? 'bg-white/25 text-white' : 'bg-white text-gray-600'
+                  active
+                    ? 'bg-white/25 text-white'
+                    : 'theme-card-bg theme-text-primary border theme-card-border'
                 }`}
               >
                 {opt.count}
@@ -190,10 +191,10 @@ const FeedbackPage = () => {
             return (
               <div
                 key={fb._id}
-                className={`card p-4 transition-shadow hover:shadow-md ${
+                className={`card p-4 transition-shadow ${
                   fb.isRead
                     ? ''
-                    : 'ring-1 ring-primary-200 bg-gradient-to-r from-primary-50/60 to-transparent'
+                    : 'border-primary-300/70 shadow-[0_0_0_1px_rgba(245,158,11,0.25),var(--card-shadow)]'
                 }`}
               >
                 {/* Header row */}
@@ -207,7 +208,7 @@ const FeedbackPage = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 truncate">
+                      <span className="font-semibold truncate theme-text-primary">
                         {classLabel ?? 'Khách hàng ẩn danh'}
                       </span>
                       {!fb.isRead && (
@@ -217,7 +218,7 @@ const FeedbackPage = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs mt-0.5 flex-wrap theme-text-muted">
                       {fb.phone && (
                         <span className="inline-flex items-center gap-1">
                           <FaPhoneAlt className="text-emerald-500" />
@@ -238,10 +239,10 @@ const FeedbackPage = () => {
                 {/* Content */}
                 {fb.content && (
                   <div className="mb-2">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1 theme-text-muted">
                       Cảm nhận chung
                     </p>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed theme-text-primary">
                       {fb.content}
                     </p>
                   </div>
@@ -253,24 +254,24 @@ const FeedbackPage = () => {
                       <MdLightbulbOutline className="text-amber-500" />
                       <span>Đề xuất cải thiện</span>
                     </p>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed theme-text-primary">
                       {fb.suggestion}
                     </p>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-3 mt-3 border-t border-gray-100">
+                <div className="flex justify-end gap-3 pt-3 mt-3 theme-divider-top">
                   <button
                     onClick={() => toggleRead(fb)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                    className="text-xs font-medium inline-flex items-center gap-1 hover:underline text-blue-600"
                   >
                     <HiOutlineRefresh />
                     <span>{fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}</span>
                   </button>
                   <button
                     onClick={() => setConfirmId(fb._id)}
-                    className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline inline-flex items-center gap-1"
+                    className="text-xs font-medium inline-flex items-center gap-1 hover:underline text-red-600"
                   >
                     <FiTrash2 />
                     <span>Xoá</span>
@@ -291,7 +292,7 @@ const FeedbackPage = () => {
           >
             ‹ Trước
           </button>
-          <span className="text-sm text-gray-600 px-2">
+          <span className="text-sm px-2 theme-text-muted">
             Trang <span className="font-semibold">{page}</span> / {totalPages}
           </span>
           <button

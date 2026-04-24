@@ -112,9 +112,13 @@ const CostumeTypesPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Loại trang phục</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Settings</span>
+          <h2 className="page-title">Loại trang phục</h2>
+          <p className="page-subtitle">Phân loại trang phục theo nhóm và kiểu dáng.</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm loại
         </button>
       </div>

@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   className?: string;
   footer?: ReactNode;
   rowClassName?: (row: T, index: number) => string;
+  rowStyle?: (row: T, index: number) => React.CSSProperties | undefined;
   stickyHeader?: boolean;
   variant?: 'card' | 'plain';
   dense?: boolean;
@@ -44,6 +45,7 @@ function DataTable<T>({
   className = '',
   footer,
   rowClassName,
+  rowStyle,
   stickyHeader = false,
   variant = 'card',
   dense = false,
@@ -52,9 +54,9 @@ function DataTable<T>({
 }: DataTableProps<T>) {
   const renderTitle = () =>
     title ? (
-      <div className="px-6 py-4 border-b bg-gray-50">
+      <div className="px-6 py-4 border-b" style={{borderColor:'var(--card-border)', background:'var(--table-head-bg)'}}>
         {typeof title === 'string' ? (
-          <h3 className="font-semibold text-gray-800">{title}</h3>
+          <h3 className="font-semibold" style={{color:'var(--text-primary)'}}>{title}</h3>
         ) : (
           title
         )}
@@ -100,13 +102,15 @@ function DataTable<T>({
   const table = (
     <table className={`w-full ${textCls}`}>
       <thead
-        className={`bg-gray-50 text-gray-600 border-b ${stickyHeader ? 'sticky top-0 z-10' : ''}`}
+        className={`border-b ${stickyHeader ? 'sticky top-0 z-10' : ''}`}
+        style={{background:'var(--table-head-bg)', borderColor:'var(--card-border)'}}
       >
         <tr>
           {columns.map((col) => (
             <th
               key={col.key}
-              className={`${cellPad} font-medium ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+              className={`${cellPad} font-semibold uppercase tracking-wide text-xs ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+              style={{color:'var(--text-muted)'}}
             >
               {col.header}
             </th>
@@ -120,8 +124,15 @@ function DataTable<T>({
             className={`${
               rowClassName
                 ? `border-b last:border-0 ${rowClassName(row, i)}`
-                : 'border-b last:border-0 hover:bg-gray-50'
+                : 'border-b last:border-0'
             }${onRowClick ? ' cursor-pointer' : ''}`}
+            style={{
+              '--hover-bg': 'var(--table-row-hover)',
+              borderColor: 'var(--card-border)',
+              ...(rowStyle ? rowStyle(row, i) : {}),
+            } as React.CSSProperties}
+            onMouseEnter={!rowClassName ? (e) => { (e.currentTarget as HTMLElement).style.background = 'var(--table-row-hover)'; } : undefined}
+            onMouseLeave={!rowClassName ? (e) => { (e.currentTarget as HTMLElement).style.background = ''; } : undefined}
             onClick={
               onRowClick
                 ? (e) => {
@@ -139,6 +150,7 @@ function DataTable<T>({
               <td
                 key={col.key}
                 className={`${cellPad} ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+                style={{borderColor:'var(--card-border)', color:'var(--text-primary)'}}
               >
                 {col.render(row, i)}
               </td>

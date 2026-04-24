@@ -11,12 +11,12 @@ import { ROLE_LABELS } from '../types';
 import type { User, UserRole } from '../types';
 
 const ROLE_BADGE: Record<UserRole, string> = {
-  0: 'bg-purple-100 text-purple-800',
-  1: 'bg-indigo-100 text-indigo-800',
-  2: 'bg-blue-100 text-blue-800',
-  3: 'bg-orange-100 text-orange-800',
-  4: 'bg-teal-100 text-teal-800',
-  5: 'bg-amber-100 text-amber-800',
+  0: 'bg-purple-800/20 text-purple-800',
+  1: 'bg-indigo-800/20 text-indigo-800',
+  2: 'bg-blue-800/20 text-blue-800',
+  3: 'bg-orange-800/20 text-orange-800',
+  4: 'bg-teal-800/20 text-teal-800',
+  5: 'bg-amber-800/20 text-amber-800',
 };
 
 interface FormValues {
@@ -113,9 +113,13 @@ const UsersPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Users</span>
+          <h2 className="page-title">Quản lý người dùng</h2>
+          <p className="page-subtitle">Quản lý tài khoản và phân quyền người dùng trong hệ thống.</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm người dùng
         </button>
       </div>
@@ -158,7 +162,7 @@ const UsersPage = () => {
               header: 'Trạng thái',
               render: (u) => (
                 <span
-                  className={`badge ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                  className={`badge ${u.isActive ? 'bg-green-800/20 text-green-800' : 'bg-red-100 text-red-800'}`}
                 >
                   {u.isActive ? 'Hoạt động' : 'Đã khoá'}
                 </span>

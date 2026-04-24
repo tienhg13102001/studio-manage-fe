@@ -6,7 +6,7 @@ import { MdPhotoLibrary } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { PageLoader, Select, StarRating } from '../components/atoms';
+import { Logo, PageLoader, Select, StarRating } from '../components/atoms';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
@@ -143,7 +143,10 @@ const FeedbackFormPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--page-bg)' }}
+      >
         <PageLoader />
       </div>
     );
@@ -151,15 +154,18 @@ const FeedbackFormPage = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="text-center max-w-sm">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--page-bg)' }}
+      >
+        <div className="text-center max-w-sm card w-full py-10">
           <div className="text-6xl mb-4 flex justify-center">
             <FiAlertCircle className="text-amber-500" />
           </div>
-          <p className="text-slate-800 font-semibold" style={{ fontSize: '18px' }}>
+          <p className="font-semibold" style={{ fontSize: '18px', color: 'var(--text-primary)' }}>
             Không tìm thấy thông tin
           </p>
-          <p className="text-slate-500 mt-1" style={{ fontSize: '14px' }}>
+          <p className="mt-1" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
             Link có thể không còn hợp lệ
           </p>
         </div>
@@ -169,31 +175,27 @@ const FeedbackFormPage = () => {
 
   if (submitStatus === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-md w-full text-center border border-slate-100">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-200">
-            <svg
-              className="w-10 h-10 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--page-bg)' }}
+      >
+        <div className="card p-10 max-w-md w-full text-center rounded-3xl">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+            <Logo size={80} />
           </div>
-          <h2 className="font-bold text-slate-900 mb-2" style={{ fontSize: '24px' }}>
+          <h2 className="font-bold mb-2" style={{ fontSize: '24px', color: 'var(--text-primary)' }}>
             Cảm ơn bạn rất nhiều!
           </h2>
-          <p className="text-slate-500 leading-relaxed mb-8" style={{ fontSize: '15px' }}>
+          <p
+            className="leading-relaxed mb-8"
+            style={{ fontSize: '15px', color: 'var(--text-muted)' }}
+          >
             Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt hơn
             trong tương lai.
           </p>
           <button
             onClick={() => setSubmitStatus('idle')}
-            className="w-full py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors"
+            className="btn-primary w-full py-3"
             style={{ fontSize: '15px' }}
           >
             Gửi phản hồi khác
@@ -207,8 +209,7 @@ const FeedbackFormPage = () => {
   const labelStyle = { fontSize: '13px' };
   const helperStyle = { fontSize: '12px' };
   const inputStyle = { fontSize: '15px' };
-  const inputCls =
-    'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500 transition placeholder:text-slate-300';
+  const inputCls = 'input';
 
   const totalSteps = 5;
   const completionCount =
@@ -220,32 +221,38 @@ const FeedbackFormPage = () => {
   const progress = Math.round((completionCount / totalSteps) * 100);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
       {/* Top bar with progress */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200/70">
+      <header
+        className="sticky top-0 z-10 backdrop-blur"
+        style={{ background: 'var(--topbar-bg)', borderBottom: '1px solid var(--topbar-border)' }}
+      >
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-sm">
-            <FaCamera className="text-white text-lg" />
+            <Logo size={36} />
           </div>
           <div className="flex-1 min-w-0">
             <p
-              className="font-bold text-slate-900 leading-tight truncate"
-              style={{ fontSize: '15px' }}
+              className="font-bold leading-tight truncate"
+              style={{ color: 'var(--text-primary)', fontSize: '15px' }}
             >
               Yume Studio
             </p>
-            <p className="text-slate-500 leading-tight" style={helperStyle}>
+            <p className="leading-tight" style={{ ...helperStyle, color: 'var(--text-muted)' }}>
               Đánh giá trải nghiệm của bạn
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+            <div
+              className="w-16 h-1.5 rounded-full overflow-hidden"
+              style={{ background: 'var(--input-border)' }}
+            >
               <div
                 className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="text-slate-500 tabular-nums" style={helperStyle}>
+            <span className="tabular-nums" style={{ ...helperStyle, color: 'var(--text-muted)' }}>
               {progress}%
             </span>
           </div>
@@ -255,18 +262,21 @@ const FeedbackFormPage = () => {
       <div className="max-w-xl mx-auto px-5 py-8">
         {/* Hero */}
         <div className="mb-8">
-          <h1 className="font-bold text-slate-900 leading-tight" style={{ fontSize: '28px' }}>
+          <h1
+            className="font-bold leading-tight"
+            style={{ fontSize: '28px', color: 'var(--text-primary)' }}
+          >
             {fixedClass ? fixedClass.className : 'Gửi phản hồi'}
           </h1>
           {fixedClass?.school ? (
-            <p className="text-slate-500 mt-1" style={{ fontSize: '15px' }}>
+            <p className="mt-1" style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
               <span className="inline-flex items-center gap-1.5">
                 <FaSchool className="text-sky-500" />
                 <span>{fixedClass.school}</span>
               </span>
             </p>
           ) : (
-            <p className="text-slate-500 mt-1" style={{ fontSize: '15px' }}>
+            <p className="mt-1" style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
               Ý kiến của bạn giúp studio phục vụ tốt hơn
             </p>
           )}
@@ -277,10 +287,10 @@ const FeedbackFormPage = () => {
           {fixedClass ? (
             <input type="hidden" {...register('customer')} />
           ) : (
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <div className="card rounded-2xl p-5">
               <label
-                className="block font-semibold text-slate-800 mb-2"
-                style={{ fontSize: '14px' }}
+                className="block font-semibold mb-2"
+                style={{ color: 'var(--text-primary)', fontSize: '14px' }}
               >
                 Lớp của bạn <span className="text-rose-500">*</span>
               </label>
@@ -303,16 +313,22 @@ const FeedbackFormPage = () => {
           )}
 
           {/* Crew rating card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="card rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(59,130,246,0.12)' }}
+              >
                 <FaFilm className="text-blue-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
+                <h3
+                  className="font-semibold"
+                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
+                >
                   Ekip chụp ảnh <span className="text-rose-500">*</span>
                 </h3>
-                <p className="text-slate-500 mt-0.5" style={labelStyle}>
+                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
                   Thái độ, sự chuyên nghiệp và kỹ năng
                 </p>
               </div>
@@ -338,16 +354,22 @@ const FeedbackFormPage = () => {
           </div>
 
           {/* Album rating card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="card rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                <MdPhotoLibrary className="text-purple-500 text-lg" />
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(168,85,247,0.14)' }}
+              >
+                <MdPhotoLibrary className="text-primary-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
+                <h3
+                  className="font-semibold"
+                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
+                >
                   Album ảnh <span className="text-rose-500">*</span>
                 </h3>
-                <p className="text-slate-500 mt-0.5" style={labelStyle}>
+                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
                   Chất lượng, bố cục và màu sắc
                 </p>
               </div>
@@ -373,16 +395,22 @@ const FeedbackFormPage = () => {
           </div>
 
           {/* General feedback card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="card rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(20,184,166,0.12)' }}
+              >
                 <FiMessageCircle className="text-teal-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
+                <h3
+                  className="font-semibold"
+                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
+                >
                   Cảm nhận chung
                 </h3>
-                <p className="text-slate-500 mt-0.5" style={labelStyle}>
+                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
                   Trải nghiệm tổng thể của bạn
                 </p>
               </div>
@@ -397,16 +425,22 @@ const FeedbackFormPage = () => {
           </div>
 
           {/* Suggestion card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="card rounded-2xl p-5">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(245,158,11,0.14)' }}
+              >
                 <FaLightbulb className="text-amber-500 text-lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-slate-900" style={{ fontSize: '15px' }}>
+                <h3
+                  className="font-semibold"
+                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
+                >
                   Đề xuất cải thiện
                 </h3>
-                <p className="text-slate-500 mt-0.5" style={labelStyle}>
+                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
                   Studio có thể làm gì tốt hơn?
                 </p>
               </div>
@@ -421,16 +455,16 @@ const FeedbackFormPage = () => {
           </div>
 
           {/* Phone card */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <div className="card rounded-2xl p-5">
             <label
-              className="flex items-center gap-2 font-semibold text-slate-800 mb-2"
-              style={{ fontSize: '14px' }}
+              className="flex items-center gap-2 font-semibold mb-2"
+              style={{ color: 'var(--text-primary)', fontSize: '14px' }}
             >
               <span className="inline-flex items-center gap-1.5">
                 <FaPhoneAlt className="text-emerald-500" />
                 <span>Số điện thoại</span>
               </span>
-              <span className="text-slate-400 font-normal" style={helperStyle}>
+              <span className="font-normal" style={{ ...helperStyle, color: 'var(--text-faint)' }}>
                 · tuỳ chọn
               </span>
             </label>
@@ -441,7 +475,7 @@ const FeedbackFormPage = () => {
               style={inputStyle}
               placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
             />
-            <p className="text-slate-400 mt-2" style={helperStyle}>
+            <p className="mt-2" style={{ ...helperStyle, color: 'var(--text-faint)' }}>
               Phản hồi hoàn toàn ẩn danh trừ khi bạn để lại SĐT
             </p>
           </div>
@@ -463,10 +497,13 @@ const FeedbackFormPage = () => {
       </div>
 
       {/* Sticky submit bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-20">
+      <div
+        className="fixed bottom-0 left-0 right-0 backdrop-blur z-20"
+        style={{ background: 'var(--topbar-bg)', borderTop: '1px solid var(--topbar-border)' }}
+      >
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-700" style={{ fontSize: '13px' }}>
+            <p className="font-semibold" style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
               {completionCount === totalSteps ? (
                 <span className="inline-flex items-center gap-1.5">
                   <IoCheckmarkCircle className="text-emerald-500" />
@@ -481,7 +518,7 @@ const FeedbackFormPage = () => {
             type="submit"
             disabled={!canSubmit}
             onClick={handleSubmit(onSubmit)}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold shadow-md shadow-primary-200 hover:shadow-lg hover:shadow-primary-300 disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none disabled:cursor-not-allowed transition-all"
+            className="btn-primary px-6 py-3"
             style={{ fontSize: '15px' }}
           >
             {isSubmitting ? 'Đang gửi…' : 'Gửi phản hồi'}

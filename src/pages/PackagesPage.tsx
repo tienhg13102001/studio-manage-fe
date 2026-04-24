@@ -115,9 +115,13 @@ const PackagesPage = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Gói chụp</h2>
-        <button onClick={openCreate} className="btn-primary">
+      <div className="page-header">
+        <div>
+          <span className="page-kicker">Settings</span>
+          <h2 className="page-title">Gói chụp</h2>
+          <p className="page-subtitle">Cấu hình các gói chụp ảnh và thời lượng.</p>
+        </div>
+        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
           + Thêm gói
         </button>
       </div>

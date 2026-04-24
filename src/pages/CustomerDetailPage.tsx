@@ -47,7 +47,7 @@ const CustomerDetailPage = () => {
       </div>
 
       <div className="card">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">{customer.className}</h2>
+        <h2 className="text-2xl font-bold mb-1">{customer.className}</h2>
         <p className="text-gray-500">{customer.school}</p>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>

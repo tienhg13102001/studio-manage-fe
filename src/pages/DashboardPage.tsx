@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { FaCalendarAlt, FaTable } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import { Select } from '../components/atoms';
+import { Select, SegmentedControl } from '../components/atoms';
 import {
   LineChart,
   Line,
@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
@@ -228,7 +227,7 @@ const DashboardPage = () => {
     <div className="space-y-6">
       {/* Greeting */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Xin chào, {displayName}!</h2>
+        <h2 className="text-2xl font-bold">Xin chào, {displayName}!</h2>
         <p className="text-sm text-gray-500 mt-0.5">Chúc bạn một ngày làm việc tốt lành!</p>
         <p className="text-sm text-gray-500 mt-0.5">
           {new Date().toLocaleDateString('vi-VN', {
@@ -281,28 +280,93 @@ const DashboardPage = () => {
                 ? 'Thu chi 30 ngày gần đây'
                 : `Thu chi ${chartMonths} tháng gần đây`}
             </h3>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-              {[1, 3, 6, 12].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => handleChartMonthsChange(m)}
-                  className={`px-3 py-1 text-xs font-medium transition-colors border-l first:border-l-0 border-gray-200 ${
-                    chartMonths === m
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {m}T
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              value={chartMonths}
+              onChange={handleChartMonthsChange}
+              items={[
+                { value: 1, label: '1T', tone: 'blue' },
+                { value: 3, label: '3T', tone: 'blue' },
+                { value: 6, label: '6T', tone: 'blue' },
+                { value: 12, label: '12T', tone: 'blue' },
+              ]}
+            />
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+          <div className="mb-2 flex flex-wrap items-center gap-4 px-1">
+            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e', boxShadow: '0 0 10px rgba(34,197,94,0.5)' }} />
+              Thu
+            </span>
+            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }} />
+              Chi
+            </span>
+            <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59,130,246,0.5)' }} />
+              Lợi nhuận
+            </span>
+          </div>
+          <div
+            className="rounded-2xl p-3"
+            style={{
+              background:
+                'radial-gradient(circle at 20% 0%, rgba(59,130,246,0.12) 0%, rgba(0,0,0,0) 40%), radial-gradient(circle at 80% 100%, rgba(124,58,237,0.12) 0%, rgba(0,0,0,0) 40%)',
+              border: '1px solid var(--card-border)',
+            }}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData} margin={{ top: 12, right: 20, left: 8, bottom: 4 }}>
+                <defs>
+                  <linearGradient id="incomeStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#22c55e" />
+                  </linearGradient>
+                  <linearGradient id="expenseStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                  <linearGradient id="profitStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" />
+                    <stop offset="100%" stopColor="#2563eb" />
+                  </linearGradient>
+                  <filter id="incomeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2.8" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter id="expenseGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter id="profitGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                <CartesianGrid
+                  vertical={false}
+                  strokeDasharray="3 8"
+                  stroke="rgba(148,163,184,0.22)"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
+                  tickMargin={10}
+                />
               <YAxis
-                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                tickCount={4}
+                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                 tickFormatter={(v) => {
                   const abs = Math.abs(v);
                   const fmtd =
@@ -314,7 +378,7 @@ const DashboardPage = () => {
                   return v < 0 ? `-${fmtd}` : fmtd;
                 }}
               />
-              <ReferenceLine y={0} stroke="#d1d5db" strokeWidth={1.5} />
+              <ReferenceLine y={0} stroke="rgba(203,213,225,0.5)" strokeWidth={1.2} />
               <Tooltip
                 formatter={(value, name) => {
                   const v = Number(value ?? 0);
@@ -323,36 +387,48 @@ const DashboardPage = () => {
                   const display = name === 'Chi' ? Math.abs(v) : v;
                   return [formatCurrency(display), name];
                 }}
-                labelStyle={{ fontWeight: 600 }}
+                cursor={false}
+                contentStyle={{
+                  background: 'rgba(15, 23, 42, 0.86)',
+                  border: '1px solid rgba(148,163,184,0.3)',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 28px rgba(15,23,42,0.4)',
+                  backdropFilter: 'blur(12px)',
+                }}
+                labelStyle={{ fontWeight: 700, color: '#e2e8f0' }}
+                itemStyle={{ color: '#cbd5e1' }}
               />
-              <Legend />
               <Line
                 type="monotone"
                 dataKey="Thu"
-                stroke="#22c55e"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                stroke="url(#incomeStroke)"
+                strokeWidth={3}
+                filter="url(#incomeGlow)"
+                dot={{ r: 4, strokeWidth: 2, stroke: '#34d399', fill: '#0f172a' }}
+                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#34d399', fill: '#ecfdf5' }}
               />
               <Line
                 type="monotone"
                 dataKey="Chi"
-                stroke="#ef4444"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                stroke="url(#expenseStroke)"
+                strokeWidth={3}
+                filter="url(#expenseGlow)"
+                dot={{ r: 4, strokeWidth: 2, stroke: '#ef4444', fill: '#0f172a' }}
+                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#ef4444', fill: '#fff1f2' }}
               />
               <Line
                 type="monotone"
                 dataKey="Lợi nhuận"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                stroke="url(#profitStroke)"
+                strokeWidth={3}
+                strokeDasharray="6 4"
+                filter="url(#profitGlow)"
+                dot={{ r: 4, strokeWidth: 2, stroke: '#3b82f6', fill: '#0f172a' }}
+                activeDot={{ r: 6, strokeWidth: 2.5, stroke: '#3b82f6', fill: '#eff6ff' }}
               />
-            </LineChart>
-          </ResponsiveContainer>
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
@@ -362,24 +438,14 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4 flex-wrap space-y-2">
             <h3 className="text-base font-semibold text-gray-700">Lịch chụp sắp tới</h3>
             <div className="flex items-center gap-3">
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                <button
-                  onClick={() => setScheduleViewMode('table')}
-                  className={`px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 ${scheduleViewMode === 'table' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <FaTable className={scheduleViewMode === 'table' ? 'text-white' : 'text-slate-500'} />
-                  <span>Bảng</span>
-                </button>
-                <button
-                  onClick={() => setScheduleViewMode('calendar')}
-                  className={`px-3 py-1 text-xs font-medium transition-colors border-l border-gray-200 inline-flex items-center gap-1.5 ${scheduleViewMode === 'calendar' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <FaCalendarAlt
-                    className={scheduleViewMode === 'calendar' ? 'text-white' : 'text-slate-500'}
-                  />
-                  <span>Lịch</span>
-                </button>
-              </div>
+              <SegmentedControl
+                value={scheduleViewMode}
+                onChange={setScheduleViewMode}
+                items={[
+                  { value: 'table', label: 'Bảng', icon: <FaTable />, tone: 'blue' },
+                  { value: 'calendar', label: 'Lịch', icon: <FaCalendarAlt />, tone: 'blue' },
+                ]}
+              />
               <Link to="/schedules" className="text-sm text-blue-600 hover:underline">
                 Xem tất cả →
               </Link>

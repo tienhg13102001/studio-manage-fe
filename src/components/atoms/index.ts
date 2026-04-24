@@ -5,6 +5,7 @@ export { default as EmptyState } from './EmptyState';
 export { default as Input } from './Input';
 export { default as PageLoader } from './PageLoader';
 export { default as Select } from './Select';
+export { default as SegmentedControl } from './SegmentedControl';
 export { default as Spinner } from './Spinner';
 export { default as StarRating } from './StarRating';
 export { default as Stars } from './Stars';
