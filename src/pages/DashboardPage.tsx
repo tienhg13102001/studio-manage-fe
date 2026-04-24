@@ -34,7 +34,7 @@ const DashboardPage = () => {
   const showFinance = user?.roles.some((r) => r === 0 || r === 1 || r === 2 || r === 5) ?? false;
 
   const dispatch = useAppDispatch();
-  const { stats, loading } = useAppSelector((s) => s.dashboard);
+  const { stats } = useAppSelector((s) => s.dashboard);
   const { list: users } = useAppSelector((s) => s.users);
   const [scheduleViewMode, setScheduleViewMode] = useState<'table' | 'calendar'>('table');
   const [filterUserId, setFilterUserId] = useState('');
@@ -136,7 +136,7 @@ const DashboardPage = () => {
     },
   ];
 
-  if (loading || !stats) return <PageLoader />;
+  if (!stats) return <PageLoader />;
 
   const {
     thisMonth,
