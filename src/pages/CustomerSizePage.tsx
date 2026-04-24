@@ -175,20 +175,25 @@ const CustomerSizePage = () => {
       return;
     }
     if (totalMale + totalFemale < selectedCustomer.total) {
-      toast.error(
+      toast.warn(
         'Sĩ số nam/nữ hiện tại nhỏ hơn sĩ số đã đăng ký. Vui lòng cập nhật đầy đủ thông tin học sinh trước khi lấy thông tin gửi đồ.',
       );
-      return;
     }
 
-    // Build costume lines from costumes selected on the schedule
+    // Build costume lines by counting each costume across all students
     let costumeLines = '';
     if (schedule?.costumes && schedule.costumes.length > 0) {
+      const counts = new Map<string, number>();
+      students.forEach((s) => {
+        s.costumes?.forEach((c) => {
+          counts.set(c._id, (counts.get(c._id) ?? 0) + 1);
+        });
+      });
       costumeLines = schedule.costumes
-        .map((c) => `- ${totalMale + totalFemale} bộ ${c.name}`)
+        .map((c) => `- ${counts.get(c._id) ?? 0} bộ ${c.name}`)
         .join('\n');
-      }
-      console.log("🚀 ~ handleCopyInfo ~ costumeLines:", costumeLines)
+    }
+
 
     const info = `
 Ngày chụp: ${schedule ? dayjs(schedule.shootDate).format('DD/MM/YYYY') : 'N/A'}
@@ -203,6 +208,7 @@ SĐT: ${selectedCustomer?.contactPhone || '-'}
 Thông tin số lượng đồ
 ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 - ${totalMale + totalFemale} giấy màu
+- ${totalMale + totalFemale} chong chóng
 `;
     navigator.clipboard.writeText(info).then(() => {
       setCopiedInfo(true);
