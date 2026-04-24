@@ -167,21 +167,21 @@ const DashboardPage = () => {
       show: showSchedules,
     },
     {
-      label: 'Thu tháng này',
+      label: 'Tổng thu',
       value: formatCurrency(thisMonth.income),
       color: 'text-green-600',
       link: '/finance',
       show: showFinance,
     },
     {
-      label: 'Chi tháng này',
+      label: 'Tổng chi',
       value: formatCurrency(thisMonth.expense),
       color: 'text-red-600',
       link: '/finance',
       show: showFinance,
     },
     {
-      label: 'Lợi nhuận tháng này',
+      label: 'Tổng lợi nhuận',
       value: formatCurrency(thisMonth.profit),
       color: thisMonth.profit >= 0 ? 'text-green-600' : 'text-red-600',
       link: '/finance',
@@ -190,10 +190,16 @@ const DashboardPage = () => {
   ];
 
   const formatChartLabel = (label: string) => {
+    console.log("🚀 ~ formatChartLabel ~ label:", label)
     if (granularity === 'week') {
       // label = YYYY-MM-DD (ngày bắt đầu tuần) → hiển thị dd/MM
       const [, mo, dd] = label.split('-');
       return `${dd}/${mo}`;
+    }
+    // label = YYYY-MM. Từ 3 tháng trở lên hiển thị kèm năm: "T3 - 2026"
+    if (chartMonths >= 3) {
+      const [yr] = label.split('-');
+      return `${shortLabel(label)} - ${yr}`;
     }
     return shortLabel(label);
   };
@@ -404,6 +410,11 @@ const DashboardPage = () => {
                     // "Lợi nhuận" giữ nguyên dấu để thấy lời/lỗ
                     const display = name === 'Chi' ? Math.abs(v) : v;
                     return [formatCurrency(display), name];
+                  }}
+                  itemSorter={(item) => {
+                    // Đổi chỗ Thu ↔ Chi trong tooltip: Thu lên trên, Chi xuống dưới
+                    const order: Record<string, number> = { Thu: 0, 'Lợi nhuận': 1, Chi: 2 };
+                    return order[String(item.name ?? '')] ?? 99;
                   }}
                   cursor={false}
                   contentStyle={{
