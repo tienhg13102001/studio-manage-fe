@@ -1,0 +1,82 @@
+import { useEffect, useMemo } from 'react';
+import { matchPath, useLocation } from 'react-router-dom';
+import { adminItems, navItems, type NavItem } from '../config/navItems';
+
+const APP_NAME = 'Yume Studio';
+
+interface FlatRoute {
+  path: string;
+  label: string;
+}
+
+/**
+ * Flatten navItems into a list of { absolutePath, label }
+ * by concatenating parent + child paths (similar to how routes are registered in App.tsx).
+ */
+function flattenNavItems(items: NavItem[], parentPath = ''): FlatRoute[] {
+  const result: FlatRoute[] = [];
+
+  for (const item of items) {
+    const segment = item.to.startsWith('/') ? item.to : `/${item.to}`;
+    const fullPath =
+      item.index || segment === '/'
+        ? parentPath || '/'
+        : `${parentPath}${segment}`.replace(/\/+/g, '/');
+
+    if (item.children && item.children.length > 0) {
+      for (const child of item.children) {
+        const childSeg = child.to ? (child.to.startsWith('/') ? child.to : `/${child.to}`) : '';
+        const childPath = (childSeg === '' ? fullPath : `${fullPath}${childSeg}`).replace(
+          /\/+/g,
+          '/',
+        );
+        result.push({ path: childPath, label: child.label });
+      }
+      // Also register the parent path itself in case it's accessed directly
+      result.push({ path: fullPath, label: item.label });
+    } else {
+      result.push({ path: fullPath, label: item.label });
+    }
+  }
+
+  return result;
+}
+
+// Manual entries for routes that are not in navItems (defined directly in App.tsx)
+const EXTRA_ROUTES: FlatRoute[] = [
+  { path: '/login', label: 'Đăng nhập' },
+  { path: '/form/:customer', label: 'Thông tin học sinh' },
+  { path: '/feedback', label: 'Phản hồi' },
+  { path: '/feedback/:customer', label: 'Phản hồi' },
+];
+
+export function usePageTitle() {
+  const { pathname } = useLocation();
+
+  const routes = useMemo<FlatRoute[]>(
+    () => [...flattenNavItems(navItems), ...flattenNavItems(adminItems), ...EXTRA_ROUTES],
+    [],
+  );
+
+  useEffect(() => {
+    // Prefer the most specific match (longest path with no params if multiple match)
+    const matches = routes
+      .map((r) => ({ route: r, match: matchPath({ path: r.path, end: true }, pathname) }))
+      .filter((m) => m.match);
+
+    let chosen: FlatRoute | undefined;
+    if (matches.length > 0) {
+      matches.sort((a, b) => {
+        const aHasParam = a.route.path.includes(':') ? 1 : 0;
+        const bHasParam = b.route.path.includes(':') ? 1 : 0;
+        if (aHasParam !== bHasParam) return aHasParam - bHasParam;
+        return b.route.path.length - a.route.path.length;
+      });
+      chosen = matches[0].route;
+    }
+
+    document.title = chosen ? `${chosen.label} | ${APP_NAME}` : APP_NAME;
+  }, [pathname, routes]);
+}
+
+export default usePageTitle;

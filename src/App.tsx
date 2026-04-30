@@ -10,6 +10,12 @@ import StudentFormPage from './pages/StudentFormPage';
 import FeedbackFormPage from './pages/FeedbackFormPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { usePageTitle } from './hooks/usePageTitle';
+
+function PageTitleManager() {
+  usePageTitle();
+  return null;
+}
 
 function wrapProtected(element: JSX.Element, allowedRoles?: UserRole[]) {
   return allowedRoles ? (
@@ -58,6 +64,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <PageTitleManager />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/form/:customer" element={<StudentFormPage />} />
