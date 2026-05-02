@@ -8,6 +8,7 @@ import { navItems, adminItems, type NavItem } from './config/navItems';
 import type { UserRole } from './types';
 import StudentFormPage from './pages/StudentFormPage';
 import FeedbackFormPage from './pages/FeedbackFormPage';
+import PortfolioPage from './pages/PortfolioPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from './hooks/usePageTitle';
@@ -67,6 +68,7 @@ function App() {
           <PageTitleManager />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/form/:customer" element={<StudentFormPage />} />
             <Route path="/feedback" element={<FeedbackFormPage />} />
             <Route path="/feedback/:customer" element={<FeedbackFormPage />} />

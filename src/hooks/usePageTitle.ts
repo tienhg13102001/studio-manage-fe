@@ -45,6 +45,7 @@ function flattenNavItems(items: NavItem[], parentPath = ''): FlatRoute[] {
 // Manual entries for routes that are not in navItems (defined directly in App.tsx)
 const EXTRA_ROUTES: FlatRoute[] = [
   { path: '/login', label: 'Đăng nhập' },
+  { path: '/portfolio', label: 'Giới thiệu studio' },
   { path: '/form/:customer', label: 'Thông tin học sinh' },
   { path: '/feedback', label: 'Phản hồi' },
   { path: '/feedback/:customer', label: 'Phản hồi' },

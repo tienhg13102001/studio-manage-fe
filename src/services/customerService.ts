@@ -14,4 +14,9 @@ export const customerService = {
     api
       .get<Pick<Customer, '_id' | 'className' | 'school'>>(`/public/customers/${id}`)
       .then((r) => r.data),
+  /** Public (no-auth) endpoint — list all classes (for portfolio / dropdowns) */
+  listPublic: () =>
+    api
+      .get<Pick<Customer, '_id' | 'className' | 'school'>[]>(`/public/customers`)
+      .then((r) => r.data),
 };
