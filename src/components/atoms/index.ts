@@ -4,6 +4,7 @@ export { default as Checkbox } from './Checkbox';
 export { default as EmptyState } from './EmptyState';
 export { default as Input } from './Input';
 export { default as PageLoader } from './PageLoader';
+export { default as Pagination } from './Pagination';
 export { default as Select } from './Select';
 export { default as SegmentedControl } from './SegmentedControl';
 export { default as Spinner } from './Spinner';

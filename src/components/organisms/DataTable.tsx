@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Spinner from '../atoms/Spinner';
 import EmptyState from '../atoms/EmptyState';
+import Pagination from '../atoms/Pagination';
 
 export interface Column<T> {
   key: string;
@@ -8,6 +9,13 @@ export interface Column<T> {
   render: (row: T, index: number) => ReactNode;
   className?: string;
   align?: 'left' | 'center' | 'right';
+}
+
+export interface PaginationOptions {
+  pageSize?: number;
+  pageSizeOptions?: number[];
+  /** Hide the page-size selector. */
+  hidePageSize?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -29,9 +37,16 @@ interface DataTableProps<T> {
   textSize?: 'xs' | 'sm';
   /** Called when a row is clicked. Clicks on buttons/links inside the row are ignored. */
   onRowClick?: (row: T, index: number) => void;
+  /**
+   * Enable client-side pagination. Pass `true` for defaults or an options object
+   * to customize page size and page-size options.
+   */
+  pagination?: boolean | PaginationOptions;
 }
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
+const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 function DataTable<T>({
   columns,
@@ -51,7 +66,29 @@ function DataTable<T>({
   dense = false,
   textSize = 'sm',
   onRowClick,
+  pagination,
 }: DataTableProps<T>) {
+  const paginationOpts = useMemo<PaginationOptions | null>(
+    () =>
+      pagination ? (typeof pagination === 'object' ? pagination : {}) : null,
+    [pagination],
+  );
+
+  const initialPageSize = paginationOpts?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [page, setPage] = useState(1);
+
+  // Reset to first page whenever the dataset or page size changes
+  useEffect(() => {
+    setPage(1);
+  }, [data, pageSize]);
+
+  const pagedData = useMemo(() => {
+    if (!paginationOpts) return data;
+    const start = (page - 1) * pageSize;
+    return data.slice(start, start + pageSize);
+  }, [data, page, pageSize, paginationOpts]);
+
   const renderTitle = () =>
     title ? (
       <div
@@ -123,70 +160,96 @@ function DataTable<T>({
         </tr>
       </thead>
       <tbody>
-        {data.map((row, i) => (
-          <tr
-            key={keyExtractor(row, i)}
-            className={`${
-              rowClassName
-                ? `border-b last:border-0 ${rowClassName(row, i)}`
-                : 'border-b last:border-0'
-            }${onRowClick ? ' cursor-pointer' : ''}`}
-            style={
-              {
-                '--hover-bg': 'var(--table-row-hover)',
-                borderColor: 'var(--card-border)',
-                ...(rowStyle ? rowStyle(row, i) : {}),
-              } as React.CSSProperties
-            }
-            onMouseEnter={
-              !rowClassName
-                ? (e) => {
-                    (e.currentTarget as HTMLElement).style.background = 'var(--table-row-hover)';
-                  }
-                : undefined
-            }
-            onMouseLeave={
-              !rowClassName
-                ? (e) => {
-                    (e.currentTarget as HTMLElement).style.background = '';
-                  }
-                : undefined
-            }
-            onClick={
-              onRowClick
-                ? (e) => {
-                    if (
-                      (e.target as HTMLElement).closest('button, a, input, label, select, textarea')
-                    ) {
-                      return;
+        {pagedData.map((row, i) => {
+          const absoluteIndex = paginationOpts ? (page - 1) * pageSize + i : i;
+          return (
+            <tr
+              key={keyExtractor(row, absoluteIndex)}
+              className={`${
+                rowClassName
+                  ? `border-b last:border-0 ${rowClassName(row, absoluteIndex)}`
+                  : 'border-b last:border-0'
+              }${onRowClick ? ' cursor-pointer' : ''}`}
+              style={
+                {
+                  '--hover-bg': 'var(--table-row-hover)',
+                  borderColor: 'var(--card-border)',
+                  ...(rowStyle ? rowStyle(row, absoluteIndex) : {}),
+                } as React.CSSProperties
+              }
+              onMouseEnter={
+                !rowClassName
+                  ? (e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        'var(--table-row-hover)';
                     }
-                    onRowClick(row, i);
-                  }
-                : undefined
-            }
-          >
-            {columns.map((col) => (
-              <td
-                key={col.key}
-                className={`${cellPad} ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
-                style={{ borderColor: 'var(--card-border)', color: 'var(--text-primary)' }}
-              >
-                {col.render(row, i)}
-              </td>
-            ))}
-          </tr>
-        ))}
+                  : undefined
+              }
+              onMouseLeave={
+                !rowClassName
+                  ? (e) => {
+                      (e.currentTarget as HTMLElement).style.background = '';
+                    }
+                  : undefined
+              }
+              onClick={
+                onRowClick
+                  ? (e) => {
+                      if (
+                        (e.target as HTMLElement).closest(
+                          'button, a, input, label, select, textarea',
+                        )
+                      ) {
+                        return;
+                      }
+                      onRowClick(row, absoluteIndex);
+                    }
+                  : undefined
+              }
+            >
+              {columns.map((col) => (
+                <td
+                  key={col.key}
+                  className={`${cellPad} ${alignClass[col.align ?? 'left']} ${col.className ?? ''}`}
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-primary)' }}
+                >
+                  {col.render(row, absoluteIndex)}
+                </td>
+              ))}
+            </tr>
+          );
+        })}
       </tbody>
       {footer && <tfoot>{footer}</tfoot>}
     </table>
   );
 
-  if (variant === 'plain') return table;
+  const paginationNode = paginationOpts ? (
+    <Pagination
+      page={page}
+      pageSize={pageSize}
+      total={data.length}
+      onPageChange={setPage}
+      onPageSizeChange={paginationOpts.hidePageSize ? undefined : setPageSize}
+      pageSizeOptions={paginationOpts.pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS}
+    />
+  ) : null;
+
+  if (variant === 'plain')
+    return paginationNode ? (
+      <>
+        {table}
+        {paginationNode}
+      </>
+    ) : (
+      table
+    );
 
   return (
     <div className={wrapperCls}>
       {renderTitle()}
       {table}
+      {paginationNode}
     </div>
   );
 }

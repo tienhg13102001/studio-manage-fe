@@ -420,6 +420,7 @@ const FinancePage = () => {
                 keyExtractor={(t) => t._id}
                 emptyTitle="Chưa có dữ liệu"
                 columns={txColumns}
+                pagination
               />
             </div>
 
@@ -502,6 +503,7 @@ const FinancePage = () => {
               keyExtractor={(row) => row._id ?? 'unknown'}
               emptyTitle="Chưa có dữ liệu"
               columns={summaryColumns}
+              pagination
               footer={
                 summary.length > 0 ? (
                   <tr className="border-t bg-gray-50 font-semibold">
