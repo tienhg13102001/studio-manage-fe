@@ -391,43 +391,8 @@ const PortfolioPage = () => {
             </div>
           </div>
 
-          {/* Right: photo collage */}
-          <div className="relative h-[480px] hidden lg:block">
-            <div
-              className="absolute top-0 right-0 w-56 h-72 rounded-3xl shadow-2xl rotate-3 overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #fbbf24, #f97316)' }}
-            >
-              <div className="w-full h-full flex flex-col items-center justify-center text-white">
-                <div className="text-6xl">🎓</div>
-                <div className="mt-3 text-sm font-bold tracking-widest">CỬ NHÂN</div>
-              </div>
-            </div>
-            <div
-              className="absolute top-16 left-4 w-52 h-64 rounded-3xl shadow-2xl -rotate-6 overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #f472b6, #ec4899)' }}
-            >
-              <div className="w-full h-full flex flex-col items-center justify-center text-white">
-                <div className="text-6xl">👘</div>
-                <div className="mt-3 text-sm font-bold tracking-widest">ÁO DÀI</div>
-              </div>
-            </div>
-            <div
-              className="absolute bottom-0 right-12 w-60 h-72 rounded-3xl shadow-2xl rotate-6 overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #22d3ee, #6366f1)' }}
-            >
-              <div className="w-full h-full flex flex-col items-center justify-center text-white">
-                <div className="text-6xl">🎬</div>
-                <div className="mt-3 text-sm font-bold tracking-widest">CINEMATIC</div>
-              </div>
-            </div>
-            <div className="absolute -bottom-2 left-12 bg-white dark:bg-slate-900 rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 border border-slate-100 dark:border-white/10">
-              <div className="text-2xl">⭐</div>
-              <div>
-                <div className="text-sm font-bold">4.9 / 5</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Trên 500+ đánh giá</div>
-              </div>
-            </div>
-          </div>
+          {/* Right: photo collage (auto-rotating) */}
+          <HeroCollage />
         </div>
       </section>
 
@@ -916,6 +881,108 @@ const PortfolioPage = () => {
 };
 
 /* ── Sub-components ──────────────────────────── */
+
+const heroCards = [
+  {
+    icon: '🎓',
+    label: 'CỬ NHÂN',
+    bg: 'linear-gradient(135deg, #fbbf24, #f97316)',
+  },
+  {
+    icon: '👘',
+    label: 'ÁO DÀI',
+    bg: 'linear-gradient(135deg, #f472b6, #ec4899)',
+  },
+  {
+    icon: '🎬',
+    label: 'CINEMATIC',
+    bg: 'linear-gradient(135deg, #22d3ee, #6366f1)',
+  },
+];
+
+// 3 positions arranged in a circle around the collage (more spaced apart).
+// `z` is animated as translateZ so cards smoothly recede / come forward
+// instead of snapping their stacking order — fixes the "jump-down" glitch
+// when the front card moves out of the way.
+const heroSlots = [
+  // top-right (mid depth)
+  { x: 160, y: -170, rotate: 8, scale: 0.98, z: -40 },
+  // bottom-center (front)
+  { x: 20, y: 100, rotate: 0, scale: 1.08, z: 40 },
+  // left (back)
+  { x: -200, y: -30, rotate: -10, scale: 0.92, z: -80 },
+];
+
+const HeroCollage = () => {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setOffset((o) => (o + 1) % heroCards.length), 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="relative h-[520px] hidden lg:block">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className="relative w-[520px] h-[460px]"
+          style={{ perspective: 1400, transformStyle: 'preserve-3d' }}
+        >
+          {heroCards.map((card, i) => {
+            const slot = heroSlots[(i + offset) % heroSlots.length];
+            const W = 232;
+            const H = 288;
+            return (
+              <div
+                key={card.label}
+                className="absolute top-1/2 left-1/2 rounded-3xl shadow-2xl overflow-hidden"
+                style={{
+                  width: W,
+                  height: H,
+                  background: card.bg,
+                  transform: `translate3d(calc(-50% + ${slot.x}px), calc(-50% + ${slot.y}px), ${slot.z}px) rotate(${slot.rotate}deg) scale(${slot.scale})`,
+                  // Long, gentle easing for very smooth circular motion
+                  transition: 'transform 1500ms cubic-bezier(0.65, 0, 0.35, 1)',
+                  willChange: 'transform',
+                  backfaceVisibility: 'hidden',
+                  transformStyle: 'preserve-3d',
+                }}
+              >
+                <div className="w-full h-full flex flex-col items-center justify-center text-white">
+                  <div className="text-6xl">{card.icon}</div>
+                  <div className="mt-3 text-sm font-bold tracking-widest">{card.label}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="absolute -bottom-2 left-4 z-50">
+        <div className="relative">
+          {/* Two ripples — synced with badge pulse so each ripple fires exactly
+              at the moments the badge reaches its smallest (scale 1) and
+              largest (scale 1.04) size. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-2xl border border-amber-400/50 yume-ripple"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-2xl border border-amber-400/50 yume-ripple"
+            style={{ animationDelay: '1.8s' }}
+          />
+          <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3 border border-slate-100 dark:border-white/10 yume-pulse">
+            <div className="text-2xl">⭐</div>
+            <div>
+              <div className="text-sm font-bold">4.9 / 5</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Trên 500+ đánh giá</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const RatingField = ({
   label,
