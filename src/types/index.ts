@@ -65,6 +65,7 @@ export interface Package {
   deliveryDays?: number;
   studentsPerCrew?: number;
   description?: string;
+  isPopular?: boolean;
   createdAt?: string;
 }
 

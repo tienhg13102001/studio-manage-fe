@@ -33,6 +33,7 @@ interface PackageFormValues {
   deliveryDays?: number;
   studentsPerCrew?: number;
   description?: string;
+  isPopular?: boolean;
 }
 
 const PackagesPage = () => {
@@ -78,6 +79,7 @@ const PackagesPage = () => {
       deliveryDays: pkg.deliveryDays,
       studentsPerCrew: pkg.studentsPerCrew,
       description: pkg.description,
+      isPopular: pkg.isPopular ?? false,
     });
     setModalOpen(true);
   };
@@ -140,7 +142,16 @@ const PackagesPage = () => {
                 {
                   key: 'name',
                   header: 'Tên gói',
-                  render: (pkg) => <span className="font-medium">{pkg.name}</span>,
+                  render: (pkg) => (
+                    <span className="font-medium inline-flex items-center gap-2">
+                      {pkg.name}
+                      {pkg.isPopular && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          Phổ biến
+                        </span>
+                      )}
+                    </span>
+                  ),
                 },
                 {
                   key: 'price',
@@ -397,6 +408,18 @@ const PackagesPage = () => {
                 rows={2}
                 placeholder="Thông tin bổ sung..."
               />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  {...register('isPopular')}
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+                />
+                <span className="text-sm theme-text-primary">
+                  Đánh dấu là gói <strong>phổ biến</strong> (hiển thị nổi bật trên trang giới thiệu)
+                </span>
+              </label>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

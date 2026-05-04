@@ -6,6 +6,8 @@ import Logo from '../components/atoms/Logo';
 import { useTheme } from '../context/ThemeContext';
 import { customerService } from '../services/customerService';
 import { feedbackService } from '../services/feedbackService';
+import { packageService } from '../services/packageService';
+import type { Package } from '../types';
 
 /* ── Static content ──────────────────────────── */
 
@@ -76,45 +78,88 @@ const steps = [
   },
 ];
 
-const packages = [
+const fallbackPackages: PackageDisplay[] = [
   {
+    id: 'fallback-small',
     name: 'Lớp nhỏ',
-    price: '7.900.000đ',
+    price: 'Liên hệ',
     note: 'Phù hợp lớp ≤ 25 bạn',
-    items: [
-      '1 buổi chụp 4 giờ',
-      '1 concept + 1 set trang phục',
-      '300+ ảnh đã blend',
-      'Album digital chia sẻ',
-    ],
+    items: ['1 buổi chụp', '1 concept', 'Ảnh đã blend', 'Album digital chia sẻ'],
     featured: false,
   },
   {
+    id: 'fallback-full',
     name: 'Trọn gói Yume',
-    price: '14.900.000đ',
+    price: 'Liên hệ',
     note: 'Lựa chọn được yêu thích nhất',
-    items: [
-      '2 buổi chụp full day',
-      '3 concept + makeup ekip',
-      '500+ ảnh blend màu điện ảnh',
-      'Video kỷ yếu 3–5 phút 4K',
-      'Album in cao cấp 30 trang',
-    ],
+    items: ['Full day', 'Nhiều concept', 'Video kỷ yếu 4K', 'Album in cao cấp'],
     featured: true,
   },
   {
+    id: 'fallback-tour',
     name: 'Tour ngoại cảnh',
     price: 'Liên hệ',
     note: 'Đà Lạt – Mộc Châu – Biển',
-    items: [
-      '2 ngày 1 đêm',
-      'Trọn gói di chuyển + lưu trú',
-      'Ekip mở rộng 8 người',
-      'Video MV + Album cinematic',
-    ],
+    items: ['2 ngày 1 đêm', 'Trọn gói di chuyển', 'Ekip mở rộng', 'Video MV cinematic'],
     featured: false,
   },
 ];
+
+const durationLabel: Record<NonNullable<Package['duration']>, string> = {
+  full_day: 'Buổi chụp full day (1 ngày)',
+  half_day: 'Buổi chụp 1/2 ngày',
+  two_thirds_day: 'Buổi chụp 2/3 ngày',
+};
+
+const editingScopeLabel: Record<NonNullable<Package['editingScope']>, string> = {
+  full: 'Hậu kỳ blend màu toàn bộ ảnh',
+  partial: 'Hậu kỳ blend màu ảnh chọn lọc',
+};
+
+const formatVnd = (n: number) =>
+  `${n.toLocaleString('vi-VN', { maximumFractionDigits: 0 })}đ / bạn`;
+
+interface PackageDisplay {
+  id: string;
+  name: string;
+  price: string;
+  note: string;
+  items: string[];
+  featured: boolean;
+}
+
+const toDisplay = (list: Package[]): PackageDisplay[] => {
+  if (!list.length) return [];
+  // Featured = first package explicitly marked isPopular by admin
+  const featuredId = list.find((p) => p.isPopular)?._id;
+  return list.map((p) => {
+    const items: string[] = [];
+    if (p.duration) items.push(durationLabel[p.duration]);
+    if (p.crewRatio) items.push(`Ekip: ${p.crewRatio}`);
+    if (p.studentsPerCrew) items.push(`${p.studentsPerCrew} bạn / ekip`);
+    if (p.editingScope) items.push(editingScopeLabel[p.editingScope]);
+    if (p.deliveryDays) items.push(`Bàn giao trong ${p.deliveryDays} ngày`);
+    if (p.costumes && p.costumes.length) {
+      const names = p.costumes
+        .map((c) => c?.name?.trim())
+        .filter((n): n is string => Boolean(n));
+      if (names.length) {
+        items.push(`Trang phục: ${names.join(', ')}`);
+      } else {
+        items.push(`${p.costumes.length} loại trang phục đi kèm`);
+      }
+    }
+    if (!items.length) items.push('Liên hệ Yume để biết thêm chi tiết');
+    return {
+      id: p._id,
+      name: p.name,
+      price: p.pricePerMember > 0 ? formatVnd(p.pricePerMember) : 'Liên hệ',
+      note: p.description?.trim() || 'Báo giá tham khảo, tư vấn riêng theo lớp',
+      items,
+      featured: p._id === featuredId,
+    };
+  });
+};
 
 const testimonials = [
   {
@@ -166,6 +211,7 @@ const PortfolioPage = () => {
   const { isDark, toggleTheme } = useTheme();
   const [classCount, setClassCount] = useState<number | null>(null);
   const [schoolCount, setSchoolCount] = useState<number | null>(null);
+  const [pkgList, setPkgList] = useState<Package[] | null>(null);
   const [form, setForm] = useState<FeedbackForm>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -184,6 +230,20 @@ const PortfolioPage = () => {
         setSchoolCount(0);
       });
   }, []);
+
+  // Fetch real pricing packages from public API
+  useEffect(() => {
+    packageService
+      .listPublic()
+      .then((list) => setPkgList(list))
+      .catch(() => setPkgList([]));
+  }, []);
+
+  const displayPackages = useMemo<PackageDisplay[]>(() => {
+    if (pkgList === null) return fallbackPackages;
+    const mapped = toDisplay(pkgList);
+    return mapped.length ? mapped : fallbackPackages;
+  }, [pkgList]);
 
   const stats = useMemo(
     () => [
@@ -567,10 +627,10 @@ const PortfolioPage = () => {
             </p>
           </div>
           <div className="mt-14 grid md:grid-cols-3 gap-6">
-            {packages.map((p) => (
+            {displayPackages.map((p) => (
               <div
-                key={p.name}
-                className={`relative rounded-3xl p-8 border transition ${
+                key={p.id}
+                className={`relative h-full flex flex-col rounded-3xl p-8 border transition ${
                   p.featured
                     ? 'border-transparent text-white shadow-2xl md:scale-[1.03]'
                     : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 shadow-sm hover:shadow-lg'
@@ -611,16 +671,18 @@ const PortfolioPage = () => {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href="#contact"
-                  className={`mt-8 inline-flex w-full justify-center items-center px-5 py-3 rounded-full text-sm font-semibold transition ${
-                    p.featured
-                      ? 'bg-white text-amber-700 hover:bg-amber-50'
-                      : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
-                  }`}
-                >
-                  Tư vấn ngay
-                </a>
+                <div className="mt-auto pt-8">
+                  <a
+                    href="#contact"
+                    className={`inline-flex w-full justify-center items-center px-5 py-3 rounded-full text-sm font-semibold transition ${
+                      p.featured
+                        ? 'bg-white text-amber-700 hover:bg-amber-50'
+                        : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
+                    }`}
+                  >
+                    Tư vấn ngay
+                  </a>
+                </div>
               </div>
             ))}
           </div>
