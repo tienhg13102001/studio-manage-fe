@@ -12,6 +12,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from './hooks/usePageTitle';
+import { TooltipProvider } from './components/atoms';
 
 function PageTitleManager() {
   usePageTitle();
@@ -64,6 +65,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <TooltipProvider delayDuration={150}>
         <BrowserRouter>
           <PageTitleManager />
           <Routes>
@@ -86,6 +88,7 @@ function App() {
           </Routes>
           <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
         </BrowserRouter>
+        </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
   );

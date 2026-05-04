@@ -13,3 +13,4 @@ export { default as Stars } from './Stars';
 export { default as TableSkeleton } from './TableSkeleton';
 export { default as Textarea } from './Textarea';
 export { default as Logo } from './Logo';
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './Tooltip';
