@@ -264,6 +264,18 @@ const SchedulesPage = () => {
       ),
     },
     {
+      key: 'notes',
+      header: 'Ghi chú',
+      render: (s) => (
+        <span
+          className="block max-w-[240px] truncate text-gray-600 whitespace-pre-line"
+          title={s.notes || ''}
+        >
+          {s.notes || '—'}
+        </span>
+      ),
+    },
+    {
       key: 'actions',
       header: '',
       align: 'right',
