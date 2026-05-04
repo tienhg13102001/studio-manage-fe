@@ -185,6 +185,18 @@ const CustomersPage = () => {
                   ),
                 },
                 {
+                  key: 'notes',
+                  header: 'Ghi chú',
+                  render: (c) => (
+                    <span
+                      className="block max-w-[240px] truncate theme-text-muted"
+                      title={c.notes || ''}
+                    >
+                      {c.notes || '-'}
+                    </span>
+                  ),
+                },
+                {
                   key: 'actions',
                   header: '',
                   align: 'right',
