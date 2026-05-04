@@ -43,11 +43,14 @@ const FinancePage = () => {
   const canRefund = user?.roles.some((r) => r === 5) ?? false;
 
   const dispatch = useAppDispatch();
-  const { list: transactions, summary, loading } = useAppSelector((s) => s.transactions);
+  const { list: transactions, total, summary, loading } = useAppSelector((s) => s.transactions);
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: categories } = useAppSelector((s) => s.categories);
   const { list: users } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
+  const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [tab, setTab] = useState<'list' | 'summary'>('list');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
@@ -62,8 +65,12 @@ const FinancePage = () => {
 
   const selectedType = watch('type');
 
-  const buildListParams = (f: FilterState): Record<string, string> => {
-    const params: Record<string, string> = {};
+  const buildListParams = (
+    f: FilterState,
+    p: number,
+    l: number,
+  ): Record<string, string | number> => {
+    const params: Record<string, string | number> = { page: p, limit: l };
     if (f.type) params.type = f.type;
     if (f.customer) params.customer = f.customer;
     if (f.categoryId) params.categoryId = f.categoryId;
@@ -73,9 +80,21 @@ const FinancePage = () => {
     return params;
   };
 
+  // Refetch transactions whenever page, pageSize, or applied filter changes
   useEffect(() => {
-    dispatch(fetchTransactions({}));
-    dispatch(fetchTransactionSummary());
+    dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
+  }, [dispatch, appliedFilter, page, pageSize]);
+
+  useEffect(() => {
+    dispatch(
+      fetchTransactionSummary({
+        dateFrom: appliedFilter.dateFrom,
+        dateTo: appliedFilter.dateTo,
+      }),
+    );
+  }, [dispatch, appliedFilter.dateFrom, appliedFilter.dateTo]);
+
+  useEffect(() => {
     dispatch(fetchCustomers({ limit: 200 }));
     dispatch(fetchCategories());
     if (canRefund) dispatch(fetchUsers());
@@ -110,8 +129,13 @@ const FinancePage = () => {
         toast.success('Thêm giao dịch thành công!');
       }
       setModalOpen(false);
-      dispatch(fetchTransactions(buildListParams(filter)));
-      dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
+      dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
+      dispatch(
+        fetchTransactionSummary({
+          dateFrom: appliedFilter.dateFrom,
+          dateTo: appliedFilter.dateTo,
+        }),
+      );
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -138,8 +162,13 @@ const FinancePage = () => {
     try {
       await transactionService.remove(confirmId);
       toast.success('Đã xoá giao dịch.');
-      dispatch(fetchTransactions(buildListParams(filter)));
-      dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
+      dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
+      dispatch(
+        fetchTransactionSummary({
+          dateFrom: appliedFilter.dateFrom,
+          dateTo: appliedFilter.dateTo,
+        }),
+      );
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -147,13 +176,13 @@ const FinancePage = () => {
   };
 
   const applyFilter = () => {
-    dispatch(fetchTransactions(buildListParams(filter)));
-    dispatch(fetchTransactionSummary({ dateFrom: filter.dateFrom, dateTo: filter.dateTo }));
+    setPage(1);
+    setAppliedFilter(filter);
   };
   const resetFilter = () => {
     setFilter(defaultFilter);
-    dispatch(fetchTransactions({}));
-    dispatch(fetchTransactionSummary());
+    setAppliedFilter(defaultFilter);
+    setPage(1);
   };
 
   const filteredCategories = categories.filter((c) => !selectedType || c.type === selectedType);
@@ -420,7 +449,17 @@ const FinancePage = () => {
                 keyExtractor={(t) => t._id}
                 emptyTitle="Chưa có dữ liệu"
                 columns={txColumns}
-                pagination
+                pagination={{
+                  serverSide: true,
+                  page,
+                  pageSize,
+                  total,
+                  onPageChange: setPage,
+                  onPageSizeChange: (size: number) => {
+                    setPageSize(size);
+                    setPage(1);
+                  },
+                }}
               />
             </div>
 

@@ -16,6 +16,20 @@ export interface PaginationOptions {
   pageSizeOptions?: number[];
   /** Hide the page-size selector. */
   hidePageSize?: boolean;
+  /**
+   * Enable server-side (controlled) pagination. When true, DataTable does not
+   * slice `data` itself; the parent fetches the current page and provides
+   * `page`, `total`, and the change callbacks.
+   */
+  serverSide?: boolean;
+  /** Current page (1-based). Required when serverSide is true. */
+  page?: number;
+  /** Total number of items across all pages. Required when serverSide is true. */
+  total?: number;
+  /** Called when the user requests a different page (server-side mode). */
+  onPageChange?: (page: number) => void;
+  /** Called when the user changes page size (server-side mode). */
+  onPageSizeChange?: (size: number) => void;
 }
 
 interface DataTableProps<T> {
@@ -75,19 +89,26 @@ function DataTable<T>({
   );
 
   const initialPageSize = paginationOpts?.pageSize ?? DEFAULT_PAGE_SIZE;
-  const [pageSize, setPageSize] = useState(initialPageSize);
-  const [page, setPage] = useState(1);
+  const isServerPagination = !!paginationOpts?.serverSide;
+  const [internalPageSize, setInternalPageSize] = useState(initialPageSize);
+  const [internalPage, setInternalPage] = useState(1);
 
-  // Reset to first page whenever the dataset or page size changes
+  const pageSize = isServerPagination
+    ? (paginationOpts?.pageSize ?? DEFAULT_PAGE_SIZE)
+    : internalPageSize;
+  const page = isServerPagination ? (paginationOpts?.page ?? 1) : internalPage;
+
+  // Reset to first page whenever the dataset or page size changes (client-side only)
   useEffect(() => {
-    setPage(1);
-  }, [data, pageSize]);
+    if (!isServerPagination) setInternalPage(1);
+  }, [data, internalPageSize, isServerPagination]);
 
   const pagedData = useMemo(() => {
     if (!paginationOpts) return data;
-    const start = (page - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, page, pageSize, paginationOpts]);
+    if (isServerPagination) return data;
+    const start = (internalPage - 1) * internalPageSize;
+    return data.slice(start, start + internalPageSize);
+  }, [data, internalPage, internalPageSize, paginationOpts, isServerPagination]);
 
   const renderTitle = () =>
     title ? (
@@ -228,9 +249,17 @@ function DataTable<T>({
     <Pagination
       page={page}
       pageSize={pageSize}
-      total={data.length}
-      onPageChange={setPage}
-      onPageSizeChange={paginationOpts.hidePageSize ? undefined : setPageSize}
+      total={isServerPagination ? (paginationOpts.total ?? 0) : data.length}
+      onPageChange={
+        isServerPagination ? (paginationOpts.onPageChange ?? (() => {})) : setInternalPage
+      }
+      onPageSizeChange={
+        paginationOpts.hidePageSize
+          ? undefined
+          : isServerPagination
+            ? paginationOpts.onPageSizeChange
+            : setInternalPageSize
+      }
       pageSizeOptions={paginationOpts.pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS}
     />
   ) : null;

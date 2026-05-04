@@ -4,17 +4,23 @@ import type { TransactionResponse, TransactionSummaryRow } from '../../types';
 
 interface TransactionsState {
   list: TransactionResponse[];
+  total: number;
   summary: TransactionSummaryRow[];
   loading: boolean;
   error: string | null;
 }
 
-const initialState: TransactionsState = { list: [], summary: [], loading: false, error: null };
+const initialState: TransactionsState = {
+  list: [],
+  total: 0,
+  summary: [],
+  loading: false,
+  error: null,
+};
 
 export const fetchTransactions = createAsyncThunk(
   'transactions/fetchAll',
-  (params?: Record<string, string | number>) =>
-    transactionService.getAll(params).then((r) => r.data),
+  (params?: Record<string, string | number>) => transactionService.getAll(params),
 );
 
 export const fetchTransactionSummary = createAsyncThunk(
@@ -45,7 +51,8 @@ const transactionsSlice = createSlice({
       })
       .addCase(fetchTransactions.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = action.payload.data;
+        state.total = action.payload.total;
       })
       .addCase(fetchTransactions.rejected, (state, action) => {
         state.loading = false;
