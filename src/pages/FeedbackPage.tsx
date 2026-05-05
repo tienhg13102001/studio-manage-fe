@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaPhoneAlt, FaRegCopy } from 'react-icons/fa';
-import { FiTrash2 } from 'react-icons/fi';
-import { HiOutlineRefresh } from 'react-icons/hi';
-import { MdLightbulbOutline } from 'react-icons/md';
+import { Copy, Lightbulb, Phone, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { EmptyState, Spinner } from '../components/atoms';
-import { RatingBlock } from '../components/molecules';
-import { ConfirmModal } from '../components/organisms';
 import { feedbackService } from '../services/feedbackService';
 import type { Customer, FeedbackResponse } from '../types';
 import { formatDateTime } from '../utils/format';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  PageHeader,
+  RatingBlock,
+  Spinner,
+} from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 type FilterValue = 'all' | 'unread' | 'read';
 
@@ -33,13 +37,13 @@ const getInitials = (customer: Customer | null, phone?: string): string => {
 
 const avatarColor = (seed: string): string => {
   const colors = [
-    'bg-blue-500/20 text-blue-200',
-    'bg-amber-500/20 text-amber-200',
-    'bg-pink-500/20 text-pink-200',
-    'bg-teal-500/20 text-teal-200',
-    'bg-amber-500/20 text-amber-200',
-    'bg-sky-500/20 text-sky-200',
-    'bg-rose-500/20 text-rose-200',
+    'bg-blue-500/20 text-blue-600 dark:text-blue-300',
+    'bg-amber-500/20 text-amber-600 dark:text-amber-300',
+    'bg-pink-500/20 text-pink-600 dark:text-pink-300',
+    'bg-teal-500/20 text-teal-600 dark:text-teal-300',
+    'bg-violet-500/20 text-violet-600 dark:text-violet-300',
+    'bg-sky-500/20 text-sky-600 dark:text-sky-300',
+    'bg-rose-500/20 text-rose-600 dark:text-rose-300',
   ];
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;
@@ -126,24 +130,20 @@ const FeedbackPage = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Feedback</span>
-          <h2 className="page-title">Phản hồi khách hàng</h2>
-          <p className="page-subtitle">Xem và quản lý các đánh giá từ khách hàng của bạn.</p>
-        </div>
-        <button
-          onClick={copyLink}
-          className={`${linkCopied ? 'btn-primary' : 'btn-secondary'} inline-flex items-center gap-2`}
-        >
-          <FaRegCopy className={linkCopied ? 'text-white' : 'text-primary-500'} />
-          <span>{linkCopied ? 'Đã sao chép' : 'Sao chép link gửi phản hồi'}</span>
-        </button>
-      </div>
+      <PageHeader
+        kicker="Feedback"
+        title="Phản hồi khách hàng"
+        description="Xem và quản lý các đánh giá từ khách hàng của bạn."
+        action={
+          <Button variant={linkCopied ? 'gradient' : 'outline'} onClick={copyLink}>
+            <Copy />
+            {linkCopied ? 'Đã sao chép' : 'Sao chép link gửi phản hồi'}
+          </Button>
+        }
+      />
 
       {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto rounded-xl p-2 theme-card-bg border theme-card-border">
+      <div className="flex gap-2 mb-4 overflow-x-auto rounded-xl p-2 bg-card border">
         {(
           [
             { v: 'all', label: 'Tất cả', count: total },
@@ -156,19 +156,19 @@ const FeedbackPage = () => {
             <button
               key={opt.v}
               onClick={() => setFilter(opt.v)}
-              className={`shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+              className={cn(
+                'shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors',
                 active
-                  ? 'bg-primary-600 text-white shadow-[0_8px_20px_rgba(245,158,11,0.28)]'
-                  : 'bg-[var(--input-bg)] text-[color:var(--text-muted)] border border-[color:var(--input-border)]'
-              }`}
+                  ? 'bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(245,158,11,0.28)]'
+                  : 'bg-muted/40 text-muted-foreground border hover:bg-muted',
+              )}
             >
               <span className="leading-none">{opt.label}</span>
               <span
-                className={`inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold leading-none ${
-                  active
-                    ? 'bg-white/25 text-white'
-                    : 'theme-card-bg theme-text-primary border theme-card-border'
-                }`}
+                className={cn(
+                  'inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold leading-none',
+                  active ? 'bg-white/25 text-primary-foreground' : 'bg-card border',
+                )}
               >
                 {opt.count}
               </span>
@@ -191,37 +191,39 @@ const FeedbackPage = () => {
             return (
               <div
                 key={fb._id}
-                className={`card p-4 transition-shadow ${
-                  fb.isRead
-                    ? ''
-                    : 'border-primary-300/70 shadow-[0_0_0_1px_rgba(245,158,11,0.25),var(--card-shadow)]'
-                }`}
+                className={cn(
+                  'rounded-xl border bg-card p-4 transition-shadow',
+                  !fb.isRead && 'border-primary/60 shadow-[0_0_0_1px_rgba(245,158,11,0.25)]',
+                )}
               >
-                {/* Header row */}
                 <div className="flex items-start gap-3 mb-3">
                   <div
-                    className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm ${avatarColor(
-                      seed,
-                    )}`}
+                    className={cn(
+                      'w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm',
+                      avatarColor(seed),
+                    )}
                   >
                     {getInitials(fb.customer, fb.phone)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold truncate theme-text-primary">
+                      <span className="font-semibold truncate">
                         {classLabel ?? 'Khách hàng ẩn danh'}
                       </span>
                       {!fb.isRead && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                        <Badge
+                          variant="outline"
+                          className="border-transparent bg-primary/15 text-primary"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                           Mới
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs mt-0.5 flex-wrap theme-text-muted">
+                    <div className="flex items-center gap-3 text-xs mt-0.5 flex-wrap text-muted-foreground">
                       {fb.phone && (
                         <span className="inline-flex items-center gap-1">
-                          <FaPhoneAlt className="text-emerald-500" />
+                          <Phone className="h-3.5 w-3.5 text-emerald-500" />
                           <span>{fb.phone}</span>
                         </span>
                       )}
@@ -230,52 +232,49 @@ const FeedbackPage = () => {
                   </div>
                 </div>
 
-                {/* Ratings */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                   <RatingBlock label="Ekip chụp ảnh" item={fb.crewFeedback} />
                   <RatingBlock label="Album" item={fb.albumFeedback} />
                 </div>
 
-                {/* Content */}
                 {fb.content && (
                   <div className="mb-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1 theme-text-muted">
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-muted-foreground">
                       Cảm nhận chung
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed theme-text-primary">
-                      {fb.content}
-                    </p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{fb.content}</p>
                   </div>
                 )}
 
                 {fb.suggestion && (
                   <div className="mt-2 rounded-lg p-3 border border-amber-400/40 bg-amber-500/10">
-                    <p className="text-xs font-semibold text-amber-500 dark:text-amber-300 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
-                      <MdLightbulbOutline className="text-amber-500 dark:text-amber-300" />
+                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5" />
                       <span>Đề xuất cải thiện</span>
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed theme-text-primary">
-                      {fb.suggestion}
-                    </p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{fb.suggestion}</p>
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex justify-end gap-3 pt-3 mt-3 theme-divider-top">
-                  <button
+                <div className="flex justify-end gap-3 pt-3 mt-3 border-t">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
                     onClick={() => toggleRead(fb)}
-                    className="text-xs font-medium inline-flex items-center gap-1 hover:underline text-blue-600"
                   >
-                    <HiOutlineRefresh />
-                    <span>{fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}</span>
-                  </button>
-                  <button
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-destructive"
                     onClick={() => setConfirmId(fb._id)}
-                    className="text-xs font-medium inline-flex items-center gap-1 hover:underline text-red-600"
                   >
-                    <FiTrash2 />
-                    <span>Xoá</span>
-                  </button>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Xoá
+                  </Button>
                 </div>
               </div>
             );
@@ -285,31 +284,28 @@ const FeedbackPage = () => {
 
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="btn-secondary disabled:opacity-50"
-          >
+          <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             ‹ Trước
-          </button>
-          <span className="text-sm px-2 theme-text-muted">
-            Trang <span className="font-semibold">{page}</span> / {totalPages}
+          </Button>
+          <span className="text-sm px-2 text-muted-foreground">
+            Trang <span className="font-semibold text-foreground">{page}</span> / {totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="btn-secondary disabled:opacity-50"
           >
             Sau ›
-          </button>
+          </Button>
         </div>
       )}
 
-      <ConfirmModal
-        isOpen={!!confirmId}
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá phản hồi này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );

@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
-import { FaPhoneAlt, FaSchool } from 'react-icons/fa';
+import { Phone, School } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
 import { customerService } from '../services/customerService';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
-import { TableSkeleton } from '../components/atoms';
-import { toast } from 'react-toastify';
 import type { Customer } from '../types';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Modal,
+  PageHeader,
+  SearchInput,
+  TableSkeleton,
+  Textarea,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
 
 type FormValues = Omit<Customer, '_id' | 'createdAt'>;
 
@@ -70,8 +81,6 @@ const CustomersPage = () => {
     }
   };
 
-  const handleDelete = (id: string) => setConfirmId(id);
-
   const doDelete = async () => {
     if (!confirmId) return;
     try {
@@ -84,44 +93,32 @@ const CustomersPage = () => {
     setConfirmId(null);
   };
 
+  const runSearch = () => dispatch(fetchCustomers(search ? { search } : {}));
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Customers</span>
-          <h2 className="page-title">Khách hàng (Lớp)</h2>
-          <p className="page-subtitle">Danh sách lớp học, trường và thông tin liên hệ.</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm lớp
-        </button>
-      </div>
+      <PageHeader
+        kicker="Customers"
+        title="Khách hàng (Lớp)"
+        description="Danh sách lớp học, trường và thông tin liên hệ."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            + Thêm lớp
+          </Button>
+        }
+      />
 
-      <div className="mb-4 flex gap-2 flex-wrap">
-        <input
-          className="input flex-1 min-w-[12rem]"
+      <div className="mb-4">
+        <SearchInput
           placeholder="Tìm kiếm lớp, trường…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && dispatch(fetchCustomers(search ? { search } : {}))}
+          onChange={setSearch}
+          onSearch={runSearch}
+          onClear={() => {
+            setSearch('');
+            dispatch(fetchCustomers({}));
+          }}
         />
-        <button
-          className="btn-secondary"
-          onClick={() => dispatch(fetchCustomers(search ? { search } : {}))}
-        >
-          Tìm
-        </button>
-        {search && (
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              setSearch('');
-              dispatch(fetchCustomers({}));
-            }}
-          >
-            Xoá bộ lọc
-          </button>
-        )}
       </div>
 
       {loading ? (
@@ -142,7 +139,7 @@ const CustomersPage = () => {
                   render: (c) => (
                     <Link
                       to={`/customers/${c._id}`}
-                      className="font-medium text-primary-600 hover:underline"
+                      className="font-medium text-primary hover:underline"
                     >
                       {c.className}
                     </Link>
@@ -189,7 +186,7 @@ const CustomersPage = () => {
                   header: 'Ghi chú',
                   render: (c) => (
                     <span
-                      className="block max-w-[240px] truncate theme-text-muted"
+                      className="block max-w-[240px] truncate text-muted-foreground"
                       title={c.notes || ''}
                     >
                       {c.notes || '-'}
@@ -203,18 +200,22 @@ const CustomersPage = () => {
                   className: 'whitespace-nowrap',
                   render: (c) => (
                     <span className="space-x-2">
-                      <button
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
                         onClick={() => openEdit(c)}
-                        className="text-blue-600 hover:underline text-xs"
                       >
                         Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c._id)}
-                        className="text-red-600 hover:underline text-xs"
+                      </Button>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-destructive"
+                        onClick={() => setConfirmId(c._id)}
                       >
                         Xoá
-                      </button>
+                      </Button>
                     </span>
                   ),
                 } satisfies Column<Customer>,
@@ -225,174 +226,177 @@ const CustomersPage = () => {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {customers.map((c) => (
-              <div key={c._id} className="card p-4">
+              <div key={c._id} className="rounded-xl border bg-card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
                     <Link
                       to={`/customers/${c._id}`}
-                      className="font-semibold text-primary-500 hover:underline text-base block truncate"
+                      className="font-semibold text-primary hover:underline text-base block truncate"
                     >
                       {c.className}
                     </Link>
                     {c.school && (
-                      <div className="text-sm theme-text-muted inline-flex items-center gap-1.5 mt-0.5">
-                        <FaSchool className="text-sky-500 shrink-0" />
+                      <div className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mt-0.5">
+                        <School className="h-4 w-4 text-sky-500 shrink-0" />
                         <span className="truncate">{c.school}</span>
                       </div>
                     )}
                   </div>
                   {c.total != null && (
-                    <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-primary-500/15 text-primary-500">
+                    <Badge
+                      variant="outline"
+                      className="border-transparent bg-primary/15 text-primary"
+                    >
                       {c.total} hs
                       {(c.totalMale != null || c.totalFemale != null) && (
-                        <span className="font-normal opacity-70">
+                        <span className="font-normal opacity-70 ml-1">
                           (<span className="text-blue-500">{c.totalMale ?? 0}</span>/
-                          <span className="text-red-500">{c.totalFemale ?? 0}</span>)
+                          <span className="text-pink-500">{c.totalFemale ?? 0}</span>)
                         </span>
                       )}
-                    </span>
+                    </Badge>
                   )}
                 </div>
 
                 {(c.contactName || c.contactPhone) && (
-                  <div className="space-y-1 pt-2 theme-divider-top">
+                  <div className="space-y-1 pt-2 border-t">
                     {c.contactName && (
-                      <div className="text-sm theme-text-primary">{c.contactName}</div>
+                      <div className="text-sm text-foreground">{c.contactName}</div>
                     )}
                     {c.contactPhone && (
                       <a
                         href={`tel:${c.contactPhone}`}
-                        className="text-sm theme-text-muted inline-flex items-center gap-1.5 hover:text-emerald-500"
+                        className="text-sm text-muted-foreground inline-flex items-center gap-1.5 hover:text-emerald-500"
                       >
-                        <FaPhoneAlt className="text-emerald-500" />
+                        <Phone className="h-4 w-4 text-emerald-500" />
                         <span>{c.contactPhone}</span>
                       </a>
                     )}
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
-                  <button
+                <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
                     onClick={() => openEdit(c)}
-                    className="text-xs font-medium text-blue-500 hover:underline"
                   >
                     Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDelete(c._id)}
-                    className="text-xs font-medium text-red-500 hover:underline"
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-destructive"
+                    onClick={() => setConfirmId(c._id)}
                   >
                     Xoá
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
             {customers.length === 0 && (
-              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
+              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                Chưa có dữ liệu
+              </div>
             )}
           </div>
         </>
       )}
 
-      <ConfirmModal
-        isOpen={!!confirmId}
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá lớp này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
+
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa lớp' : 'Thêm lớp mới'}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="col-span-2 sm:col-span-1">
-              <label className="label">
-                Tên lớp <span className="text-rose-500">*</span>
-              </label>
-              <input
-                {...register('className', { required: 'Vui lòng nhập tên lớp' })}
-                className="input"
-              />
-              {errors.className && (
-                <p className="text-xs text-red-500 mt-1">{errors.className.message}</p>
-              )}
-            </div>
-            <div className="col-span-2 sm:col-span-2">
-              <label className="label">
-                Trường <span className="text-rose-500">*</span>
-              </label>
-              <input
-                {...register('school', { required: 'Vui lòng nhập trường' })}
-                className="input"
-              />
-              {errors.school && (
-                <p className="text-xs text-red-500 mt-1">{errors.school.message}</p>
-              )}
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label className="label">
-                Sĩ số <span className="text-rose-500">*</span>
-              </label>
-              <input
-                {...register('total', { valueAsNumber: true, required: 'Vui lòng nhập sĩ số' })}
+            <FormField
+              label="Tên lớp"
+              required
+              htmlFor="className"
+              error={errors.className?.message}
+              className="col-span-2 sm:col-span-1"
+            >
+              <Input id="className" {...register('className', { required: 'Vui lòng nhập tên lớp' })} />
+            </FormField>
+            <FormField
+              label="Trường"
+              required
+              htmlFor="school"
+              error={errors.school?.message}
+              className="col-span-2"
+            >
+              <Input id="school" {...register('school', { required: 'Vui lòng nhập trường' })} />
+            </FormField>
+            <FormField
+              label="Sĩ số"
+              required
+              htmlFor="total"
+              error={errors.total?.message}
+              className="col-span-2 sm:col-span-1"
+            >
+              <Input
+                id="total"
                 type="number"
-                className="input"
+                {...register('total', { valueAsNumber: true, required: 'Vui lòng nhập sĩ số' })}
               />
-              {errors.total && <p className="text-xs text-red-500 mt-1">{errors.total.message}</p>}
-            </div>
-            <div>
-              <label className="label">
-                Số nam <span className="text-rose-500">*</span>
-              </label>
-              <input
+            </FormField>
+            <FormField label="Số nam" required htmlFor="totalMale" error={errors.totalMale?.message}>
+              <Input
+                id="totalMale"
+                type="number"
+                min={0}
                 {...register('totalMale', {
                   valueAsNumber: true,
                   required: 'Vui lòng nhập số nam',
                 })}
+              />
+            </FormField>
+            <FormField
+              label="Số nữ"
+              required
+              htmlFor="totalFemale"
+              error={errors.totalFemale?.message}
+            >
+              <Input
+                id="totalFemale"
                 type="number"
                 min={0}
-                className="input"
-              />
-              {errors.totalMale && (
-                <p className="text-xs text-red-500 mt-1">{errors.totalMale.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="label">
-                Số nữ <span className="text-rose-500">*</span>
-              </label>
-              <input
                 {...register('totalFemale', {
                   valueAsNumber: true,
                   required: 'Vui lòng nhập số nữ',
                 })}
-                type="number"
-                min={0}
-                className="input"
               />
-              {errors.totalFemale && (
-                <p className="text-xs text-red-500 mt-1">{errors.totalFemale.message}</p>
-              )}
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">
-                Người liên hệ <span className="text-rose-500">*</span>
-              </label>
-              <input
+            </FormField>
+            <FormField
+              label="Người liên hệ"
+              required
+              htmlFor="contactName"
+              error={errors.contactName?.message}
+              className="sm:col-span-2"
+            >
+              <Input
+                id="contactName"
                 {...register('contactName', { required: 'Vui lòng nhập người liên hệ' })}
-                className="input"
               />
-              {errors.contactName && (
-                <p className="text-xs text-red-500 mt-1">{errors.contactName.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="label">
-                Số điện thoại (người liên hệ) <span className="text-rose-500">*</span>
-              </label>
-              <input
+            </FormField>
+            <FormField
+              label="Số điện thoại (người liên hệ)"
+              required
+              htmlFor="contactPhone"
+              error={errors.contactPhone?.message}
+            >
+              <Input
+                id="contactPhone"
                 {...register('contactPhone', {
                   required: 'Vui lòng nhập số điện thoại',
                   pattern: {
@@ -400,36 +404,31 @@ const CustomersPage = () => {
                     message: 'Số điện thoại không hợp lệ',
                   },
                 })}
-                className="input"
               />
-              {errors.contactPhone && (
-                <p className="text-xs text-red-500 mt-1">{errors.contactPhone.message}</p>
-              )}
-            </div>
-            <div className=" col-span-2 sm:col-span-3">
-              <label className="label">
-                Địa chỉ (người liên hệ) <span className="text-rose-500">*</span>
-              </label>
-              <input
+            </FormField>
+            <FormField
+              label="Địa chỉ (người liên hệ)"
+              required
+              htmlFor="contactAddress"
+              error={errors.contactAddress?.message}
+              className="col-span-2 sm:col-span-3"
+            >
+              <Input
+                id="contactAddress"
                 {...register('contactAddress', { required: 'Vui lòng nhập địa chỉ' })}
-                className="input"
               />
-              {errors.contactAddress && (
-                <p className="text-xs text-red-500 mt-1">{errors.contactAddress.message}</p>
-              )}
-            </div>
-            <div className="col-span-2 sm:col-span-3">
-              <label className="label">Ghi chú</label>
-              <textarea {...register('notes')} className="input" rows={2} />
-            </div>
+            </FormField>
+            <FormField label="Ghi chú" htmlFor="notes" className="col-span-2 sm:col-span-3">
+              <Textarea id="notes" rows={2} {...register('notes')} />
+            </FormField>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

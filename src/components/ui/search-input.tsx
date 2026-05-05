@@ -1,5 +1,8 @@
 import { useRef } from 'react';
-import { FiSearch, FiX } from 'react-icons/fi';
+import { Search, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SearchInputProps {
   value: string;
@@ -10,17 +13,13 @@ interface SearchInputProps {
   className?: string;
 }
 
-/**
- * Molecule: text input + search button + optional clear button.
- * Triggers onSearch on Enter key or button click.
- */
-const SearchInput = ({
+export const SearchInput = ({
   value,
   onChange,
   onSearch,
   onClear,
   placeholder = 'Tìm kiếm…',
-  className = '',
+  className,
 }: SearchInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,14 +30,12 @@ const SearchInput = ({
   };
 
   return (
-    <div className={`flex gap-2 flex-wrap ${className}`}>
+    <div className={cn('flex gap-2 flex-wrap', className)}>
       <div className="relative flex-1 min-w-[12rem]">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">
-          <FiSearch className="text-base" />
-        </span>
-        <input
+        <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
           ref={inputRef}
-          className="input pl-8 pr-8"
+          className="pl-8 pr-8"
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -48,18 +45,16 @@ const SearchInput = ({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             aria-label="Xoá tìm kiếm"
           >
-            <FiX className="text-sm" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
-      <button type="button" className="btn-secondary" onClick={onSearch}>
+      <Button type="button" variant="secondary" onClick={onSearch}>
         Tìm
-      </button>
+      </Button>
     </div>
   );
 };
-
-export default SearchInput;

@@ -12,7 +12,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from './hooks/usePageTitle';
-import { TooltipProvider } from './components/atoms';
+import { TooltipProvider } from '@/components/ui';
 
 function PageTitleManager() {
   usePageTitle();

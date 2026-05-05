@@ -1,11 +1,28 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { costumeService } from '../services/costumeService';
 import { costumeTypeService } from '../services/costumeTypeService';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
-import { toast } from 'react-toastify';
 import type { Costume, CostumeResponse, CostumeType } from '../types';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Modal,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface CostumeFormValues {
   name: string;
@@ -20,8 +37,9 @@ const GENDER_LABEL: Record<Costume['gender'], string> = {
   unisex: 'Nam / Nữ',
 };
 
-const getTypeId = (type: CostumeType | undefined): string => type?._id ?? '';
+const NO_TYPE = '__none__';
 
+const getTypeId = (type: CostumeType | undefined): string => type?._id ?? '';
 const getTypeName = (type: CostumeType | undefined): string => type?.name ?? '—';
 
 const CostumesPage = () => {
@@ -36,6 +54,7 @@ const CostumesPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting },
   } = useForm<CostumeFormValues>();
 
@@ -98,18 +117,70 @@ const CostumesPage = () => {
     setConfirmId(null);
   };
 
+  const columns: Column<CostumeResponse>[] = [
+    {
+      key: 'name',
+      header: 'Tên trang phục',
+      render: (c) => <span className="font-medium">{c.name}</span>,
+    },
+    {
+      key: 'gender',
+      header: 'Giới tính',
+      render: (c) => (
+        <span className="text-muted-foreground">{GENDER_LABEL[c.gender] ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Loại',
+      render: (c) => <span className="text-muted-foreground">{getTypeName(c.type)}</span>,
+    },
+    {
+      key: 'description',
+      header: 'Mô tả',
+      render: (c) => <span className="text-muted-foreground">{c.description ?? '—'}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      className: 'whitespace-nowrap',
+      render: (c) => (
+        <span className="space-x-2">
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-primary"
+            onClick={() => openEdit(c)}
+          >
+            Sửa
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
+            onClick={() => setConfirmId(c._id)}
+          >
+            Xoá
+          </Button>
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Settings</span>
-          <h2 className="page-title">Trang phục</h2>
-          <p className="page-subtitle">Quản lý danh mục trang phục dùng trong các buổi chụp.</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm trang phục
-        </button>
-      </div>
+      <PageHeader
+        kicker="Settings"
+        title="Trang phục"
+        description="Quản lý danh mục trang phục dùng trong các buổi chụp."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus />
+            Thêm trang phục
+          </Button>
+        }
+      />
 
       <div className="hidden md:block">
         <DataTable<CostumeResponse>
@@ -117,102 +188,61 @@ const CostumesPage = () => {
           data={costumes}
           keyExtractor={(c) => c._id}
           emptyTitle="Chưa có trang phục nào"
-          columns={[
-            {
-              key: 'name',
-              header: 'Tên trang phục',
-              render: (c) => <span className="font-medium">{c.name}</span>,
-            },
-            {
-              key: 'gender',
-              header: 'Giới tính',
-              render: (c) => (
-                <span className="theme-text-muted">{GENDER_LABEL[c.gender] ?? '—'}</span>
-              ),
-            },
-            {
-              key: 'type',
-              header: 'Loại',
-              render: (c) => <span className="theme-text-muted">{getTypeName(c.type)}</span>,
-            },
-            {
-              key: 'description',
-              header: 'Mô tả',
-              render: (c) => <span className="theme-text-muted">{c.description ?? '—'}</span>,
-            },
-            {
-              key: 'actions',
-              header: '',
-              align: 'right',
-              className: 'whitespace-nowrap',
-              render: (c) => (
-                <span className="space-x-2">
-                  <button
-                    onClick={() => openEdit(c)}
-                    className="text-blue-500 hover:underline text-xs"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => setConfirmId(c._id)}
-                    className="text-red-500 hover:underline text-xs"
-                  >
-                    Xoá
-                  </button>
-                </span>
-              ),
-            } satisfies Column<CostumeResponse>,
-          ]}
+          columns={columns}
         />
       </div>
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {loading ? (
-          <div className="card py-10 text-center theme-text-muted">Đang tải…</div>
+          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+            Đang tải…
+          </div>
         ) : costumes.length === 0 ? (
-          <div className="card py-10 text-center theme-text-muted">Chưa có trang phục nào</div>
+          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+            Chưa có trang phục nào
+          </div>
         ) : (
           costumes.map((c) => {
             const genderStyle =
               c.gender === 'male'
-                ? 'bg-blue-500/15 text-blue-500'
+                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
                 : c.gender === 'female'
-                  ? 'bg-pink-500/15 text-pink-500'
-                  : 'bg-purple-500/15 text-purple-500';
+                  ? 'bg-pink-500/15 text-pink-600 dark:text-pink-400'
+                  : 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
             return (
-              <div key={c._id} className="card p-4">
+              <div key={c._id} className="rounded-xl border bg-card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold theme-text-primary truncate">{c.name}</div>
+                    <div className="font-semibold truncate">{c.name}</div>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className={`badge text-xs ${genderStyle}`}>
+                      <Badge variant="outline" className={cn('border-transparent', genderStyle)}>
                         {GENDER_LABEL[c.gender] ?? '—'}
-                      </span>
-                      {c.type && (
-                        <span className="badge text-xs bg-[var(--input-bg)] theme-text-muted border border-[color:var(--input-border)]">
-                          {getTypeName(c.type)}
-                        </span>
-                      )}
+                      </Badge>
+                      {c.type && <Badge variant="outline">{getTypeName(c.type)}</Badge>}
                     </div>
                   </div>
                 </div>
                 {c.description && (
-                  <p className="text-sm theme-text-muted italic">{c.description}</p>
+                  <p className="text-sm text-muted-foreground italic">{c.description}</p>
                 )}
-                <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
-                  <button
+                <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
                     onClick={() => openEdit(c)}
-                    className="text-blue-500 text-xs font-medium hover:underline"
                   >
                     Sửa
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-destructive"
                     onClick={() => setConfirmId(c._id)}
-                    className="text-red-500 text-xs font-medium hover:underline"
                   >
                     Xoá
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -221,68 +251,86 @@ const CostumesPage = () => {
       </div>
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa trang phục' : 'Thêm trang phục'}
         size="sm"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div>
-            <label className="label">Tên trang phục *</label>
-            <input
-              {...register('name', { required: true })}
-              className="input"
+          <FormField label="Tên trang phục" required htmlFor="name">
+            <Input
+              id="name"
               placeholder="VD: Đồng phục trường, Áo dài, Tự do..."
+              {...register('name', { required: true })}
             />
-          </div>
-          <div>
-            <label className="label">Giới tính *</label>
-            <select
-              {...register('gender', { required: true })}
-              className="input"
-              defaultValue="unisex"
-            >
-              <option value="male">Nam</option>
-              <option value="female">Nữ</option>
-              <option value="unisex">Nam / Nữ</option>
-            </select>
-          </div>
-          <div>
-            <label className="label">Loại trang phục</label>
-            <select {...register('type')} className="input">
-              <option value="">-- Không phân loại --</option>
-              {costumeTypes.map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Mô tả</label>
-            <textarea
-              {...register('description')}
-              className="input"
+          </FormField>
+          <FormField label="Giới tính" required>
+            <Controller
+              name="gender"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value ?? 'unisex'} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Nam</SelectItem>
+                    <SelectItem value="female">Nữ</SelectItem>
+                    <SelectItem value="unisex">Nam / Nữ</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
+          <FormField label="Loại trang phục">
+            <Controller
+              name="type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || NO_TYPE}
+                  onValueChange={(v) => field.onChange(v === NO_TYPE ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_TYPE}>-- Không phân loại --</SelectItem>
+                    {costumeTypes.map((t) => (
+                      <SelectItem key={t._id} value={t._id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
+          <FormField label="Mô tả" htmlFor="description">
+            <Textarea
+              id="description"
               rows={2}
               placeholder="Mô tả thêm về loại trang phục..."
+              {...register('description')}
             />
-          </div>
+          </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
 
-      <ConfirmModal
-        isOpen={!!confirmId}
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá trang phục này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );

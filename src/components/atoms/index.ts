@@ -1,16 +1,1 @@
-export { default as Badge } from './Badge';
-export { default as Button } from './Button';
-export { default as Checkbox } from './Checkbox';
-export { default as EmptyState } from './EmptyState';
-export { default as Input } from './Input';
-export { default as PageLoader } from './PageLoader';
-export { default as Pagination } from './Pagination';
-export { default as Select } from './Select';
-export { default as SegmentedControl } from './SegmentedControl';
-export { default as Spinner } from './Spinner';
-export { default as StarRating } from './StarRating';
-export { default as Stars } from './Stars';
-export { default as TableSkeleton } from './TableSkeleton';
-export { default as Textarea } from './Textarea';
 export { default as Logo } from './Logo';
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './Tooltip';

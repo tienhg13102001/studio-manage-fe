@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react';
-import { FaBoxOpen, FaCut, FaTshirt, FaUsers } from 'react-icons/fa';
-import { MdOutlineTimer } from 'react-icons/md';
+import { Package2, Plus, Scissors, Shirt, Timer, Users } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
+import { toast } from 'react-toastify';
 import { packageService } from '../services/packageService';
 import { costumeTypeService } from '../services/costumeTypeService';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
-import { TableSkeleton, Select } from '../components/atoms';
-import { toast } from 'react-toastify';
 import type { CostumeType, Package } from '../types';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Label,
+  Modal,
+  MultiSelect,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TableSkeleton,
+  Textarea,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
 
 const editingScopeLabel: Record<string, string> = {
   full: 'Toàn bộ',
@@ -22,6 +39,8 @@ const durationLabel: Record<string, string> = {
   half_day: '1/2 ngày',
   two_thirds_day: '2/3 ngày',
 };
+
+const NO_DURATION = '__none__';
 
 interface PackageFormValues {
   name: string;
@@ -101,8 +120,6 @@ const PackagesPage = () => {
     }
   };
 
-  const handleDelete = (id: string) => setConfirmId(id);
-
   const doDelete = async () => {
     if (!confirmId) return;
     try {
@@ -115,18 +132,114 @@ const PackagesPage = () => {
     setConfirmId(null);
   };
 
+  const columns: Column<Package>[] = [
+    {
+      key: 'name',
+      header: 'Tên gói',
+      render: (pkg) => (
+        <span className="font-medium inline-flex items-center gap-2">
+          {pkg.name}
+          {pkg.isPopular && (
+            <Badge variant="warning" className="text-[10px] uppercase tracking-wider">
+              Phổ biến
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'price',
+      header: 'Giá/thành viên',
+      render: (pkg) => `${pkg.pricePerMember.toLocaleString('vi-VN')}₫`,
+    },
+    {
+      key: 'duration',
+      header: 'Thời gian',
+      render: (pkg) => (
+        <span className="text-muted-foreground">
+          {pkg.duration ? durationLabel[pkg.duration] : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'crew',
+      header: 'Ekip (hs/thợ)',
+      render: (pkg) => (
+        <span className="text-muted-foreground">
+          {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'costumes',
+      header: 'Trang phục',
+      render: (pkg) => (
+        <span className="text-muted-foreground">
+          {pkg.costumes && pkg.costumes.length > 0
+            ? pkg.costumes.map((c) => c.name).join(', ')
+            : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'editingScope',
+      header: 'Chỉnh sửa',
+      render: (pkg) => (
+        <span className="text-muted-foreground">
+          {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'deliveryDays',
+      header: 'Trả file tối đa (ngày)',
+      render: (pkg) => (
+        <span className="text-muted-foreground">
+          {pkg.deliveryDays != null ? `tối đa ${pkg.deliveryDays} ngày` : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      className: 'whitespace-nowrap',
+      render: (pkg) => (
+        <span className="space-x-2">
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-primary"
+            onClick={() => openEdit(pkg)}
+          >
+            Sửa
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
+            onClick={() => setConfirmId(pkg._id)}
+          >
+            Xoá
+          </Button>
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Settings</span>
-          <h2 className="page-title">Gói chụp</h2>
-          <p className="page-subtitle">Cấu hình các gói chụp ảnh và thời lượng.</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm gói
-        </button>
-      </div>
+      <PageHeader
+        kicker="Settings"
+        title="Gói chụp"
+        description="Cấu hình các gói chụp ảnh và thời lượng."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus />
+            Thêm gói
+          </Button>
+        }
+      />
 
       {loading ? (
         <TableSkeleton cols={8} />
@@ -138,233 +251,148 @@ const PackagesPage = () => {
               data={packages}
               keyExtractor={(pkg) => pkg._id}
               emptyTitle="Chưa có gói chụp nào"
-              columns={[
-                {
-                  key: 'name',
-                  header: 'Tên gói',
-                  render: (pkg) => (
-                    <span className="font-medium inline-flex items-center gap-2">
-                      {pkg.name}
-                      {pkg.isPopular && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                          Phổ biến
-                        </span>
-                      )}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'price',
-                  header: 'Giá/thành viên',
-                  render: (pkg) => `${pkg.pricePerMember.toLocaleString('vi-VN')}₫`,
-                },
-                {
-                  key: 'duration',
-                  header: 'Thời gian',
-                  render: (pkg) => (
-                    <span className="text-gray-600">
-                      {pkg.duration ? durationLabel[pkg.duration] : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'crew',
-                  header: 'Ekip (hs/thợ)',
-                  render: (pkg) => (
-                    <span className="text-gray-600">
-                      {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'costumes',
-                  header: 'Trang phục',
-                  render: (pkg) => (
-                    <span className="text-gray-600">
-                      {pkg.costumes && pkg.costumes.length > 0
-                        ? pkg.costumes.map((c) => c.name).join(', ')
-                        : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'editingScope',
-                  header: 'Chỉnh sửa',
-                  render: (pkg) => (
-                    <span className="text-gray-600">
-                      {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'deliveryDays',
-                  header: 'Trả file tối đa (ngày)',
-                  render: (pkg) => (
-                    <span className="text-gray-600">
-                      {pkg.deliveryDays != null ? `tối đa ${pkg.deliveryDays} ngày` : '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'actions',
-                  header: '',
-                  align: 'right',
-                  className: 'whitespace-nowrap',
-                  render: (pkg) => (
-                    <span className="space-x-2">
-                      <button
-                        onClick={() => openEdit(pkg)}
-                        className="text-blue-600 hover:underline text-xs"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDelete(pkg._id)}
-                        className="text-red-600 hover:underline text-xs"
-                      >
-                        Xoá
-                      </button>
-                    </span>
-                  ),
-                } satisfies Column<Package>,
-              ]}
+              columns={columns}
             />
           </div>
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {packages.map((pkg) => (
-              <div key={pkg._id} className="card p-4">
+              <div key={pkg._id} className="rounded-xl border bg-card p-4">
                 <div className="flex items-start justify-between mb-2 gap-2">
                   <div className="min-w-0">
-                    <div className="font-semibold theme-text-primary truncate">{pkg.name}</div>
-                    <div className="text-primary-500 text-sm mt-0.5">
+                    <div className="font-semibold truncate">{pkg.name}</div>
+                    <div className="text-primary text-sm mt-0.5">
                       {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
                     </div>
                   </div>
                   <div className="flex gap-3 shrink-0">
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
                       onClick={() => openEdit(pkg)}
-                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(pkg._id)}
-                      className="text-red-500 text-xs font-medium hover:underline"
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-destructive"
+                      onClick={() => setConfirmId(pkg._id)}
                     >
                       Xoá
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-1 text-sm theme-text-muted">
+                <div className="space-y-1 text-sm text-muted-foreground">
                   {pkg.duration && (
                     <div className="inline-flex items-center gap-1.5">
-                      <MdOutlineTimer className="text-sky-500" />
+                      <Timer className="h-4 w-4 text-sky-500" />
                       <span>{durationLabel[pkg.duration]}</span>
                     </div>
                   )}
                   {pkg.studentsPerCrew != null && (
                     <div className="inline-flex items-center gap-1.5">
-                      <FaUsers className="text-indigo-500" />
+                      <Users className="h-4 w-4 text-indigo-500" />
                       <span>{pkg.studentsPerCrew} học sinh / thợ</span>
                     </div>
                   )}
                   {pkg.costumes && pkg.costumes.length > 0 && (
                     <div className="inline-flex items-center gap-1.5">
-                      <FaTshirt className="text-fuchsia-500" />
+                      <Shirt className="h-4 w-4 text-fuchsia-500" />
                       <span>{pkg.costumes.map((c) => c.name).join(', ')}</span>
                     </div>
                   )}
                   {pkg.editingScope && (
                     <div className="inline-flex items-center gap-1.5">
-                      <FaCut className="text-amber-500" />
+                      <Scissors className="h-4 w-4 text-amber-500" />
                       <span>{editingScopeLabel[pkg.editingScope]}</span>
                     </div>
                   )}
                   {pkg.deliveryDays != null && (
                     <div className="inline-flex items-center gap-1.5">
-                      <FaBoxOpen className="text-orange-500" />
+                      <Package2 className="h-4 w-4 text-orange-500" />
                       <span>Trả file tối đa: {pkg.deliveryDays} ngày</span>
                     </div>
                   )}
                   {pkg.description && (
-                    <div className="theme-text-muted italic">{pkg.description}</div>
+                    <div className="text-muted-foreground italic">{pkg.description}</div>
                   )}
                 </div>
               </div>
             ))}
             {packages.length === 0 && (
-              <div className="card py-10 text-center theme-text-muted">Chưa có gói chụp nào</div>
+              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                Chưa có gói chụp nào
+              </div>
             )}
           </div>
         </>
       )}
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa gói chụp' : 'Thêm gói chụp'}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className="label">Tên gói *</label>
-              <input
-                {...register('name', { required: true })}
-                className="input"
+            <FormField label="Tên gói" required htmlFor="pkgName" className="sm:col-span-2">
+              <Input
+                id="pkgName"
                 placeholder="VD: Gói cơ bản, Gói nâng cao..."
+                {...register('name', { required: true })}
               />
-            </div>
-            <div>
-              <label className="label">Giá/thành viên (₫) *</label>
-              <input
-                {...register('pricePerMember', { required: true, valueAsNumber: true })}
+            </FormField>
+            <FormField label="Giá/thành viên (₫)" required htmlFor="price">
+              <Input
+                id="price"
                 type="number"
                 min={0}
-                className="input"
                 placeholder="VD: 150000"
+                {...register('pricePerMember', { required: true, valueAsNumber: true })}
               />
-            </div>
-            <div>
-              <label className="label">Thời gian</label>
+            </FormField>
+            <FormField label="Thời gian">
               <Controller
                 name="duration"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
-                      { value: 'half_day', label: '1/2 ngày' },
-                      { value: 'two_thirds_day', label: '2/3 ngày' },
-                      { value: 'full_day', label: '1 ngày' },
-                    ]}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v || undefined)}
-                    placeholder="-- Không xác định --"
-                  />
+                    value={field.value || NO_DURATION}
+                    onValueChange={(v) => field.onChange(v === NO_DURATION ? undefined : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Không xác định --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_DURATION}>-- Không xác định --</SelectItem>
+                      <SelectItem value="half_day">1/2 ngày</SelectItem>
+                      <SelectItem value="two_thirds_day">2/3 ngày</SelectItem>
+                      <SelectItem value="full_day">1 ngày</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               />
-            </div>
-            <div>
-              <label className="label">Ekip (số học sinh / 1 thợ)</label>
-              <input
-                {...register('studentsPerCrew', { valueAsNumber: true })}
+            </FormField>
+            <FormField label="Ekip (số học sinh / 1 thợ)" htmlFor="studentsPerCrew">
+              <Input
+                id="studentsPerCrew"
                 type="number"
                 min={1}
-                className="input"
                 placeholder="Ví dụ: 20"
+                {...register('studentsPerCrew', { valueAsNumber: true })}
               />
-            </div>
-            <div>
-              <label className="label">Trang phục</label>
-              <Select
-                multiple
+            </FormField>
+            <FormField label="Trang phục">
+              <MultiSelect
                 options={allCostumes.map((c) => ({
                   value: c._id,
                   label: c.name + (c.description ? ` — ${c.description}` : ''),
                 }))}
                 value={selectedCostumes}
-                onChange={(v) => setSelectedCostumes(v as string[])}
+                onChange={setSelectedCostumes}
                 placeholder={
                   allCostumes.length === 0
                     ? 'Chưa có loại trang phục nào'
@@ -372,72 +400,77 @@ const PackagesPage = () => {
                 }
                 disabled={allCostumes.length === 0}
               />
-            </div>
-            <div>
-              <label className="label">Chỉnh sửa ảnh</label>
+            </FormField>
+            <FormField label="Chỉnh sửa ảnh">
               <Controller
                 name="editingScope"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    options={[
-                      { value: 'full', label: 'Toàn bộ file' },
-                      { value: 'partial', label: 'Một phần' },
-                    ]}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v)}
-                  />
+                  <Select value={field.value ?? 'full'} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Toàn bộ file</SelectItem>
+                      <SelectItem value="partial">Một phần</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField label="Trả file sau tối đa (ngày)" htmlFor="deliveryDays">
+              <Input
+                id="deliveryDays"
+                type="number"
+                min={1}
+                placeholder="VD: 7"
+                {...register('deliveryDays', { valueAsNumber: true })}
+              />
+            </FormField>
+            <FormField label="Mô tả thêm" htmlFor="pkgDesc" className="sm:col-span-2">
+              <Textarea
+                id="pkgDesc"
+                rows={2}
+                placeholder="Thông tin bổ sung..."
+                {...register('description')}
+              />
+            </FormField>
+            <div className="sm:col-span-2">
+              <Controller
+                name="isPopular"
+                control={control}
+                render={({ field }) => (
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <Checkbox
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(!!v)}
+                    />
+                    <Label className="cursor-pointer">
+                      Đánh dấu là gói <strong>phổ biến</strong> (hiển thị nổi bật trên trang giới
+                      thiệu)
+                    </Label>
+                  </label>
                 )}
               />
             </div>
-            <div>
-              <label className="label">Trả file sau tối đa (ngày)</label>
-              <input
-                {...register('deliveryDays', { valueAsNumber: true })}
-                type="number"
-                min={1}
-                className="input"
-                placeholder="VD: 7"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Mô tả thêm</label>
-              <textarea
-                {...register('description')}
-                className="input"
-                rows={2}
-                placeholder="Thông tin bổ sung..."
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  {...register('isPopular')}
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400"
-                />
-                <span className="text-sm theme-text-primary">
-                  Đánh dấu là gói <strong>phổ biến</strong> (hiển thị nổi bật trên trang giới thiệu)
-                </span>
-              </label>
-            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
 
-      <ConfirmModal
-        isOpen={!!confirmId}
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá gói chụp này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );

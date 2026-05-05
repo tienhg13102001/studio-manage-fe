@@ -1,21 +1,20 @@
 import type { ComponentType } from 'react';
-import type { IconType } from 'react-icons';
 import {
-  FaBoxOpen,
-  FaCalendarAlt,
-  FaCashRegister,
-  FaClipboardList,
-  FaCogs,
-  FaLayerGroup,
-  FaRulerCombined,
-  FaTachometerAlt,
-  FaTags,
-  FaTshirt,
-  FaUniversity,
-  FaUsers,
-  FaWrench,
-} from 'react-icons/fa';
-import { MdFeedback } from 'react-icons/md';
+  Banknote,
+  Calendar,
+  ClipboardList,
+  Layers,
+  LayoutDashboard,
+  MessageSquare,
+  Package,
+  Ruler,
+  School,
+  Settings,
+  Shirt,
+  Tags,
+  Users,
+  Wrench,
+} from 'lucide-react';
 import type { UserRole } from '../types';
 import DashboardPage from '../pages/DashboardPage';
 import CustomersPage from '../pages/CustomersPage';
@@ -30,10 +29,12 @@ import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
 import FeedbackPage from '../pages/FeedbackPage';
 
+export type NavIcon = ComponentType<{ className?: string }>;
+
 export interface NavItem {
   to: string;
   label: string;
-  icon?: IconType;
+  icon?: NavIcon;
   iconClassName?: string;
   allowedRoles?: UserRole[];
   component?: ComponentType;
@@ -46,7 +47,7 @@ export const navItems: NavItem[] = [
   {
     to: '/',
     label: 'Dashboard',
-    icon: FaTachometerAlt,
+    icon: LayoutDashboard,
     iconClassName: 'text-blue-400',
     allowedRoles: [0, 1, 2, 3, 4],
     component: DashboardPage,
@@ -55,14 +56,14 @@ export const navItems: NavItem[] = [
   {
     to: '/customers',
     label: 'Khách hàng',
-    icon: FaUniversity,
+    icon: School,
     iconClassName: 'text-cyan-300',
     allowedRoles: [0, 1, 2, 4],
     children: [
       {
         to: '',
         label: 'Danh sách lớp học',
-        icon: FaClipboardList,
+        icon: ClipboardList,
         iconClassName: 'text-slate-300',
         allowedRoles: [0, 1, 2, 4],
         component: CustomersPage,
@@ -70,7 +71,7 @@ export const navItems: NavItem[] = [
       {
         to: '/size',
         label: 'Thông tin học sinh',
-        icon: FaRulerCombined,
+        icon: Ruler,
         iconClassName: 'text-emerald-300',
         allowedRoles: [0, 1, 2, 4],
         component: CustomerSizePage,
@@ -87,7 +88,7 @@ export const navItems: NavItem[] = [
   {
     to: '/schedules',
     label: 'Lịch chụp',
-    icon: FaCalendarAlt,
+    icon: Calendar,
     iconClassName: 'text-indigo-300',
     component: SchedulesPage,
   },
@@ -97,14 +98,14 @@ export const adminItems: NavItem[] = [
   {
     to: '/manage',
     label: 'Quản lý',
-    icon: FaWrench,
+    icon: Wrench,
     iconClassName: 'text-amber-300',
     allowedRoles: [0, 1, 5],
     children: [
       {
         to: '/finance',
         label: 'Tài chính',
-        icon: FaCashRegister,
+        icon: Banknote,
         iconClassName: 'text-green-300',
         allowedRoles: [0, 1, 5],
         component: FinancePage,
@@ -112,7 +113,7 @@ export const adminItems: NavItem[] = [
       {
         to: '/users',
         label: 'Người dùng',
-        icon: FaUsers,
+        icon: Users,
         iconClassName: 'text-blue-300',
         allowedRoles: [0, 1],
         component: UsersPage,
@@ -120,7 +121,7 @@ export const adminItems: NavItem[] = [
       {
         to: '/feedback',
         label: 'Phản hồi',
-        icon: MdFeedback,
+        icon: MessageSquare,
         iconClassName: 'text-pink-300',
         allowedRoles: [0, 1],
         component: FeedbackPage,
@@ -130,14 +131,14 @@ export const adminItems: NavItem[] = [
   {
     to: '/settings',
     label: 'Cài đặt',
-    icon: FaCogs,
+    icon: Settings,
     iconClassName: 'text-slate-300',
     allowedRoles: [0, 1],
     children: [
       {
         to: '/categories',
         label: 'Danh mục thu/chi',
-        icon: FaTags,
+        icon: Tags,
         iconClassName: 'text-violet-300',
         allowedRoles: [0, 1],
         component: CategoriesPage,
@@ -145,7 +146,7 @@ export const adminItems: NavItem[] = [
       {
         to: '/costumes',
         label: 'Trang phục',
-        icon: FaTshirt,
+        icon: Shirt,
         iconClassName: 'text-fuchsia-300',
         allowedRoles: [0, 1],
         component: CostumesPage,
@@ -153,7 +154,7 @@ export const adminItems: NavItem[] = [
       {
         to: '/costume-types',
         label: 'Loại trang phục',
-        icon: FaLayerGroup,
+        icon: Layers,
         iconClassName: 'text-violet-200',
         allowedRoles: [0, 1],
         component: CostumeTypesPage,
@@ -161,7 +162,7 @@ export const adminItems: NavItem[] = [
       {
         to: '/packages',
         label: 'Gói chụp',
-        icon: FaBoxOpen,
+        icon: Package,
         iconClassName: 'text-orange-300',
         allowedRoles: [0, 1, 2, 4],
         component: PackagesPage,

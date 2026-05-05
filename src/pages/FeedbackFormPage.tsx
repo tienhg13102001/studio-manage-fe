@@ -1,12 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FaFilm, FaLightbulb, FaPhoneAlt, FaSchool } from 'react-icons/fa';
-import { FiAlertCircle, FiMessageCircle } from 'react-icons/fi';
-import { IoCheckmarkCircle } from 'react-icons/io5';
-import { MdPhotoLibrary } from 'react-icons/md';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Film,
+  Image as ImageIcon,
+  Lightbulb,
+  MessageCircle,
+  Phone,
+  School,
+} from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
-import { Logo, PageLoader, Select, StarRating } from '../components/atoms';
+import Logo from '../components/atoms/Logo';
+import {
+  Button,
+  Card,
+  CardContent,
+  Combobox,
+  Input,
+  PageLoader,
+  StarRating,
+  Textarea,
+} from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
@@ -143,10 +160,7 @@ const FeedbackFormPage = () => {
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--page-bg)' }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <PageLoader />
       </div>
     );
@@ -154,62 +168,45 @@ const FeedbackFormPage = () => {
 
   if (loadError) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: 'var(--page-bg)' }}
-      >
-        <div className="text-center max-w-sm card w-full py-10">
-          <div className="text-6xl mb-4 flex justify-center">
-            <FiAlertCircle className="text-amber-500" />
-          </div>
-          <p className="font-semibold" style={{ fontSize: '18px', color: 'var(--text-primary)' }}>
-            Không tìm thấy thông tin
-          </p>
-          <p className="mt-1" style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-            Link có thể không còn hợp lệ
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-sm w-full text-center">
+          <CardContent className="py-10">
+            <div className="mb-4 flex justify-center">
+              <AlertCircle className="h-12 w-12 text-amber-500" />
+            </div>
+            <p className="font-semibold text-lg">Không tìm thấy thông tin</p>
+            <p className="mt-1 text-sm text-muted-foreground">Link có thể không còn hợp lệ</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (submitStatus === 'success') {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: 'var(--page-bg)' }}
-      >
-        <div className="card p-10 max-w-md w-full text-center rounded-3xl">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
-            <Logo size={80} />
-          </div>
-          <h2 className="font-bold mb-2" style={{ fontSize: '24px', color: 'var(--text-primary)' }}>
-            Cảm ơn bạn rất nhiều!
-          </h2>
-          <p
-            className="leading-relaxed mb-8"
-            style={{ fontSize: '15px', color: 'var(--text-muted)' }}
-          >
-            Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt hơn
-            trong tương lai.
-          </p>
-          <button
-            onClick={() => setSubmitStatus('idle')}
-            className="btn-primary w-full py-3"
-            style={{ fontSize: '15px' }}
-          >
-            Gửi phản hồi khác
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-md w-full text-center rounded-3xl">
+          <CardContent className="p-10">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
+              <Logo size={80} />
+            </div>
+            <h2 className="font-bold mb-2 text-2xl">Cảm ơn bạn rất nhiều!</h2>
+            <p className="leading-relaxed mb-8 text-muted-foreground">
+              Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt
+              hơn trong tương lai.
+            </p>
+            <Button
+              variant="gradient"
+              className="w-full py-3"
+              onClick={() => setSubmitStatus('idle')}
+            >
+              Gửi phản hồi khác
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-
-  // Tailwind của app ép text-xs/sm thành 16px → dùng inline style cho chữ nhỏ thật sự
-  const labelStyle = { fontSize: '13px' };
-  const helperStyle = { fontSize: '12px' };
-  const inputStyle = { fontSize: '15px' };
-  const inputCls = 'input';
 
   const totalSteps = 5;
   const completionCount =
@@ -221,274 +218,213 @@ const FeedbackFormPage = () => {
   const progress = Math.round((completionCount / totalSteps) * 100);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
-      {/* Top bar with progress */}
-      <header
-        className="sticky top-0 z-10 backdrop-blur"
-        style={{ background: 'var(--topbar-bg)', borderBottom: '1px solid var(--topbar-border)' }}
-      >
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 backdrop-blur bg-background/80 border-b">
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-cyan-500 flex items-center justify-center shadow-sm">
             <Logo size={36} />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className="font-bold leading-tight truncate"
-              style={{ color: 'var(--text-primary)', fontSize: '15px' }}
-            >
-              Yume Studio
-            </p>
-            <p className="leading-tight" style={{ ...helperStyle, color: 'var(--text-muted)' }}>
+            <p className="font-bold leading-tight truncate">Yume Studio</p>
+            <p className="leading-tight text-xs text-muted-foreground">
               Đánh giá trải nghiệm của bạn
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div
-              className="w-16 h-1.5 rounded-full overflow-hidden"
-              style={{ background: 'var(--input-border)' }}
-            >
+            <div className="w-16 h-1.5 rounded-full overflow-hidden bg-muted">
               <div
-                className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-amber-500 to-cyan-500 transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="tabular-nums" style={{ ...helperStyle, color: 'var(--text-muted)' }}>
-              {progress}%
-            </span>
+            <span className="tabular-nums text-xs text-muted-foreground">{progress}%</span>
           </div>
         </div>
       </header>
 
       <div className="max-w-xl mx-auto px-5 py-8">
-        {/* Hero */}
         <div className="mb-8">
-          <h1
-            className="font-bold leading-tight"
-            style={{ fontSize: '28px', color: 'var(--text-primary)' }}
-          >
+          <h1 className="font-bold leading-tight text-2xl sm:text-3xl">
             {fixedClass ? fixedClass.className : 'Gửi phản hồi'}
           </h1>
           {fixedClass?.school ? (
-            <p className="mt-1" style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
-              <span className="inline-flex items-center gap-1.5">
-                <FaSchool className="text-sky-500" />
-                <span>{fixedClass.school}</span>
-              </span>
+            <p className="mt-1 text-muted-foreground inline-flex items-center gap-1.5">
+              <School className="h-4 w-4 text-sky-500" />
+              <span>{fixedClass.school}</span>
             </p>
           ) : (
-            <p className="mt-1" style={{ fontSize: '15px', color: 'var(--text-muted)' }}>
+            <p className="mt-1 text-muted-foreground">
               Ý kiến của bạn giúp studio phục vụ tốt hơn
             </p>
           )}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Class selector */}
           {fixedClass ? (
             <input type="hidden" {...register('customer')} />
           ) : (
-            <div className="card rounded-2xl p-5">
-              <label
-                className="block font-semibold mb-2"
-                style={{ color: 'var(--text-primary)', fontSize: '14px' }}
-              >
-                Lớp của bạn <span className="text-rose-500">*</span>
-              </label>
-              <Select
-                options={classes.map((c) => ({
-                  value: c._id,
-                  label: c.school ? `${c.className} — ${c.school}` : c.className,
-                }))}
-                value={selectedCustomerId}
-                onChange={(v) => setValue('customer', v as string, { shouldValidate: true })}
-                placeholder="Chọn lớp…"
-                error={errors.customer?.message}
-              />
-              {errors.customer && (
-                <p className="text-rose-500 mt-2" style={helperStyle}>
-                  {errors.customer.message}
-                </p>
-              )}
-            </div>
+            <Card className="rounded-2xl">
+              <CardContent className="p-5">
+                <label className="block font-semibold mb-2">
+                  Lớp của bạn <span className="text-rose-500">*</span>
+                </label>
+                <Combobox
+                  options={classes.map((c) => ({
+                    value: c._id,
+                    label: c.school ? `${c.className} — ${c.school}` : c.className,
+                  }))}
+                  value={selectedCustomerId}
+                  onChange={(v) => setValue('customer', v, { shouldValidate: true })}
+                  placeholder="Chọn lớp…"
+                />
+                {errors.customer && (
+                  <p className="text-rose-500 mt-2 text-xs">{errors.customer.message}</p>
+                )}
+              </CardContent>
+            </Card>
           )}
 
-          {/* Crew rating card */}
-          <div className="card rounded-2xl p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(59,130,246,0.12)' }}
-              >
-                <FaFilm className="text-blue-500 text-lg" />
+          {/* Crew rating */}
+          <Card className="rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/15">
+                  <Film className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold">
+                    Ekip chụp ảnh <span className="text-rose-500">*</span>
+                  </h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Thái độ, sự chuyên nghiệp và kỹ năng
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3
-                  className="font-semibold"
-                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
-                >
-                  Ekip chụp ảnh <span className="text-rose-500">*</span>
-                </h3>
-                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
-                  Thái độ, sự chuyên nghiệp và kỹ năng
-                </p>
-              </div>
-            </div>
-            <input type="hidden" {...register('crewRating', { required: true, min: 1 })} />
-            <StarRating
-              value={crewRating}
-              onChange={(v) => setValue('crewRating', v, { shouldValidate: true })}
-            />
-            <textarea
-              {...register('crewDescription', {
-                required: true,
-                validate: (v) => v.trim().length > 0,
-              })}
-              rows={2}
-              className={`${inputCls} mt-4 resize-none ${errors.crewDescription ? 'border-red-400' : ''}`}
-              style={inputStyle}
-              placeholder="Chia sẻ thêm về ekip…"
-            />
-            {errors.crewDescription && (
-              <p className="mt-1 text-xs text-red-500">Vui lòng chia sẻ thêm về ekip</p>
-            )}
-          </div>
+              <input type="hidden" {...register('crewRating', { required: true, min: 1 })} />
+              <StarRating
+                value={crewRating}
+                onChange={(v) => setValue('crewRating', v, { shouldValidate: true })}
+              />
+              <Textarea
+                rows={2}
+                placeholder="Chia sẻ thêm về ekip…"
+                className={cn('mt-4 resize-none', errors.crewDescription && 'border-destructive')}
+                {...register('crewDescription', {
+                  required: true,
+                  validate: (v) => v.trim().length > 0,
+                })}
+              />
+              {errors.crewDescription && (
+                <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về ekip</p>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Album rating card */}
-          <div className="card rounded-2xl p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(168,85,247,0.14)' }}
-              >
-                <MdPhotoLibrary className="text-primary-500 text-lg" />
+          {/* Album rating */}
+          <Card className="rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-violet-500/15">
+                  <ImageIcon className="h-5 w-5 text-violet-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold">
+                    Album ảnh <span className="text-rose-500">*</span>
+                  </h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Chất lượng, bố cục và màu sắc
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3
-                  className="font-semibold"
-                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
-                >
-                  Album ảnh <span className="text-rose-500">*</span>
-                </h3>
-                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
-                  Chất lượng, bố cục và màu sắc
-                </p>
-              </div>
-            </div>
-            <input type="hidden" {...register('albumRating', { required: true, min: 1 })} />
-            <StarRating
-              value={albumRating}
-              onChange={(v) => setValue('albumRating', v, { shouldValidate: true })}
-            />
-            <textarea
-              {...register('albumDescription', {
-                required: true,
-                validate: (v) => v.trim().length > 0,
-              })}
-              rows={2}
-              className={`${inputCls} mt-4 resize-none ${errors.albumDescription ? 'border-red-400' : ''}`}
-              style={inputStyle}
-              placeholder="Chia sẻ thêm về album…"
-            />
-            {errors.albumDescription && (
-              <p className="mt-1 text-xs text-red-500">Vui lòng chia sẻ thêm về album</p>
-            )}
-          </div>
+              <input type="hidden" {...register('albumRating', { required: true, min: 1 })} />
+              <StarRating
+                value={albumRating}
+                onChange={(v) => setValue('albumRating', v, { shouldValidate: true })}
+              />
+              <Textarea
+                rows={2}
+                placeholder="Chia sẻ thêm về album…"
+                className={cn('mt-4 resize-none', errors.albumDescription && 'border-destructive')}
+                {...register('albumDescription', {
+                  required: true,
+                  validate: (v) => v.trim().length > 0,
+                })}
+              />
+              {errors.albumDescription && (
+                <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về album</p>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* General feedback card */}
-          <div className="card rounded-2xl p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(20,184,166,0.12)' }}
-              >
-                <FiMessageCircle className="text-teal-500 text-lg" />
+          {/* General feedback */}
+          <Card className="rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-500/15">
+                  <MessageCircle className="h-5 w-5 text-teal-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold">Cảm nhận chung</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Trải nghiệm tổng thể của bạn
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3
-                  className="font-semibold"
-                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
-                >
-                  Cảm nhận chung
-                </h3>
-                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
-                  Trải nghiệm tổng thể của bạn
-                </p>
-              </div>
-            </div>
-            <textarea
-              {...register('content')}
-              rows={3}
-              className={`${inputCls} resize-none`}
-              style={inputStyle}
-              placeholder="Hãy chia sẻ cảm nhận của bạn…"
-            />
-          </div>
+              <Textarea
+                rows={3}
+                className="resize-none"
+                placeholder="Hãy chia sẻ cảm nhận của bạn…"
+                {...register('content')}
+              />
+            </CardContent>
+          </Card>
 
-          {/* Suggestion card */}
-          <div className="card rounded-2xl p-5">
-            <div className="flex items-start gap-3 mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(245,158,11,0.14)' }}
-              >
-                <FaLightbulb className="text-amber-500 text-lg" />
+          {/* Suggestion */}
+          <Card className="rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/15">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold">Đề xuất cải thiện</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Studio có thể làm gì tốt hơn?
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3
-                  className="font-semibold"
-                  style={{ fontSize: '15px', color: 'var(--text-primary)' }}
-                >
-                  Đề xuất cải thiện
-                </h3>
-                <p className="mt-0.5" style={{ ...labelStyle, color: 'var(--text-muted)' }}>
-                  Studio có thể làm gì tốt hơn?
-                </p>
-              </div>
-            </div>
-            <textarea
-              {...register('suggestion')}
-              rows={3}
-              className={`${inputCls} resize-none`}
-              style={inputStyle}
-              placeholder="Góp ý để studio phục vụ bạn tốt hơn…"
-            />
-          </div>
+              <Textarea
+                rows={3}
+                className="resize-none"
+                placeholder="Góp ý để studio phục vụ bạn tốt hơn…"
+                {...register('suggestion')}
+              />
+            </CardContent>
+          </Card>
 
-          {/* Phone card */}
-          <div className="card rounded-2xl p-5">
-            <label
-              className="flex items-center gap-2 font-semibold mb-2"
-              style={{ color: 'var(--text-primary)', fontSize: '14px' }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <FaPhoneAlt className="text-emerald-500" />
+          {/* Phone */}
+          <Card className="rounded-2xl">
+            <CardContent className="p-5">
+              <label className="flex items-center gap-2 font-semibold mb-2">
+                <Phone className="h-4 w-4 text-emerald-500" />
                 <span>Số điện thoại</span>
-              </span>
-              <span className="font-normal" style={{ ...helperStyle, color: 'var(--text-faint)' }}>
-                · tuỳ chọn
-              </span>
-            </label>
-            <input
-              {...register('phone')}
-              type="tel"
-              className={inputCls}
-              style={inputStyle}
-              placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
-            />
-            <p className="mt-2" style={{ ...helperStyle, color: 'var(--text-faint)' }}>
-              Phản hồi hoàn toàn ẩn danh trừ khi bạn để lại SĐT
-            </p>
-          </div>
+                <span className="font-normal text-xs text-muted-foreground">· tuỳ chọn</span>
+              </label>
+              <Input
+                type="tel"
+                placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
+                {...register('phone')}
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Phản hồi hoàn toàn ẩn danh trừ khi bạn để lại SĐT
+              </p>
+            </CardContent>
+          </Card>
 
           {submitStatus === 'error' && (
-            <div
-              className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-rose-700"
-              style={{ fontSize: '14px' }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <FiAlertCircle className="text-rose-500" />
-                <span>Có lỗi xảy ra, vui lòng thử lại.</span>
-              </span>
+            <div className="rounded-2xl p-4 text-sm text-destructive bg-destructive/10 border border-destructive/30 inline-flex items-center gap-1.5">
+              <AlertCircle className="h-4 w-4" />
+              <span>Có lỗi xảy ra, vui lòng thử lại.</span>
             </div>
           )}
 
@@ -497,16 +433,13 @@ const FeedbackFormPage = () => {
       </div>
 
       {/* Sticky submit bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 backdrop-blur z-20"
-        style={{ background: 'var(--topbar-bg)', borderTop: '1px solid var(--topbar-border)' }}
-      >
+      <div className="fixed bottom-0 left-0 right-0 backdrop-blur z-20 bg-background/80 border-t">
         <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold" style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+            <p className="font-semibold text-sm">
               {completionCount === totalSteps ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <IoCheckmarkCircle className="text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   <span>Sẵn sàng gửi</span>
                 </span>
               ) : (
@@ -514,15 +447,15 @@ const FeedbackFormPage = () => {
               )}
             </p>
           </div>
-          <button
+          <Button
             type="submit"
+            variant="gradient"
             disabled={!canSubmit}
             onClick={handleSubmit(onSubmit)}
-            className="btn-primary px-6 py-3"
-            style={{ fontSize: '15px' }}
+            className="px-6 py-3"
           >
             {isSubmitting ? 'Đang gửi…' : 'Gửi phản hồi'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

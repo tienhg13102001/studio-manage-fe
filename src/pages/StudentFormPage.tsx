@@ -2,13 +2,29 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import dayjs from 'dayjs';
-import { FaCalendarCheck, FaGift, FaMars, FaSchool, FaVenus } from 'react-icons/fa';
-import { FiAlertCircle } from 'react-icons/fi';
-import { IoCheckmarkCircle } from 'react-icons/io5';
-import { PageLoader } from '../components/atoms';
+import {
+  AlertCircle,
+  CalendarCheck,
+  CheckCircle2,
+  Gift,
+  Mars,
+  School,
+  Venus,
+} from 'lucide-react';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { PublicScheduleResponse } from '../types';
+import {
+  Button,
+  Card,
+  CardContent,
+  FormField,
+  Input,
+  Label,
+  PageLoader,
+  Textarea,
+} from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface FormValues {
   name: string;
@@ -43,7 +59,6 @@ const StudentFormPage = () => {
     (c) => c.gender === gender || c.gender === 'unisex',
   );
 
-  // Default: tick all visible costumes whenever schedule loads or gender changes.
   useEffect(() => {
     setValue(
       'costumes',
@@ -87,21 +102,23 @@ const StudentFormPage = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 theme-page">
-        <div className="text-center card max-w-sm w-full py-10">
-          <div className="mb-4 flex justify-center">
-            <FiAlertCircle className="text-5xl text-amber-500" />
-          </div>
-          <p className="font-medium theme-text-primary">Không tìm thấy lớp học</p>
-          <p className="text-sm mt-1 theme-text-muted">Link có thể không còn hợp lệ</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-sm w-full text-center">
+          <CardContent className="py-10">
+            <div className="mb-4 flex justify-center">
+              <AlertCircle className="h-12 w-12 text-amber-500" />
+            </div>
+            <p className="font-medium">Không tìm thấy lớp học</p>
+            <p className="text-sm mt-1 text-muted-foreground">Link có thể không còn hợp lệ</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!schedule) {
     return (
-      <div className="min-h-screen flex items-center justify-center theme-page">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <PageLoader />
       </div>
     );
@@ -109,51 +126,54 @@ const StudentFormPage = () => {
 
   if (submitStatus === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 theme-page">
-        <div className="card p-8 max-w-sm w-full text-center">
-          <div className="mb-4 flex justify-center">
-            <IoCheckmarkCircle className="text-5xl text-emerald-500" />
-          </div>
-          <h2 className="text-xl font-bold mb-2 theme-text-primary">Đã ghi nhận!</h2>
-          <p className="text-sm mb-6 theme-text-muted">Thông tin của bạn đã được lưu thành công.</p>
-          <button onClick={() => setSubmitStatus('idle')} className="btn-primary w-full py-2.5">
-            Nhập thêm học sinh khác
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="max-w-sm w-full text-center">
+          <CardContent className="p-8">
+            <div className="mb-4 flex justify-center">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Đã ghi nhận!</h2>
+            <p className="text-sm mb-6 text-muted-foreground">
+              Thông tin của bạn đã được lưu thành công.
+            </p>
+            <Button
+              variant="gradient"
+              className="w-full"
+              onClick={() => setSubmitStatus('idle')}
+            >
+              Nhập thêm học sinh khác
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center py-10 px-4 theme-page">
-      <div className="card w-full max-w-md p-0 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-5 border-b theme-card-border">
-          <p className="text-xs uppercase tracking-wider mb-1 theme-text-faint">
+    <div className="min-h-screen flex items-start justify-center py-10 px-4 bg-background">
+      <Card className="w-full max-w-md p-0 overflow-hidden">
+        <div className="px-6 py-5 border-b">
+          <p className="text-xs uppercase tracking-wider mb-1 text-muted-foreground">
             Nhập thông tin học sinh
           </p>
-          <h1 className="text-xl font-bold flex items-center gap-2 theme-text-primary">
-            <span>{schedule.customer.className}</span>{' '}
+          <h1 className="text-xl font-bold flex items-center gap-2 flex-wrap">
+            <span>{schedule.customer.className}</span>
             {schedule.customer.school && (
-              <span className="text-sm mt-0.5 h-full font-light theme-text-muted">
-                <span className="inline-flex items-center gap-1">
-                  <FaSchool className="text-sky-500" />
-                  <span>{schedule.customer.school}</span>
-                </span>
+              <span className="text-sm font-light text-muted-foreground inline-flex items-center gap-1">
+                <School className="h-4 w-4 text-sky-500" />
+                <span>{schedule.customer.school}</span>
               </span>
             )}
           </h1>
 
           <div className="flex flex-col">
-            {schedule && (
-              <p className="text-sm text-primary-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
-                <FaCalendarCheck className="text-primary-500" />
-                <span>Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}</span>
-              </p>
-            )}
+            <p className="text-sm text-primary mt-1.5 font-medium inline-flex items-center gap-1.5">
+              <CalendarCheck className="h-4 w-4" />
+              <span>Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}</span>
+            </p>
             {schedule.package && (
-              <p className="text-sm text-green-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
-                <FaGift className="text-green-500" />
+              <p className="text-sm text-emerald-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
+                <Gift className="h-4 w-4" />
                 <span>Gói chụp: {schedule.package.name}</span>
               </p>
             )}
@@ -161,40 +181,42 @@ const StudentFormPage = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
-          <div>
-            <label className="label">
-              Họ và tên <span className="text-red-500">*</span>
-            </label>
-            <input
-              {...register('name', { required: 'Vui lòng nhập họ tên' })}
-              className="input"
+          <FormField label="Họ và tên" required htmlFor="name" error={errors.name?.message}>
+            <Input
+              id="name"
               placeholder="Nguyễn Văn A"
+              {...register('name', { required: 'Vui lòng nhập họ tên' })}
             />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-          </div>
+          </FormField>
 
-          <div>
-            <label className="label">
-              Giới tính <span className="text-red-500">*</span>
-            </label>
+          <div className="space-y-1.5">
+            <Label>
+              Giới tính <span className="text-destructive">*</span>
+            </Label>
             <div className="flex gap-3">
               {(['male', 'female'] as const).map((g) => (
-                <label key={g} className="costume-option flex-1 justify-center py-2.5">
+                <label
+                  key={g}
+                  className={cn(
+                    'flex-1 inline-flex items-center justify-center gap-2 rounded-md border bg-card px-3 py-2.5 cursor-pointer hover:bg-muted',
+                    gender === g && 'border-primary bg-primary/5',
+                  )}
+                >
                   <input
                     type="radio"
                     value={g}
                     {...register('gender', { required: true })}
-                    className="accent-primary-600"
+                    className="accent-primary"
                   />
                   <span className="text-sm inline-flex items-center gap-1.5">
                     {g === 'male' ? (
                       <>
-                        <FaMars className="text-sky-600" />
+                        <Mars className="h-4 w-4 text-sky-600" />
                         <span>Nam</span>
                       </>
                     ) : (
                       <>
-                        <FaVenus className="text-pink-500" />
+                        <Venus className="h-4 w-4 text-pink-500" />
                         <span>Nữ</span>
                       </>
                     )}
@@ -205,86 +227,82 @@ const StudentFormPage = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">
-                Chiều cao (cm) <span className="text-red-500">*</span>
-              </label>
-              <input
-                {...register('height', {
-                  required: 'Vui lòng nhập chiều cao',
-                  validate: (v) => (v !== '' && Number(v) > 0) || 'Chiều cao không hợp lệ',
-                })}
+            <FormField
+              label="Chiều cao (cm)"
+              required
+              htmlFor="height"
+              error={errors.height?.message}
+            >
+              <Input
+                id="height"
                 type="number"
                 step="0.1"
                 min="50"
                 max="250"
-                className="input"
                 placeholder="165"
-              />
-              {errors.height && (
-                <p className="text-red-500 text-xs mt-1">{errors.height.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="label">
-                Cân nặng (kg) <span className="text-red-500">*</span>
-              </label>
-              <input
-                {...register('weight', {
-                  required: 'Vui lòng nhập cân nặng',
-                  validate: (v) => (v !== '' && Number(v) > 0) || 'Cân nặng không hợp lệ',
+                {...register('height', {
+                  required: 'Vui lòng nhập chiều cao',
+                  validate: (v) => (v !== '' && Number(v) > 0) || 'Chiều cao không hợp lệ',
                 })}
+              />
+            </FormField>
+            <FormField
+              label="Cân nặng (kg)"
+              required
+              htmlFor="weight"
+              error={errors.weight?.message}
+            >
+              <Input
+                id="weight"
                 type="number"
                 step="0.1"
                 min="10"
                 max="200"
-                className="input"
                 placeholder="55"
+                {...register('weight', {
+                  required: 'Vui lòng nhập cân nặng',
+                  validate: (v) => (v !== '' && Number(v) > 0) || 'Cân nặng không hợp lệ',
+                })}
               />
-              {errors.weight && (
-                <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
-              )}
-            </div>
+            </FormField>
           </div>
-          <div className="space-y-1">
-            <label className="label">Trang phục</label>
+
+          <div className="space-y-1.5">
+            <Label>Trang phục</Label>
             <div className="flex flex-wrap gap-3">
               {visibleCostumes.map((c) => (
-                <label key={c._id} className="costume-option py-2.5">
+                <label
+                  key={c._id}
+                  className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 cursor-pointer hover:bg-muted text-sm"
+                >
                   <input
                     type="checkbox"
                     value={c._id}
                     {...register('costumes')}
-                    className="accent-primary-600"
+                    className="accent-primary h-4 w-4"
                   />
-                  <span className="text-sm">{c.name}</span>
+                  <span>{c.name}</span>
                 </label>
               ))}
             </div>
-            <p className="text-xs ml-1 theme-text-muted">
-              đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
+            <p className="text-xs ml-1 text-muted-foreground">
+              Đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
             </p>
           </div>
 
-          <div>
-            <label className="label">Ghi chú</label>
-            <textarea
-              {...register('notes')}
-              className="input resize-none"
-              rows={2}
-              placeholder="Tuỳ chọn…"
-            />
-          </div>
+          <FormField label="Ghi chú" htmlFor="notes">
+            <Textarea id="notes" rows={2} placeholder="Tuỳ chọn…" {...register('notes')} />
+          </FormField>
 
           {submitStatus === 'error' && (
-            <p className="text-red-500 text-sm">Có lỗi xảy ra, vui lòng thử lại.</p>
+            <p className="text-destructive text-sm">Có lỗi xảy ra, vui lòng thử lại.</p>
           )}
 
-          <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3">
+          <Button type="submit" variant="gradient" disabled={isSubmitting} className="w-full py-3">
             {isSubmitting ? 'Đang gửi…' : 'Gửi thông tin'}
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 };

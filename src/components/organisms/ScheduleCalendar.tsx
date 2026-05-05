@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { FaMapMarkerAlt } from 'react-icons/fa';
-import { MdAccessTime, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { MapPin, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DOW_VN, SCHEDULE_STATUS_LABEL } from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
@@ -75,7 +74,7 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
           }
           className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
         >
-          <MdChevronLeft size={20} />
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <span className="font-bold theme-text-primary text-base tracking-wide">
           Tháng {calendarDate.month + 1} / {calendarDate.year}
@@ -88,7 +87,7 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
           }
           className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
         >
-          <MdChevronRight size={20} />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
@@ -193,14 +192,14 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
                     </div>
                     {(s.startTime || s.endTime) && (
                       <div className="text-xs theme-text-muted flex items-center gap-1">
-                        <MdAccessTime className="text-sky-400 shrink-0" />
+                        <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                         {s.startTime}
                         {s.endTime ? ` – ${s.endTime}` : ''}
                       </div>
                     )}
                     {s.location && (
                       <div className="text-xs theme-text-muted flex items-center gap-1">
-                        <FaMapMarkerAlt className="text-rose-400 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                         <span className="truncate">{s.location}</span>
                       </div>
                     )}

@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { customerService } from '../services/customerService';
 import { scheduleService } from '../services/scheduleService';
 import { transactionService } from '../services/transactionService';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Customer, ScheduleResponse, TransactionResponse } from '../types';
-import { PageLoader } from '../components/atoms';
-import { DataTable } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { SCHEDULE_STATUS_COLOR, SCHEDULE_STATUS_LABEL } from '../utils/scheduleConstants';
+import {
+  Badge,
+  Card,
+  CardContent,
+  DataTable,
+  PageLoader,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 const CustomerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,65 +44,83 @@ const CustomerDetailPage = () => {
   const totalExpense = transactions
     .filter((t) => t.type === 'expense')
     .reduce((s, t) => s + t.amount, 0);
+  const profit = totalIncome - totalExpense;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/customers" className="text-sm text-gray-500 hover:text-gray-700">
-          ← Danh sách lớp
+        <Link
+          to="/customers"
+          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Danh sách lớp
         </Link>
       </div>
 
-      <div className="card">
-        <h2 className="text-2xl font-bold mb-1">{customer.className}</h2>
-        <p className="text-gray-500">{customer.school}</p>
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Liên hệ:</span>{' '}
-            <span className="font-medium">{customer.contactName}</span>
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="text-2xl font-bold mb-1">{customer.className}</h2>
+          <p className="text-muted-foreground">{customer.school}</p>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Liên hệ:</span>{' '}
+              <span className="font-medium">{customer.contactName}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">SĐT:</span>{' '}
+              <span className="font-medium">{customer.contactPhone}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Địa chỉ:</span>{' '}
+              <span className="font-medium">{customer.contactAddress}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Sĩ số:</span>{' '}
+              <span className="font-medium">{customer.total}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Nam:</span>{' '}
+              <span className="font-medium">{customer.totalMale ?? 0}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Nữ:</span>{' '}
+              <span className="font-medium">{customer.totalFemale ?? 0}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-gray-500">SĐT:</span>{' '}
-            <span className="font-medium">{customer.contactPhone}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Địa chỉ:</span>{' '}
-            <span className="font-medium">{customer.contactAddress}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Sĩ số:</span>{' '}
-            <span className="font-medium">{customer.total}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Nam:</span>{' '}
-            <span className="font-medium">{customer.totalMale ?? 0}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Nữ:</span>{' '}
-            <span className="font-medium">{customer.totalFemale ?? 0}</span>
-          </div>
-        </div>
-        {customer.notes && <p className="mt-3 text-sm text-gray-600">{customer.notes}</p>}
-      </div>
+          {customer.notes && (
+            <p className="mt-3 text-sm text-muted-foreground">{customer.notes}</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Finance summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="card text-center">
-          <p className="text-xs text-gray-500">Tổng thu</p>
-          <p className="text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-500">Tổng chi</p>
-          <p className="text-xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-500">Lợi nhuận</p>
-          <p
-            className={`text-xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}
-          >
-            {formatCurrency(totalIncome - totalExpense)}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground">Tổng thu</p>
+            <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground">Tổng chi</p>
+            <p className="text-xl font-bold text-rose-600">{formatCurrency(totalExpense)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground">Lợi nhuận</p>
+            <p
+              className={cn(
+                'text-xl font-bold',
+                profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
+              )}
+            >
+              {formatCurrency(profit)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Schedules */}
@@ -110,7 +135,7 @@ const CustomerDetailPage = () => {
             key: 'time',
             header: 'Giờ',
             render: (s) => (
-              <span className="text-gray-600">
+              <span className="text-muted-foreground">
                 {s.startTime}
                 {s.endTime ? ` – ${s.endTime}` : ''}
               </span>
@@ -119,16 +144,16 @@ const CustomerDetailPage = () => {
           {
             key: 'location',
             header: 'Địa điểm',
-            render: (s) => <span className="text-gray-600">{s.location}</span>,
+            render: (s) => <span className="text-muted-foreground">{s.location}</span>,
           },
           {
             key: 'crew',
             header: 'Ekip',
             render: (s) => (
-              <span className="text-gray-600">
+              <span className="text-muted-foreground">
                 {s.leadPhotographer?.username ?? '—'}
                 {s.supportPhotographers.length > 0 && (
-                  <span className="ml-1 text-xs text-gray-400">
+                  <span className="ml-1 text-xs text-muted-foreground/70">
                     (+{s.supportPhotographers.length})
                   </span>
                 )}
@@ -139,9 +164,9 @@ const CustomerDetailPage = () => {
             key: 'status',
             header: 'Trạng thái',
             render: (s) => (
-              <span className={`badge ${SCHEDULE_STATUS_COLOR[s.status]}`}>
+              <Badge variant="outline" className={cn('border-transparent', SCHEDULE_STATUS_COLOR[s.status])}>
                 {SCHEDULE_STATUS_LABEL[s.status]}
-              </span>
+              </Badge>
             ),
           } satisfies Column<ScheduleResponse>,
         ]}
@@ -159,22 +184,28 @@ const CustomerDetailPage = () => {
             key: 'type',
             header: 'Loại',
             render: (t) => (
-              <span
-                className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+              <Badge
+                variant="outline"
+                className={cn(
+                  'border-transparent',
+                  t.type === 'income'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+                )}
               >
                 {t.type === 'income' ? 'Thu' : 'Chi'}
-              </span>
+              </Badge>
             ),
           },
           {
             key: 'category',
             header: 'Danh mục',
-            render: (t) => <span className="text-gray-600">{t.categoryId?.name ?? '—'}</span>,
+            render: (t) => <span className="text-muted-foreground">{t.categoryId?.name ?? '—'}</span>,
           },
           {
             key: 'description',
             header: 'Mô tả',
-            render: (t) => <span className="text-gray-600">{t.description}</span>,
+            render: (t) => <span className="text-muted-foreground">{t.description}</span>,
           },
           {
             key: 'amount',
@@ -182,7 +213,10 @@ const CustomerDetailPage = () => {
             align: 'right',
             render: (t) => (
               <span
-                className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
+                className={cn(
+                  'font-medium',
+                  t.type === 'income' ? 'text-emerald-600' : 'text-rose-600',
+                )}
               >
                 {t.type === 'expense' ? '-' : '+'}
                 {formatCurrency(t.amount)}

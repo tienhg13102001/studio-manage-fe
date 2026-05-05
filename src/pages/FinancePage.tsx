@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import { FaSchool, FaUserCircle } from 'react-icons/fa';
+import { School, UserCircle2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
-import { transactionService } from '../services/transactionService';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { toast } from 'react-toastify';
+import { transactionService } from '../services/transactionService';
 import { formatDate, formatCurrency } from '../utils/format';
 import type { Transaction, TransactionResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -16,8 +14,29 @@ import {
 } from '../store/slices/transactionsSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchCategories } from '../store/slices/categoriesSlice';
-import { TableSkeleton, Select } from '../components/atoms';
 import { fetchUsers } from '../store/slices/usersSlice';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Combobox,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TableSkeleton,
+  Textarea,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface FilterState {
   type: string;
@@ -37,6 +56,8 @@ const defaultFilter: FilterState = {
   dateTo: '',
 };
 
+const ALL = '__all__';
+
 const FinancePage = () => {
   const { user } = useAuth();
   const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
@@ -54,6 +75,7 @@ const FinancePage = () => {
   const [tab, setTab] = useState<'list' | 'summary'>('list');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -80,7 +102,6 @@ const FinancePage = () => {
     return params;
   };
 
-  // Refetch transactions whenever page, pageSize, or applied filter changes
   useEffect(() => {
     dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
   }, [dispatch, appliedFilter, page, pageSize]);
@@ -142,20 +163,14 @@ const FinancePage = () => {
   };
 
   const toggleRefund = async (t: TransactionResponse, value: boolean) => {
-    // Optimistic update via redux – không trigger loading state
     dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: value } }));
     try {
       await transactionService.update(t._id, { accountantRefunded: value });
     } catch {
-      // rollback
       dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: !value } }));
       toast.error('Không thể cập nhật trạng thái hoàn tiền.');
     }
   };
-
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-
-  const handleDelete = (id: string) => setConfirmId(id);
 
   const doDelete = async () => {
     if (!confirmId) return;
@@ -202,35 +217,41 @@ const FinancePage = () => {
       key: 'type',
       header: 'Loại',
       render: (t) => (
-        <span
-          className={`badge ${t.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+        <Badge
+          variant="outline"
+          className={cn(
+            'border-transparent',
+            t.type === 'income'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+          )}
         >
           {t.type === 'income' ? 'Thu' : 'Chi'}
-        </span>
+        </Badge>
       ),
     },
     {
       key: 'category',
       header: 'Danh mục',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (t) => t.categoryId?.name ?? '—',
     },
     {
       key: 'class',
       header: 'Lớp',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (t) => t.customer?.className ?? '—',
     },
     {
       key: 'description',
       header: 'Mô tả',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (t) => t.description,
     },
     {
       key: 'createdBy',
       header: 'Người thực hiện',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (t) => t.createdBy?.name ?? t.createdBy?.username ?? '—',
     },
     {
@@ -238,7 +259,12 @@ const FinancePage = () => {
       header: 'Số tiền',
       align: 'right',
       render: (t) => (
-        <span className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+        <span
+          className={cn(
+            'font-medium',
+            t.type === 'income' ? 'text-emerald-600' : 'text-rose-600',
+          )}
+        >
           {t.type === 'expense' ? '-' : '+'}
           {formatCurrency(t.amount)}
         </span>
@@ -249,12 +275,10 @@ const FinancePage = () => {
       header: 'KT hoàn tiền',
       align: 'center',
       render: (t) => (
-        <input
-          type="checkbox"
-          className="rounded border-gray-300"
+        <Checkbox
           checked={!!t.accountantRefunded}
           disabled={!canRefund}
-          onChange={(e) => toggleRefund(t, e.target.checked)}
+          onCheckedChange={(c) => toggleRefund(t, !!c)}
         />
       ),
     },
@@ -264,15 +288,22 @@ const FinancePage = () => {
       align: 'right',
       render: (t) => (
         <span className="space-x-2">
-          <button onClick={() => openEdit(t)} className="text-blue-600 hover:underline text-xs">
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={() => openEdit(t)}
+          >
             Sửa
-          </button>
-          <button
-            onClick={() => handleDelete(t._id)}
-            className="text-red-600 hover:underline text-xs"
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
+            onClick={() => setConfirmId(t._id)}
           >
             Xoá
-          </button>
+          </Button>
         </span>
       ),
     },
@@ -289,27 +320,32 @@ const FinancePage = () => {
     {
       key: 'school',
       header: 'Trường',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (row) => row.customer?.school,
     },
     {
       key: 'income',
-      header: <span className="text-green-600">Tổng thu</span>,
+      header: <span className="text-emerald-600">Tổng thu</span>,
       align: 'right',
-      render: (row) => <span className="text-green-600">{formatCurrency(row.income)}</span>,
+      render: (row) => <span className="text-emerald-600">{formatCurrency(row.income)}</span>,
     },
     {
       key: 'expense',
-      header: <span className="text-red-600">Tổng chi</span>,
+      header: <span className="text-rose-600">Tổng chi</span>,
       align: 'right',
-      render: (row) => <span className="text-red-600">{formatCurrency(row.expense)}</span>,
+      render: (row) => <span className="text-rose-600">{formatCurrency(row.expense)}</span>,
     },
     {
       key: 'profit',
       header: 'Lợi nhuận',
       align: 'right',
       render: (row) => (
-        <span className={`font-medium ${row.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <span
+          className={cn(
+            'font-medium',
+            row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
+          )}
+        >
           {formatCurrency(row.profit)}
         </span>
       ),
@@ -318,123 +354,118 @@ const FinancePage = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Finance</span>
-          <h2 className="page-title">Quản lý Thu Chi</h2>
-          <p className="page-subtitle">
-            Theo dõi thu chi, lọc theo lớp, danh mục và khoảng thời gian.
-          </p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm giao dịch
-        </button>
-      </div>
+      <PageHeader
+        kicker="Finance"
+        title="Quản lý Thu Chi"
+        description="Theo dõi thu chi, lọc theo lớp, danh mục và khoảng thời gian."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            + Thêm giao dịch
+          </Button>
+        }
+      />
 
       {/* Filters */}
-      <div className="section-card mb-5 space-y-4">
-        {/* Hàng 1: Loại + Lớp + Danh mục */}
+      <div className="rounded-xl border bg-card p-4 mb-5 space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="field-stack">
-            <label className="field-caption">Loại giao dịch</label>
+          <FormField label="Loại giao dịch">
             <Select
-              options={[
-                { value: '', label: 'Tất cả loại' },
-                { value: 'income', label: 'Thu' },
-                { value: 'expense', label: 'Chi' },
-              ]}
-              value={filter.type}
-              onChange={(v) => setFilter((f) => ({ ...f, type: v as string }))}
-            />
-          </div>
-          <div className="field-stack">
-            <label className="field-caption">Lớp</label>
-            <Select
+              value={filter.type || ALL}
+              onValueChange={(v) => setFilter((f) => ({ ...f, type: v === ALL ? '' : v }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Tất cả loại</SelectItem>
+                <SelectItem value="income">Thu</SelectItem>
+                <SelectItem value="expense">Chi</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Lớp">
+            <Combobox
               options={[
                 { value: '', label: 'Tất cả lớp' },
-                ...customers.map((c) => ({ value: c._id, label: `${c.className} - ${c.school}` })),
+                ...customers.map((c) => ({
+                  value: c._id,
+                  label: `${c.className} - ${c.school}`,
+                })),
               ]}
               value={filter.customer}
-              onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
+              onChange={(v) => setFilter((f) => ({ ...f, customer: v }))}
+              placeholder="Tất cả lớp"
             />
-          </div>
-          <div className="field-stack col-span-2 md:col-span-1">
-            <label className="field-caption">Danh mục</label>
-            <Select
+          </FormField>
+          <FormField label="Danh mục" className="col-span-2 md:col-span-1">
+            <Combobox
               options={[
                 { value: '', label: 'Tất cả danh mục' },
                 ...categories.map((c) => ({ value: c._id, label: c.name })),
               ]}
               value={filter.categoryId}
-              onChange={(v) => setFilter((f) => ({ ...f, categoryId: v as string }))}
+              onChange={(v) => setFilter((f) => ({ ...f, categoryId: v }))}
+              placeholder="Tất cả danh mục"
             />
-          </div>
+          </FormField>
         </div>
 
         {canRefund && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="field-stack">
-              <label className="field-caption">Người thực hiện</label>
-              <Select
+            <FormField label="Người thực hiện">
+              <Combobox
                 options={[
                   { value: '', label: 'Tất cả người thực hiện' },
                   ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
                 ]}
                 value={filter.createdBy}
-                onChange={(v) => setFilter((f) => ({ ...f, createdBy: v as string }))}
+                onChange={(v) => setFilter((f) => ({ ...f, createdBy: v }))}
+                placeholder="Tất cả người thực hiện"
               />
-            </div>
+            </FormField>
           </div>
         )}
 
-        {/* Hàng 2: Từ ngày + Đến ngày + Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-end">
-          <div className="field-stack">
-            <label className="field-caption">Từ ngày</label>
-            <input
+          <FormField label="Từ ngày">
+            <Input
               type="date"
-              className="input"
               value={filter.dateFrom}
               onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
             />
-          </div>
-          <div className="field-stack">
-            <label className="field-caption">Đến ngày</label>
-            <input
+          </FormField>
+          <FormField label="Đến ngày">
+            <Input
               type="date"
-              className="input"
               value={filter.dateTo}
               onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
             />
-          </div>
+          </FormField>
           <div className="flex gap-2 md:justify-end">
-            <button onClick={applyFilter} className="btn-primary flex-1 md:flex-none min-w-[96px]">
+            <Button variant="gradient" onClick={applyFilter} className="flex-1 md:flex-none min-w-[96px]">
               Lọc
-            </button>
-            <button
-              onClick={resetFilter}
-              className="btn-secondary flex-1 md:flex-none min-w-[88px]"
-            >
+            </Button>
+            <Button variant="outline" onClick={resetFilter} className="flex-1 md:flex-none min-w-[88px]">
               Xoá
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
-        <button
+        <Button
+          variant={tab === 'list' ? 'gradient' : 'outline'}
           onClick={() => setTab('list')}
-          className={tab === 'list' ? 'btn-primary' : 'btn-secondary'}
         >
           Danh sách
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={tab === 'summary' ? 'gradient' : 'outline'}
           onClick={() => setTab('summary')}
-          className={tab === 'summary' ? 'btn-primary' : 'btn-secondary'}
         >
           Tổng hợp theo lớp
-        </button>
+        </Button>
       </div>
 
       {tab === 'list' &&
@@ -442,7 +473,6 @@ const FinancePage = () => {
           <TableSkeleton cols={8} />
         ) : (
           <>
-            {/* Desktop table */}
             <div className="hidden md:block">
               <DataTable<TransactionResponse>
                 data={transactions}
@@ -463,71 +493,83 @@ const FinancePage = () => {
               />
             </div>
 
-            {/* Mobile cards */}
             <div className="md:hidden space-y-3">
               {transactions.map((t) => (
-                <div key={t._id} className="card p-4">
+                <div key={t._id} className="rounded-xl border bg-card p-4">
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="min-w-0">
-                      <div className="text-sm theme-text-muted">{formatDate(t.date)}</div>
-                      <div className="text-sm theme-text-primary font-medium mt-0.5">
+                      <div className="text-sm text-muted-foreground">{formatDate(t.date)}</div>
+                      <div className="text-sm font-medium mt-0.5">
                         {t.categoryId?.name ?? '—'}
                       </div>
                       {t.customer && (
-                        <div className="text-xs theme-text-muted">{t.customer.className}</div>
+                        <div className="text-xs text-muted-foreground">{t.customer.className}</div>
                       )}
                       {t.description && (
-                        <div className="text-xs theme-text-muted mt-0.5">{t.description}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>
                       )}
                       {t.createdBy && (
-                        <div className="text-xs theme-text-muted mt-0.5 inline-flex items-center gap-1.5">
-                          <FaUserCircle className="text-indigo-400" />
+                        <div className="text-xs text-muted-foreground mt-0.5 inline-flex items-center gap-1.5">
+                          <UserCircle2 className="h-3.5 w-3.5 text-indigo-400" />
                           <span>{t.createdBy.name ?? t.createdBy.username}</span>
                         </div>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <span
-                        className={`badge ${t.type === 'income' ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500'}`}
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'border-transparent',
+                          t.type === 'income'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+                        )}
                       >
                         {t.type === 'income' ? 'Thu' : 'Chi'}
-                      </span>
+                      </Badge>
                       <div
-                        className={`font-semibold text-sm mt-1 ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}
+                        className={cn(
+                          'font-semibold text-sm mt-1',
+                          t.type === 'income' ? 'text-emerald-500' : 'text-rose-500',
+                        )}
                       >
                         {t.type === 'expense' ? '-' : '+'}
                         {formatCurrency(t.amount)}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-4 pt-2 theme-divider-top">
-                    <label className="flex items-center gap-1.5 text-xs theme-text-muted mr-auto">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300"
+                  <div className="flex gap-4 pt-2 border-t items-center">
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground mr-auto">
+                      <Checkbox
                         checked={!!t.accountantRefunded}
                         disabled={!canRefund}
-                        onChange={(e) => toggleRefund(t, e.target.checked)}
+                        onCheckedChange={(c) => toggleRefund(t, !!c)}
                       />
                       KT hoàn tiền
                     </label>
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
                       onClick={() => openEdit(t)}
-                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(t._id)}
-                      className="text-red-500 text-xs font-medium hover:underline"
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-destructive"
+                      onClick={() => setConfirmId(t._id)}
                     >
                       Xoá
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
               {transactions.length === 0 && (
-                <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
+                <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                  Chưa có dữ liệu
+                </div>
               )}
             </div>
           </>
@@ -535,7 +577,6 @@ const FinancePage = () => {
 
       {tab === 'summary' && (
         <>
-          {/* Desktop table */}
           <div className="hidden md:block">
             <DataTable<SummaryRow>
               data={summary}
@@ -545,18 +586,21 @@ const FinancePage = () => {
               pagination
               footer={
                 summary.length > 0 ? (
-                  <tr className="border-t bg-gray-50 font-semibold">
+                  <tr className="border-t bg-muted/40 font-semibold">
                     <td className="px-3 py-2" colSpan={2}>
                       Tổng cộng
                     </td>
-                    <td className="px-3 py-2 text-right text-green-600">
+                    <td className="px-3 py-2 text-right text-emerald-600">
                       {formatCurrency(grandTotal.income)}
                     </td>
-                    <td className="px-3 py-2 text-right text-red-600">
+                    <td className="px-3 py-2 text-right text-rose-600">
                       {formatCurrency(grandTotal.expense)}
                     </td>
                     <td
-                      className={`px-3 py-2 text-right ${grandTotal.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      className={cn(
+                        'px-3 py-2 text-right',
+                        grandTotal.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
+                      )}
                     >
                       {formatCurrency(grandTotal.profit)}
                     </td>
@@ -566,32 +610,36 @@ const FinancePage = () => {
             />
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {summary.map((row) => (
-              <div key={row._id ?? 'unknown'} className="card p-4">
-                <div className="font-semibold theme-text-primary mb-0.5">
+              <div key={row._id ?? 'unknown'} className="rounded-xl border bg-card p-4">
+                <div className="font-semibold mb-0.5">
                   {row.customer?.className ?? '(Không có lớp)'}
                 </div>
                 {row.customer?.school && (
-                  <div className="text-sm theme-text-muted mb-2 inline-flex items-center gap-1.5">
-                    <FaSchool className="text-sky-500" />
+                  <div className="text-sm text-muted-foreground mb-2 inline-flex items-center gap-1.5">
+                    <School className="h-4 w-4 text-sky-500" />
                     <span>{row.customer.school}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <div className="text-xs theme-text-muted">Thu</div>
-                    <div className="text-green-500 font-medium">{formatCurrency(row.income)}</div>
+                    <div className="text-xs text-muted-foreground">Thu</div>
+                    <div className="text-emerald-500 font-medium">
+                      {formatCurrency(row.income)}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-xs theme-text-muted">Chi</div>
-                    <div className="text-red-500 font-medium">{formatCurrency(row.expense)}</div>
+                    <div className="text-xs text-muted-foreground">Chi</div>
+                    <div className="text-rose-500 font-medium">{formatCurrency(row.expense)}</div>
                   </div>
                   <div>
-                    <div className="text-xs theme-text-muted">Lợi nhuận</div>
+                    <div className="text-xs text-muted-foreground">Lợi nhuận</div>
                     <div
-                      className={`font-semibold ${row.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                      className={cn(
+                        'font-semibold',
+                        row.profit >= 0 ? 'text-emerald-500' : 'text-rose-500',
+                      )}
                     >
                       {formatCurrency(row.profit)}
                     </div>
@@ -600,25 +648,28 @@ const FinancePage = () => {
               </div>
             ))}
             {summary.length > 0 && (
-              <div className="card p-4 bg-[var(--input-bg)]">
-                <div className="font-semibold theme-text-primary mb-2">Tổng cộng</div>
+              <div className="rounded-xl border bg-muted/40 p-4">
+                <div className="font-semibold mb-2">Tổng cộng</div>
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
                   <div>
-                    <div className="text-xs theme-text-muted">Thu</div>
-                    <div className="text-green-500 font-semibold">
+                    <div className="text-xs text-muted-foreground">Thu</div>
+                    <div className="text-emerald-500 font-semibold">
                       {formatCurrency(grandTotal.income)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs theme-text-muted">Chi</div>
-                    <div className="text-red-500 font-semibold">
+                    <div className="text-xs text-muted-foreground">Chi</div>
+                    <div className="text-rose-500 font-semibold">
                       {formatCurrency(grandTotal.expense)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs theme-text-muted">Lợi nhuận</div>
+                    <div className="text-xs text-muted-foreground">Lợi nhuận</div>
                     <div
-                      className={`font-semibold ${grandTotal.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                      className={cn(
+                        'font-semibold',
+                        grandTotal.profit >= 0 ? 'text-emerald-500' : 'text-rose-500',
+                      )}
                     >
                       {formatCurrency(grandTotal.profit)}
                     </div>
@@ -627,145 +678,157 @@ const FinancePage = () => {
               </div>
             )}
             {summary.length === 0 && (
-              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
+              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                Chưa có dữ liệu
+              </div>
             )}
           </div>
         </>
       )}
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa giao dịch' : 'Thêm giao dịch'}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="label">Loại *</label>
+            <FormField label="Loại" required>
               <Controller
                 name="type"
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select
-                    options={[
-                      { value: 'income', label: 'Thu' },
-                      { value: 'expense', label: 'Chi' },
-                    ]}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v)}
-                  />
+                  <Select value={field.value ?? 'income'} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Thu</SelectItem>
+                      <SelectItem value="expense">Chi</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               />
-            </div>
-            <div>
-              <label className="label">Danh mục *</label>
+            </FormField>
+            <FormField label="Danh mục" required>
               <Controller
                 name="categoryId"
                 control={control}
                 rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    options={filteredCategories.map((c) => ({ value: c._id, label: c.name }))}
-                    value={
-                      typeof field.value === 'object' && field.value !== null
-                        ? (field.value as { _id: string })._id
-                        : (field.value ?? '')
-                    }
-                    onChange={(v) => field.onChange(v)}
-                    placeholder="-- Chọn danh mục --"
-                  />
-                )}
+                render={({ field }) => {
+                  const value =
+                    typeof field.value === 'object' && field.value !== null
+                      ? (field.value as { _id: string })._id
+                      : ((field.value as string | undefined) ?? '');
+                  return (
+                    <Combobox
+                      options={filteredCategories.map((c) => ({ value: c._id, label: c.name }))}
+                      value={value}
+                      onChange={field.onChange}
+                      placeholder="-- Chọn danh mục --"
+                    />
+                  );
+                }}
               />
-            </div>
-            <div>
-              <label className="label">Số tiền *</label>
-              <input
-                {...register('amount', { required: true, valueAsNumber: true, min: 0 })}
+            </FormField>
+            <FormField label="Số tiền" required htmlFor="amount">
+              <Input
+                id="amount"
                 type="number"
-                className="input"
+                {...register('amount', { required: true, valueAsNumber: true, min: 0 })}
               />
-            </div>
-            <div>
-              <label className="label">Ngày *</label>
-              <input {...register('date', { required: true })} type="date" className="input" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Lớp (tuỳ chọn)</label>
+            </FormField>
+            <FormField label="Ngày" required htmlFor="date">
+              <Input id="date" type="date" {...register('date', { required: true })} />
+            </FormField>
+            <FormField label="Lớp (tuỳ chọn)" className="sm:col-span-2">
               <Controller
                 name="customer"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    options={customers.map((c) => ({
-                      value: c._id,
-                      label: `${c.className} – ${c.school}`,
-                    }))}
-                    value={
-                      typeof field.value === 'object' && field.value !== null
-                        ? (field.value as { _id: string })._id
-                        : (field.value ?? '')
-                    }
-                    onChange={(v) => field.onChange(v || undefined)}
-                    placeholder="-- Không có lớp --"
-                  />
-                )}
+                render={({ field }) => {
+                  const value =
+                    typeof field.value === 'object' && field.value !== null
+                      ? (field.value as { _id: string })._id
+                      : ((field.value as string | undefined) ?? '');
+                  return (
+                    <Combobox
+                      options={customers.map((c) => ({
+                        value: c._id,
+                        label: `${c.className} – ${c.school}`,
+                      }))}
+                      value={value}
+                      onChange={(v) => field.onChange(v || undefined)}
+                      placeholder="-- Không có lớp --"
+                    />
+                  );
+                }}
               />
-            </div>
+            </FormField>
             {isAdmin && (
-              <div className="sm:col-span-2">
-                <label className="label">Người thực hiện</label>
+              <FormField label="Người thực hiện" className="sm:col-span-2">
                 <Controller
                   name="createdBy"
                   control={control}
+                  render={({ field }) => {
+                    const value =
+                      typeof field.value === 'object' && field.value !== null
+                        ? (field.value as { _id: string })._id
+                        : ((field.value as string | undefined) ?? '');
+                    return (
+                      <Combobox
+                        options={users.map((u) => ({
+                          value: u._id,
+                          label: u.name ?? u.username,
+                        }))}
+                        value={value}
+                        onChange={(v) => field.onChange(v || undefined)}
+                        placeholder="-- Mặc định (tôi) --"
+                      />
+                    );
+                  }}
+                />
+              </FormField>
+            )}
+            <FormField label="Mô tả" htmlFor="description" className="sm:col-span-2">
+              <Textarea id="description" rows={2} {...register('description')} />
+            </FormField>
+            {canRefund && (
+              <div className="sm:col-span-2">
+                <Controller
+                  name="accountantRefunded"
+                  control={control}
                   render={({ field }) => (
-                    <Select
-                      options={users.map((u) => ({ value: u._id, label: u.name ?? u.username }))}
-                      value={
-                        typeof field.value === 'object' && field.value !== null
-                          ? (field.value as { _id: string })._id
-                          : (field.value ?? '')
-                      }
-                      onChange={(v) => field.onChange(v || undefined)}
-                      placeholder="-- Mặc định (tôi) --"
-                    />
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={(c) => field.onChange(!!c)}
+                      />
+                      <Label className="cursor-pointer">Kế toán đã hoàn tiền</Label>
+                    </label>
                   )}
                 />
               </div>
             )}
-            <div className="sm:col-span-2">
-              <label className="label">Mô tả</label>
-              <textarea {...register('description')} className="input" rows={2} />
-            </div>
-            {canRefund && (
-              <div className="sm:col-span-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300"
-                    {...register('accountantRefunded')}
-                  />
-                  <span className="text-sm text-gray-700">Kế toán đã hoàn tiền</span>
-                </label>
-              </div>
-            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
-      <ConfirmModal
-        isOpen={!!confirmId}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá giao dịch này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );

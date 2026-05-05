@@ -1,22 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Plus } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { userService } from '../services/userService';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchUsers } from '../store/slices/usersSlice';
-import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_LABELS } from '../types';
 import type { User, UserRole } from '../types';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 const ROLE_BADGE: Record<UserRole, string> = {
-  0: 'bg-purple-800/20 text-purple-800',
-  1: 'bg-indigo-800/20 text-indigo-800',
-  2: 'bg-blue-800/20 text-blue-800',
-  3: 'bg-orange-800/20 text-orange-800',
-  4: 'bg-teal-800/20 text-teal-800',
-  5: 'bg-amber-800/20 text-amber-800',
+  0: 'bg-purple-500/15 text-purple-700 dark:text-purple-300',
+  1: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300',
+  2: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  3: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+  4: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
+  5: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
 };
 
 interface FormValues {
@@ -111,134 +124,148 @@ const UsersPage = () => {
     setConfirmId(null);
   };
 
+  const columns: Column<User>[] = [
+    {
+      key: 'username',
+      header: 'Tên đăng nhập',
+      render: (u) => (
+        <span className="font-medium">
+          {u.username}
+          {u._id === me?._id && (
+            <span className="ml-2 text-xs text-muted-foreground">(bạn)</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'name',
+      header: 'Họ tên',
+      render: (u) => <span className="text-muted-foreground">{u.name ?? '—'}</span>,
+    },
+    {
+      key: 'roles',
+      header: 'Role',
+      render: (u) => (
+        <div className="flex flex-wrap gap-1">
+          {(u.roles ?? []).map((r) => (
+            <Badge key={r} variant="outline" className={cn('border-transparent', ROLE_BADGE[r])}>
+              {ROLE_LABELS[r]}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      render: (u) =>
+        u.isActive ? (
+          <Badge variant="success">Hoạt động</Badge>
+        ) : (
+          <Badge variant="destructive">Đã khoá</Badge>
+        ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      className: 'whitespace-nowrap',
+      render: (u) => (
+        <span className="space-x-2">
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-primary"
+            onClick={() => openEdit(u)}
+          >
+            Sửa
+          </Button>
+          {u._id !== me?._id && (
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs text-destructive"
+              onClick={() => handleDelete(u._id)}
+            >
+              Xoá
+            </Button>
+          )}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Users</span>
-          <h2 className="page-title">Quản lý người dùng</h2>
-          <p className="page-subtitle">
-            Quản lý tài khoản và phân quyền người dùng trong hệ thống.
-          </p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm người dùng
-        </button>
-      </div>
+      <PageHeader
+        kicker="Users"
+        title="Quản lý người dùng"
+        description="Quản lý tài khoản và phân quyền người dùng trong hệ thống."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus />
+            Thêm người dùng
+          </Button>
+        }
+      />
 
       <div className="hidden md:block">
-        <DataTable<User>
-          data={users}
-          keyExtractor={(u) => u._id}
-          columns={[
-            {
-              key: 'username',
-              header: 'Tên đăng nhập',
-              render: (u) => (
-                <span className="font-medium">
-                  {u.username}
-                  {u._id === me?._id && <span className="ml-2 text-xs text-gray-400">(bạn)</span>}
-                </span>
-              ),
-            },
-            {
-              key: 'name',
-              header: 'Họ tên',
-              render: (u) => <span className="text-gray-600">{u.name ?? '—'}</span>,
-            },
-            {
-              key: 'roles',
-              header: 'Role',
-              render: (u) => (
-                <div className="flex flex-wrap gap-1">
-                  {(u.roles ?? []).map((r) => (
-                    <span key={r} className={`badge ${ROLE_BADGE[r]}`}>
-                      {ROLE_LABELS[r]}
-                    </span>
-                  ))}
-                </div>
-              ),
-            },
-            {
-              key: 'status',
-              header: 'Trạng thái',
-              render: (u) => (
-                <span
-                  className={`badge ${u.isActive ? 'bg-green-800/20 text-green-800' : 'bg-red-100 text-red-800'}`}
-                >
-                  {u.isActive ? 'Hoạt động' : 'Đã khoá'}
-                </span>
-              ),
-            },
-            {
-              key: 'actions',
-              header: '',
-              align: 'right',
-              className: 'whitespace-nowrap',
-              render: (u) => (
-                <span className="space-x-2">
-                  <button
-                    onClick={() => openEdit(u)}
-                    className="text-blue-600 hover:underline text-xs"
-                  >
-                    Sửa
-                  </button>
-                  {u._id !== me?._id && (
-                    <button
-                      onClick={() => handleDelete(u._id)}
-                      className="text-red-600 hover:underline text-xs"
-                    >
-                      Xoá
-                    </button>
-                  )}
-                </span>
-              ),
-            } satisfies Column<User>,
-          ]}
-        />
+        <DataTable<User> data={users} keyExtractor={(u) => u._id} columns={columns} />
       </div>
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {users.map((u) => (
-          <div key={u._id} className="card p-4">
+          <div key={u._id} className="rounded-xl border bg-card p-4">
             <div className="flex items-start justify-between mb-1 gap-2">
               <div className="min-w-0">
-                <div className="font-semibold theme-text-primary truncate">
+                <div className="font-semibold truncate">
                   {u.username}
                   {u._id === me?._id && (
-                    <span className="ml-2 text-xs theme-text-muted">(bạn)</span>
+                    <span className="ml-2 text-xs text-muted-foreground">(bạn)</span>
                   )}
                 </div>
-                {u.name && <div className="text-sm theme-text-muted">{u.name}</div>}
+                {u.name && <div className="text-sm text-muted-foreground">{u.name}</div>}
               </div>
-              <span
-                className={`badge shrink-0 ${u.isActive ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500'}`}
-              >
-                {u.isActive ? 'Hoạt động' : 'Đã khoá'}
-              </span>
+              {u.isActive ? (
+                <Badge variant="success" className="shrink-0">
+                  Hoạt động
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="shrink-0">
+                  Đã khoá
+                </Badge>
+              )}
             </div>
             <div className="flex flex-wrap gap-1 mt-2">
               {(u.roles ?? []).map((r) => (
-                <span key={r} className={`badge ${ROLE_BADGE[r]}`}>
+                <Badge
+                  key={r}
+                  variant="outline"
+                  className={cn('border-transparent', ROLE_BADGE[r])}
+                >
                   {ROLE_LABELS[r]}
-                </span>
+                </Badge>
               ))}
             </div>
-            <div className="flex gap-4 mt-3 pt-3 theme-divider-top">
-              <button
+            <div className="flex gap-4 mt-3 pt-3 border-t">
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
                 onClick={() => openEdit(u)}
-                className="text-blue-500 text-xs font-medium hover:underline"
               >
                 Sửa
-              </button>
+              </Button>
               {u._id !== me?._id && (
-                <button
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-destructive"
                   onClick={() => handleDelete(u._id)}
-                  className="text-red-500 text-xs font-medium hover:underline"
                 >
                   Xoá
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -246,52 +273,50 @@ const UsersPage = () => {
       </div>
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa người dùng' : 'Thêm người dùng'}
         size="sm"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div>
-            <label className="label">Tên đăng nhập *</label>
-            <input
-              {...register('username', { required: true })}
-              className="input"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <label className="label">Họ tên</label>
-            <input {...register('name')} className="input" />
-          </div>
-          <div>
-            <label className="label">
-              {editing ? 'Mật khẩu mới (để trống = không đổi)' : 'Mật khẩu *'}
-            </label>
-            <input
-              {...register('password', { required: !editing })}
+          <FormField label="Tên đăng nhập" required htmlFor="username">
+            <Input id="username" autoComplete="off" {...register('username', { required: true })} />
+          </FormField>
+          <FormField label="Họ tên" htmlFor="name">
+            <Input id="name" {...register('name')} />
+          </FormField>
+          <FormField
+            label={editing ? 'Mật khẩu mới (để trống = không đổi)' : 'Mật khẩu'}
+            required={!editing}
+            htmlFor="password"
+          >
+            <Input
+              id="password"
               type="password"
-              className="input"
               autoComplete="new-password"
+              {...register('password', { required: !editing })}
             />
-          </div>
-          <div>
-            <label className="label">Role</label>
-            <div className="border border-gray-200 rounded-lg p-2 space-y-1">
+          </FormField>
+          <div className="space-y-1.5">
+            <Label>Role</Label>
+            <div className="rounded-lg border p-2 space-y-1">
               {(Object.entries(ROLE_LABELS) as [string, string][]).map(([val, label]) => {
                 const r = Number(val) as UserRole;
                 return (
                   <label
                     key={r}
-                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded"
+                    className="flex items-center gap-2 cursor-pointer hover:bg-muted px-1 py-1 rounded"
                   >
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300"
+                    <Checkbox
                       checked={selectedRoles.includes(r)}
-                      onChange={() => toggleRole(r)}
+                      onCheckedChange={() => toggleRole(r)}
                     />
-                    <span className={`badge ${ROLE_BADGE[r]}`}>{label}</span>
+                    <Badge
+                      variant="outline"
+                      className={cn('border-transparent', ROLE_BADGE[r])}
+                    >
+                      {label}
+                    </Badge>
                   </label>
                 );
               })}
@@ -302,27 +327,27 @@ const UsersPage = () => {
               {...register('isActive')}
               type="checkbox"
               id="isActive"
-              className="rounded border-gray-300"
+              className="h-4 w-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
             />
-            <label htmlFor="isActive" className="text-sm text-gray-700">
-              Đang hoạt động
-            </label>
+            <Label htmlFor="isActive">Đang hoạt động</Label>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
-      <ConfirmModal
-        isOpen={!!confirmId}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá tài khoản này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );

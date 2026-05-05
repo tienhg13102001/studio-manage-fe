@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FaChevronRight } from 'react-icons/fa';
-import { HiSun, HiMoon, HiDesktopComputer } from 'react-icons/hi';
+import { ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, type ThemeMode } from '../../context/ThemeContext';
@@ -58,18 +57,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   };
 
   const themeOptions: Array<{ mode: ThemeMode; label: string; icon: JSX.Element }> = [
-    { mode: 'light', label: 'Sáng', icon: <HiSun className="w-3.5 h-3.5" /> },
-    { mode: 'dark', label: 'Tối', icon: <HiMoon className="w-3.5 h-3.5" /> },
-    { mode: 'system', label: 'Hệ thống', icon: <HiDesktopComputer className="w-3.5 h-3.5" /> },
+    { mode: 'light', label: 'Sáng', icon: <Sun className="w-3.5 h-3.5" /> },
+    { mode: 'dark', label: 'Tối', icon: <Moon className="w-3.5 h-3.5" /> },
+    { mode: 'system', label: 'Hệ thống', icon: <Monitor className="w-3.5 h-3.5" /> },
   ];
 
   const currentThemeIcon =
     themeMode === 'system' ? (
-      <HiDesktopComputer className="w-4 h-4" />
+      <Monitor className="w-4 h-4" />
     ) : resolvedTheme === 'dark' ? (
-      <HiMoon className="w-4 h-4" />
+      <Moon className="w-4 h-4" />
     ) : (
-      <HiSun className="w-4 h-4" />
+      <Sun className="w-4 h-4" />
     );
 
   const isAllowed = (item: NavItem) =>
@@ -103,8 +102,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               {ParentIcon && <ParentIcon className="w-4 h-4" />}
               {item.label}
             </span>
-            <FaChevronRight
-              className={`text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}
+            <ChevronRight
+              className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`}
             />
           </button>
           {isOpen && (

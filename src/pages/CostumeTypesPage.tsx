@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { ConfirmModal, DataTable, Modal } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { costumeTypeService } from '../services/costumeTypeService';
 import type { CostumeType } from '../types';
+import {
+  Button,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Modal,
+  PageHeader,
+  Textarea,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
 
 interface CostumeTypeFormValues {
   name: string;
@@ -87,7 +97,7 @@ const CostumeTypesPage = () => {
     {
       key: 'description',
       header: 'Mô tả',
-      render: (t) => <span className="theme-text-muted">{t.description ?? '—'}</span>,
+      render: (t) => <span className="text-muted-foreground">{t.description ?? '—'}</span>,
     },
     {
       key: 'actions',
@@ -96,32 +106,40 @@ const CostumeTypesPage = () => {
       className: 'whitespace-nowrap',
       render: (t) => (
         <span className="space-x-2">
-          <button onClick={() => openEdit(t)} className="text-blue-500 hover:underline text-xs">
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-primary"
+            onClick={() => openEdit(t)}
+          >
             Sửa
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
             onClick={() => setConfirmId(t._id)}
-            className="text-red-500 hover:underline text-xs"
           >
             Xoá
-          </button>
+          </Button>
         </span>
       ),
-    } satisfies Column<CostumeType>,
+    },
   ];
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Settings</span>
-          <h2 className="page-title">Loại trang phục</h2>
-          <p className="page-subtitle">Phân loại trang phục theo nhóm và kiểu dáng.</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary self-start md:self-auto">
-          + Thêm loại
-        </button>
-      </div>
+      <PageHeader
+        kicker="Settings"
+        title="Loại trang phục"
+        description="Phân loại trang phục theo nhóm và kiểu dáng."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus />
+            Thêm loại
+          </Button>
+        }
+      />
 
       <div className="hidden md:block">
         <DataTable<CostumeType>
@@ -137,73 +155,80 @@ const CostumeTypesPage = () => {
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {loading ? (
-          <div className="card py-10 text-center theme-text-muted">Đang tải…</div>
+          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+            Đang tải…
+          </div>
         ) : types.length === 0 ? (
-          <div className="card py-10 text-center theme-text-muted">Chưa có loại trang phục nào</div>
+          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+            Chưa có loại trang phục nào
+          </div>
         ) : (
           types.map((t) => (
-            <div key={t._id} className="card p-4">
-              <div className="font-semibold theme-text-primary">{t.name}</div>
+            <div key={t._id} className="rounded-xl border bg-card p-4">
+              <div className="font-semibold">{t.name}</div>
               {t.description && (
-                <p className="text-sm theme-text-muted italic mt-1">{t.description}</p>
+                <p className="text-sm text-muted-foreground italic mt-1">{t.description}</p>
               )}
-              <div className="flex justify-end gap-3 mt-3 pt-3 theme-divider-top">
-                <button
+              <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
                   onClick={() => openEdit(t)}
-                  className="text-blue-500 text-xs font-medium hover:underline"
                 >
                   Sửa
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-destructive"
                   onClick={() => setConfirmId(t._id)}
-                  className="text-red-500 text-xs font-medium hover:underline"
                 >
                   Xoá
-                </button>
+                </Button>
               </div>
             </div>
           ))
         )}
       </div>
 
-      <ConfirmModal
-        isOpen={!!confirmId}
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá loại trang phục này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa loại trang phục' : 'Thêm loại trang phục'}
         size="sm"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div>
-            <label className="label">Tên loại *</label>
-            <input
-              {...register('name', { required: true })}
-              className="input"
+          <FormField label="Tên loại" required htmlFor="name">
+            <Input
+              id="name"
               placeholder="VD: Cử nhân, Trang phục truyền thống..."
+              {...register('name', { required: true })}
             />
-          </div>
-          <div>
-            <label className="label">Mô tả</label>
-            <textarea
-              {...register('description')}
-              className="input"
+          </FormField>
+          <FormField label="Mô tả" htmlFor="description">
+            <Textarea
+              id="description"
               rows={2}
               placeholder="Mô tả thêm về loại trang phục..."
+              {...register('description')}
             />
-          </div>
+          </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

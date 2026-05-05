@@ -3,7 +3,77 @@
 @tailwind utilities;
 
 /* ══════════════════════════════════════════════════
-   CSS Custom Properties — Light / Dark themes
+   shadcn/ui design tokens — mapped to Yume Studio brand
+   primary = amber (#f59e0b), accent = cyan (#22d3ee)
+══════════════════════════════════════════════════ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Amber 500 */
+    --primary: 38 92% 50%;
+    --primary-foreground: 26 83% 14%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Cyan 400 */
+    --accent: 187 85% 53%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 38 92% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 22% 6%;
+    --foreground: 210 40% 96%;
+
+    --card: 240 16% 10%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 240 16% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 38 92% 55%;
+    --primary-foreground: 26 83% 14%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 187 85% 58%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 28% 22%;
+    --input: 215 28% 22%;
+    --ring: 38 92% 55%;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   Legacy custom theme variables (kept for current pages)
 ══════════════════════════════════════════════════ */
 :root {
   /* Page */
@@ -160,6 +230,10 @@
 }
 
 @layer base {
+  * {
+    @apply border-border;
+  }
+
   html {
     font-size: 16px;
   }
@@ -234,7 +308,7 @@
   .btn {
     @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold
            transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
-           focus:ring-primary-500 disabled:opacity-40 disabled:cursor-not-allowed;
+           ring-offset-background focus:ring-primary-500 disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-primary {
     @apply btn text-white;
@@ -306,10 +380,12 @@
   }
   .input:focus {
     border-color: var(--input-focus-border);
-    background: #ffffff;
     box-shadow:
       0 0 0 3px var(--input-focus-ring),
       0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  :root:not(.dark) .input:focus {
+    background: #ffffff;
   }
   :root.dark .input {
     border-radius: 1rem;

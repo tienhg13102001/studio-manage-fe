@@ -1,37 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  FaCalendarAlt,
-  FaTable,
-  FaRegClock,
-  FaMapMarkerAlt,
-  FaRegStickyNote,
-  FaUserTie,
-  FaUsers,
-  FaSearch,
-  FaTshirt,
-  FaMars,
-  FaVenus,
-  FaVenusMars,
-  FaCheck,
-  FaTimes,
-} from 'react-icons/fa';
+  Calendar,
+  Table as TableIcon,
+  Clock,
+  MapPin,
+  StickyNote,
+  Briefcase,
+  Users as UsersIcon,
+  Search,
+  Shirt,
+  Mars,
+  Venus,
+  VenusAndMars,
+  Check,
+  X,
+} from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { costumeService } from '../services/costumeService';
-import { ConfirmModal, DataTable, Modal, ScheduleCalendar } from '../components/organisms';
-import type { Column } from '../components/organisms';
 import { scheduleService } from '../services/scheduleService';
 import type { ScheduleResponse, CostumeResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
-import {
-  TableSkeleton,
-  Select,
-  SegmentedControl,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '../components/atoms';
 import {
   SCHEDULE_STATUS_COLOR as statusColor,
   SCHEDULE_STATUS_LABEL as statusLabel,
@@ -41,6 +31,32 @@ import { fetchSchedules } from '../store/slices/schedulesSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
+import { ScheduleCalendar } from '../components/organisms';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Combobox,
+  ConfirmDialog,
+  DataTable,
+  FormField,
+  Input,
+  Modal,
+  PageHeader,
+  SegmentedControl,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TableSkeleton,
+  Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui';
+import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface FilterState {
   status: string;
@@ -50,6 +66,7 @@ interface FilterState {
 }
 
 const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
+const ALL = '__all__';
 
 const getInitials = (fullName: string) =>
   fullName
@@ -72,7 +89,7 @@ const UserAvatar = ({ name, size = 32 }: { name: string; size?: number }) => {
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          className="rounded-full inline-flex items-center justify-center text-xs font-semibold text-white ring-2 ring-white dark:ring-gray-800 shadow-sm select-none cursor-default"
+          className="rounded-full inline-flex items-center justify-center text-xs font-semibold text-white ring-2 ring-background shadow-sm select-none cursor-default"
           style={{
             backgroundColor: `hsl(${hue}, 65%, 45%)`,
             width: size,
@@ -94,17 +111,17 @@ const GENDER_META: Record<
 > = {
   male: {
     label: 'Nam',
-    icon: <FaMars />,
+    icon: <Mars className="h-3 w-3" />,
     cls: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
   },
   female: {
     label: 'Nữ',
-    icon: <FaVenus />,
+    icon: <Venus className="h-3 w-3" />,
     cls: 'bg-pink-500/10 text-pink-500 border-pink-500/30',
   },
   unisex: {
     label: 'Unisex',
-    icon: <FaVenusMars />,
+    icon: <VenusAndMars className="h-3 w-3" />,
     cls: 'bg-violet-500/10 text-violet-500 border-violet-500/30',
   },
 };
@@ -132,7 +149,6 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
     });
   }, [costumes, search, genderFilter]);
 
-  // Group by costume type
   const groups = useMemo(() => {
     const map = new Map<string, { id: string; name: string; items: CostumeResponse[] }>();
     for (const c of filtered) {
@@ -159,57 +175,58 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
 
   if (costumes.length === 0) {
     return (
-      <>
-        <label className="label">
-          Trang phục <span className="text-red-500">*</span>
-        </label>
-        <div className="rounded-lg border border-dashed border-red-400/50 bg-red-500/5 px-4 py-6 text-center">
-          <FaTshirt className="mx-auto text-2xl text-red-400 mb-2" />
-          <p className="text-sm text-red-500 font-medium">
+      <div>
+        <div className="text-sm font-medium mb-1.5">
+          Trang phục <span className="text-destructive">*</span>
+        </div>
+        <div className="rounded-lg border border-dashed border-destructive/50 bg-destructive/5 px-4 py-6 text-center">
+          <Shirt className="mx-auto h-6 w-6 text-destructive mb-2" />
+          <p className="text-sm text-destructive font-medium">
             Gói chụp này chưa có trang phục nào được liên kết.
           </p>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
     <div>
       <div className="flex items-center justify-between gap-2 mb-2">
-        <label className="label !mb-0 flex items-center gap-2">
-          <FaTshirt className="text-primary-500" />
-          Trang phục <span className="text-red-500">*</span>
+        <div className="text-sm font-medium flex items-center gap-2">
+          <Shirt className="h-4 w-4 text-primary" />
+          Trang phục <span className="text-destructive">*</span>
           {selected.length > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-500 text-xs font-semibold">
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-semibold">
               {selected.length}/{costumes.length} đã chọn
             </span>
           )}
-        </label>
+        </div>
         {selected.length > 0 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            className="h-auto px-2 py-1 text-xs"
             onClick={() => onChange([])}
-            className="text-xs theme-text-muted hover:text-red-500 inline-flex items-center gap-1"
           >
-            <FaTimes /> Bỏ chọn tất cả
-          </button>
+            <X className="h-3 w-3 mr-1" /> Bỏ chọn tất cả
+          </Button>
         )}
       </div>
 
-      <div className="rounded-xl border border-[color:var(--card-border)] bg-[var(--card-bg)] overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-2 px-2.5 py-2 border-b border-[color:var(--card-border)]">
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 px-2.5 py-2 border-b">
           <div className="relative flex-1 min-w-[10rem]">
-            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs theme-text-muted" />
-            <input
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm trang phục..."
-              className="input !pl-8 !py-1.5 !text-sm w-full"
+              className="pl-8 h-8 text-sm"
             />
           </div>
-          <div className="inline-flex rounded-lg border border-[color:var(--card-border)] overflow-hidden text-xs">
+          <div className="inline-flex rounded-lg border overflow-hidden text-xs">
             {(['all', 'male', 'female', 'unisex'] as const).map((g) => {
               const active = genderFilter === g;
               const labels: Record<typeof g, string> = {
@@ -223,11 +240,12 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                   key={g}
                   type="button"
                   onClick={() => setGenderFilter(g)}
-                  className={`px-2.5 py-1.5 transition-colors ${
+                  className={cn(
+                    'px-2.5 py-1.5 transition-colors',
                     active
-                      ? 'bg-primary-500 text-white font-medium'
-                      : 'theme-text-muted hover:bg-[var(--table-row-hover)]'
-                  }`}
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
                 >
                   {labels[g]}
                 </button>
@@ -236,10 +254,9 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
           </div>
         </div>
 
-        {/* Groups */}
         <div className="max-h-72 overflow-y-auto p-2 space-y-3">
           {groups.length === 0 ? (
-            <div className="text-center py-6 text-sm theme-text-muted">
+            <div className="text-center py-6 text-sm text-muted-foreground">
               Không tìm thấy trang phục phù hợp.
             </div>
           ) : (
@@ -250,24 +267,26 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                 <div key={g.id}>
                   <div className="flex items-center justify-between mb-1.5 px-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide theme-text-muted">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {g.name}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--table-row-hover)] theme-text-muted">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                         {g.items.length}
                       </span>
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
                       onClick={() => toggleGroup(g.items, allSelected)}
-                      className="text-xs text-primary-500 hover:underline"
                     >
                       {allSelected
                         ? 'Bỏ chọn nhóm'
                         : someSelected
                           ? 'Chọn hết nhóm'
                           : 'Chọn tất cả'}
-                    </button>
+                    </Button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                     {g.items.map((c) => {
@@ -276,11 +295,12 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                       return (
                         <label
                           key={c._id}
-                          className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer transition-all ${
+                          className={cn(
+                            'group flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer transition-all',
                             checked
-                              ? 'border-primary-500 bg-primary-500/10 ring-1 ring-primary-500/40'
-                              : 'border-[color:var(--card-border)] hover:border-primary-500/50 hover:bg-[var(--table-row-hover)]'
-                          }`}
+                              ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+                              : 'border-border hover:border-primary/50 hover:bg-muted',
+                          )}
                         >
                           <input
                             type="checkbox"
@@ -289,19 +309,21 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                             onChange={(e) => toggle(c._id, e.target.checked)}
                           />
                           <span
-                            className={`shrink-0 w-4 h-4 rounded border inline-flex items-center justify-center transition-colors ${
+                            className={cn(
+                              'shrink-0 w-4 h-4 rounded border inline-flex items-center justify-center transition-colors',
                               checked
-                                ? 'bg-primary-500 border-primary-500 text-white'
-                                : 'border-gray-400 group-hover:border-primary-500'
-                            }`}
+                                ? 'bg-primary border-primary text-primary-foreground'
+                                : 'border-muted-foreground/40 group-hover:border-primary',
+                            )}
                           >
-                            {checked && <FaCheck className="text-[8px]" />}
+                            {checked && <Check className="h-2.5 w-2.5" />}
                           </span>
-                          <span className="text-sm theme-text-primary truncate flex-1">
-                            {c.name}
-                          </span>
+                          <span className="text-sm truncate flex-1">{c.name}</span>
                           <span
-                            className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${meta.cls}`}
+                            className={cn(
+                              'shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium',
+                              meta.cls,
+                            )}
                             title={meta.label}
                           >
                             {meta.icon}
@@ -318,8 +340,8 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
       </div>
 
       {showError && (
-        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-          <FaTimes /> Vui lòng chọn ít nhất một trang phục.
+        <p className="text-xs text-destructive mt-1.5 flex items-center gap-1">
+          <X className="h-3 w-3" /> Vui lòng chọn ít nhất một trang phục.
         </p>
       )}
     </div>
@@ -353,6 +375,8 @@ const SchedulesPage = () => {
   const [supportIds, setSupportIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [detail, setDetail] = useState<ScheduleResponse | null>(null);
+  const [costumeTouched, setCostumeTouched] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -373,12 +397,10 @@ const SchedulesPage = () => {
 
   const selectedPackageId = watch('package');
   const selectedPackage = packages.find((p) => p._id === selectedPackageId);
-  // IDs of CostumeTypes linked to the selected package
   const packageTypeIds = useMemo(
     () => new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id)),
     [selectedPackage],
   );
-  // Costumes whose type belongs to the selected package
   const availableCostumes = useMemo(
     () => allCostumes.filter((c) => c.type && packageTypeIds.has(c.type._id)),
     [allCostumes, packageTypeIds],
@@ -424,8 +446,6 @@ const SchedulesPage = () => {
     setModalOpen(true);
   };
 
-  const [costumeTouched, setCostumeTouched] = useState(false);
-
   const onSubmit = async (data: ScheduleFormValues) => {
     if (selectedCostumes.length === 0) {
       setCostumeTouched(true);
@@ -453,8 +473,6 @@ const SchedulesPage = () => {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
   };
-
-  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const handleDelete = (id: string) => setConfirmId(id);
 
@@ -506,31 +524,29 @@ const SchedulesPage = () => {
       render: (s) => (
         <div className="flex flex-col">
           <span>{formatDate(s.shootDate)} </span>
-          <span className="text-gray-500 text-xs whitespace-nowrap">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
         </div>
       ),
     },
     {
       key: 'class',
       header: 'Lớp',
-      className: 'text-primary-600',
       render: (s) => (
         <div className="flex flex-col">
-          <span className="font-medium">{s.customer?.className ?? '—'}</span>
-          <span className="text-gray-600 text-xs">{s.customer?.school ?? ''}</span>
+          <span className="font-medium text-primary">{s.customer?.className ?? '—'}</span>
+          <span className="text-muted-foreground text-xs">{s.customer?.school ?? ''}</span>
         </div>
       ),
     },
     {
       key: 'package',
       header: 'Gói chụp',
-      className: 'text-gray-600',
+      className: 'text-muted-foreground',
       render: (s) => s.package?.name ?? '—',
     },
     {
       key: 'sale',
       header: 'Sale',
-      className: 'text-gray-600',
       render: (s) => {
         const fullName = s.bookedBy?.name ?? s.bookedBy?.username;
         if (!fullName) return '—';
@@ -540,7 +556,6 @@ const SchedulesPage = () => {
     {
       key: 'leader',
       header: 'Leader',
-      className: 'text-gray-600',
       render: (s) => {
         const fullName = s.leadPhotographer?.name ?? s.leadPhotographer?.username;
         if (!fullName) return '—';
@@ -550,7 +565,6 @@ const SchedulesPage = () => {
     {
       key: 'support',
       header: 'Support',
-      className: 'text-gray-600',
       render: (s) => {
         const names = s.supportPhotographers
           .map((u) => u.name ?? u.username)
@@ -569,7 +583,9 @@ const SchedulesPage = () => {
       key: 'status',
       header: 'Trạng thái',
       render: (s) => (
-        <span className={`badge ${statusColor[s.status]}`}>{statusLabel[s.status]}</span>
+        <Badge variant="outline" className={cn('border-transparent', statusColor[s.status])}>
+          {statusLabel[s.status]}
+        </Badge>
       ),
     },
     {
@@ -577,7 +593,7 @@ const SchedulesPage = () => {
       header: 'Ghi chú',
       render: (s) => (
         <span
-          className="block max-w-96 truncate text-gray-600 whitespace-pre-line"
+          className="block max-w-96 truncate text-muted-foreground whitespace-pre-line"
           title={s.notes || ''}
         >
           {s.notes || '—'}
@@ -590,21 +606,39 @@ const SchedulesPage = () => {
       align: 'right',
       render: (s) => (
         <span className="space-x-2">
-          <button
-            onClick={() => handleDownloadContract(s)}
-            className="text-green-600 hover:underline text-xs"
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-emerald-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadContract(s);
+            }}
           >
             Hợp đồng
-          </button>
-          <button onClick={() => openEdit(s)} className="text-blue-600 hover:underline text-xs">
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              openEdit(s);
+            }}
+          >
             Sửa
-          </button>
-          <button
-            onClick={() => handleDelete(s._id)}
-            className="text-red-600 hover:underline text-xs"
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(s._id);
+            }}
           >
             Xoá
-          </button>
+          </Button>
         </span>
       ),
     },
@@ -612,75 +646,83 @@ const SchedulesPage = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Schedules</span>
-          <h2 className="page-title">Lịch chụp</h2>
-          <p className="page-subtitle">Theo dõi và sắp xếp lịch chụp ảnh theo ngày.</p>
-        </div>
-        <div className="flex items-center gap-2 justify-between w-full md:w-auto">
-          <SegmentedControl
-            value={viewMode}
-            onChange={setViewMode}
-            items={[
-              { value: 'table', label: 'Bảng', icon: <FaTable />, tone: 'blue' },
-              { value: 'calendar', label: 'Lịch', icon: <FaCalendarAlt />, tone: 'violet' },
-            ]}
-          />
-          <button onClick={openCreate} className="btn-primary">
-            + Thêm lịch
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Schedules"
+        title="Lịch chụp"
+        description="Theo dõi và sắp xếp lịch chụp ảnh theo ngày."
+        action={
+          <div className="flex items-center gap-2 justify-between w-full md:w-auto">
+            <SegmentedControl
+              value={viewMode}
+              onChange={(v) => setViewMode(v as 'table' | 'calendar')}
+              items={[
+                { value: 'table', label: 'Bảng', icon: <TableIcon className="h-3.5 w-3.5" /> },
+                { value: 'calendar', label: 'Lịch', icon: <Calendar className="h-3.5 w-3.5" /> },
+              ]}
+            />
+            <Button variant="gradient" onClick={openCreate}>
+              + Thêm lịch
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Filters */}
-      <div className="card mb-4">
+      <div className="rounded-xl border bg-card p-4 mb-4">
         <div className="flex flex-wrap gap-2">
           <div className="flex-1 min-w-[8rem]">
             <Select
-              options={[
-                { value: '', label: 'Tất cả trạng thái' },
-                ...Object.entries(statusLabel).map(([v, l]) => ({ value: v, label: l })),
-              ]}
-              value={filter.status}
-              onChange={(v) => setFilter((f) => ({ ...f, status: v as string }))}
-            />
+              value={filter.status || ALL}
+              onValueChange={(v) => setFilter((f) => ({ ...f, status: v === ALL ? '' : v }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+                {Object.entries(statusLabel).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex-1 min-w-[8rem]">
-            <Select
+            <Combobox
               options={[
                 { value: '', label: 'Tất cả lớp' },
                 ...customers.map((c) => ({ value: c._id, label: c.className })),
               ]}
               value={filter.customer}
-              onChange={(v) => setFilter((f) => ({ ...f, customer: v as string }))}
+              onChange={(v) => setFilter((f) => ({ ...f, customer: v }))}
+              placeholder="Tất cả lớp"
             />
           </div>
-          <input
+          <Input
             type="date"
-            className="input flex-1 min-w-[8rem]"
+            className="flex-1 min-w-[8rem]"
             value={filter.dateFrom}
             onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
           />
-          <input
+          <Input
             type="date"
-            className="input flex-1 min-w-[8rem]"
+            className="flex-1 min-w-[8rem]"
             value={filter.dateTo}
             onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
           />
-          <button onClick={applyFilter} className="btn-primary">
+          <Button variant="gradient" onClick={applyFilter}>
             Lọc
-          </button>
-          <button onClick={resetFilter} className="btn-secondary">
+          </Button>
+          <Button variant="outline" onClick={resetFilter}>
             Xoá lọc
-          </button>
+          </Button>
         </div>
       </div>
 
       {loading ? (
         <TableSkeleton cols={11} />
       ) : viewMode === 'calendar' ? (
-        <div className="card p-4">
+        <div className="rounded-xl border bg-card p-4">
           <ScheduleCalendar
             items={calendarItems}
             onEdit={(id) => {
@@ -692,7 +734,6 @@ const SchedulesPage = () => {
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
             <DataTable<ScheduleResponse>
               data={schedules}
@@ -703,35 +744,37 @@ const SchedulesPage = () => {
             />
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {schedules.map((s) => {
               const customer = s.customer;
               const leadName = s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? null;
               const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
-              const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
+              const supports = s.supportPhotographers
+                .map((u) => u.name ?? u.username)
+                .join(', ');
               return (
-                <div key={s._id} className="card p-4">
+                <div key={s._id} className="rounded-xl border bg-card p-4">
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="min-w-0">
-                      <div className="font-semibold theme-text-primary">
-                        {formatDate(s.shootDate)}
-                      </div>
-                      <div className="text-primary-500 text-sm mt-0.5 truncate">
+                      <div className="font-semibold">{formatDate(s.shootDate)}</div>
+                      <div className="text-primary text-sm mt-0.5 truncate">
                         {customer?.className ?? '—'}
                         {customer?.school && (
-                          <span className="theme-text-muted"> · {customer.school}</span>
+                          <span className="text-muted-foreground"> · {customer.school}</span>
                         )}
                       </div>
                     </div>
-                    <span className={`badge shrink-0 ${statusColor[s.status]}`}>
+                    <Badge
+                      variant="outline"
+                      className={cn('border-transparent shrink-0', statusColor[s.status])}
+                    >
                       {statusLabel[s.status]}
-                    </span>
+                    </Badge>
                   </div>
-                  <div className="space-y-1 text-sm theme-text-muted">
+                  <div className="space-y-1 text-sm text-muted-foreground">
                     {(s.startTime || s.endTime) && (
                       <div className="flex items-center gap-2">
-                        <FaRegClock className="shrink-0 text-primary-500" />
+                        <Clock className="h-4 w-4 shrink-0 text-primary" />
                         <span>
                           {s.startTime}
                           {s.endTime ? ` – ${s.endTime}` : ''}
@@ -740,52 +783,58 @@ const SchedulesPage = () => {
                     )}
                     {s.location && (
                       <div className="flex items-center gap-2">
-                        <FaMapMarkerAlt className="shrink-0 text-rose-500" />
+                        <MapPin className="h-4 w-4 shrink-0 text-rose-500" />
                         <span>{s.location}</span>
                       </div>
                     )}
                     {leadName && (
                       <div className="flex items-center gap-2">
-                        <FaUserTie className="shrink-0 text-blue-500" />
-                        <span className="theme-text-muted">Leader:</span>{' '}
-                        <span className="theme-text-primary">{leadName}</span>
+                        <Briefcase className="h-4 w-4 shrink-0 text-blue-500" />
+                        <span>Leader:</span>{' '}
+                        <span className="text-foreground">{leadName}</span>
                       </div>
                     )}
                     {supports && (
                       <div className="flex items-center gap-2">
-                        <FaUsers className="shrink-0 text-violet-500" />
-                        <span className="theme-text-muted">Support:</span>{' '}
-                        <span className="theme-text-primary">{supports}</span>
+                        <UsersIcon className="h-4 w-4 shrink-0 text-violet-500" />
+                        <span>Support:</span>{' '}
+                        <span className="text-foreground">{supports}</span>
                       </div>
                     )}
                     {s.notes && (
                       <div className="mt-1 flex items-start gap-2 rounded-md border border-yellow-400/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300 text-xs font-medium px-2 py-1 whitespace-pre-line">
-                        <FaRegStickyNote className="shrink-0 mt-0.5" />
+                        <StickyNote className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                         <span>{s.notes}</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 mt-3 pt-3 theme-divider-top">
-                    <button
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-emerald-600"
                       onClick={() => handleDownloadContract(s)}
-                      className="text-green-500 text-xs font-medium hover:underline"
                     >
                       Hợp đồng
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
                       onClick={() => openEdit(s)}
-                      className="text-blue-500 text-xs font-medium hover:underline"
                     >
                       Sửa
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-destructive"
                       onClick={() => handleDelete(s._id)}
-                      className="text-red-500 text-xs font-medium hover:underline"
                     >
                       Xoá
-                    </button>
+                    </Button>
                     {bookedByName && (
-                      <span className="ml-auto bg-primary-500/15 text-primary-500 text-xs font-medium px-2 py-0.5 rounded-full border border-primary-500/30">
+                      <span className="ml-auto bg-primary/15 text-primary text-xs font-medium px-2 py-0.5 rounded-full border border-primary/30">
                         {bookedByName}
                       </span>
                     )}
@@ -794,57 +843,53 @@ const SchedulesPage = () => {
               );
             })}
             {schedules.length === 0 && (
-              <div className="card py-10 text-center theme-text-muted">Chưa có dữ liệu</div>
+              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                Chưa có dữ liệu
+              </div>
             )}
           </div>
         </>
       )}
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa lịch chụp' : 'Thêm lịch chụp'}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="label">
-                Lớp <span className="text-red-500">*</span>
-              </label>
+            <FormField label="Lớp" required>
               <Controller
                 name="customer"
                 control={control}
                 rules={{ required: true }}
                 render={({ field, fieldState }) => (
                   <>
-                    <Select
+                    <Combobox
                       options={customers.map((c) => ({
                         value: c._id,
                         label: `${c.className} – ${c.school}`,
                       }))}
                       value={field.value ?? ''}
-                      onChange={(v) => field.onChange(v)}
+                      onChange={field.onChange}
                       placeholder="-- Chọn lớp --"
                     />
                     {fieldState.error && (
-                      <p className="text-xs text-red-500 mt-1">Vui lòng chọn lớp.</p>
+                      <p className="text-xs text-destructive mt-1">Vui lòng chọn lớp.</p>
                     )}
                   </>
                 )}
               />
-            </div>
-            <div>
-              <label className="label">
-                Gói chụp <span className="text-red-500">*</span>
-              </label>
+            </FormField>
+            <FormField label="Gói chụp" required>
               <Controller
                 name="package"
                 control={control}
                 rules={{ required: true }}
                 render={({ field, fieldState }) => (
                   <>
-                    <Select
+                    <Combobox
                       options={packages.map((p) => ({
                         value: p._id,
                         label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
@@ -854,26 +899,32 @@ const SchedulesPage = () => {
                       placeholder="-- Chọn gói chụp --"
                     />
                     {fieldState.error && (
-                      <p className="text-xs text-red-500 mt-1">Vui lòng chọn gói chụp.</p>
+                      <p className="text-xs text-destructive mt-1">Vui lòng chọn gói chụp.</p>
                     )}
                   </>
                 )}
               />
-            </div>
-            <div>
-              <label className="label">Trạng thái</label>
+            </FormField>
+            <FormField label="Trạng thái">
               <Controller
                 name="status"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    options={Object.entries(statusLabel).map(([v, l]) => ({ value: v, label: l }))}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v)}
-                  />
+                  <Select value={field.value ?? 'pending'} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(statusLabel).map(([v, l]) => (
+                        <SelectItem key={v} value={v}>
+                          {l}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               />
-            </div>
+            </FormField>
             {selectedPackageId && (
               <div className="lg:col-span-3">
                 <CostumePicker
@@ -884,34 +935,31 @@ const SchedulesPage = () => {
                 />
               </div>
             )}
-            <div>
-              <label className="label">
-                Ngày chụp <span className="text-red-500">*</span>
-              </label>
-              <input {...register('shootDate', { required: true })} type="date" className="input" />
+            <FormField label="Ngày chụp" required htmlFor="shootDate">
+              <Input
+                id="shootDate"
+                type="date"
+                {...register('shootDate', { required: true })}
+              />
               {errors.shootDate && (
-                <p className="text-xs text-red-500 mt-1">Vui lòng chọn ngày chụp.</p>
+                <p className="text-xs text-destructive mt-1">Vui lòng chọn ngày chụp.</p>
               )}
-            </div>
-            <div>
-              <label className="label">Giờ bắt đầu</label>
-              <input {...register('startTime')} type="time" className="input" />
-            </div>
-            <div>
-              <label className="label">Giờ kết thúc</label>
-              <input {...register('endTime')} type="time" className="input" />
-            </div>
-            <div className="lg:col-span-3">
-              <label className="label">Địa điểm</label>
-              <input {...register('location')} className="input" />
-            </div>
-            <div className="lg:col-span-1">
-              <label className="label">Người chốt lớp (Sale)</label>
+            </FormField>
+            <FormField label="Giờ bắt đầu" htmlFor="startTime">
+              <Input id="startTime" type="time" {...register('startTime')} />
+            </FormField>
+            <FormField label="Giờ kết thúc" htmlFor="endTime">
+              <Input id="endTime" type="time" {...register('endTime')} />
+            </FormField>
+            <FormField label="Địa điểm" htmlFor="location" className="lg:col-span-3">
+              <Input id="location" {...register('location')} />
+            </FormField>
+            <FormField label="Người chốt lớp (Sale)">
               <Controller
                 name="bookedBy"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <Combobox
                     options={salesUsers.map((u) => ({
                       value: u._id,
                       label: u.username + (u.name ? ` (${u.name})` : ''),
@@ -922,14 +970,13 @@ const SchedulesPage = () => {
                   />
                 )}
               />
-            </div>
-            <div className="lg:col-span-2">
-              <label className="label">Thợ leader</label>
+            </FormField>
+            <FormField label="Thợ leader" className="lg:col-span-2">
               <Controller
                 name="leadPhotographer"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <Combobox
                     options={photographers.map((u) => ({
                       value: u._id,
                       label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
@@ -940,68 +987,70 @@ const SchedulesPage = () => {
                   />
                 )}
               />
-            </div>
-            {/* khi có thợ lead mới chọn thợ support */}
+            </FormField>
             {watch('leadPhotographer') && (
-              <div className="lg:col-span-3">
-                <label className="label">Thợ support</label>
-                <div className="border border-[color:var(--card-border)] rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
+              <FormField label="Thợ support" className="lg:col-span-3">
+                <div className="border rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
                   {photographers
                     .filter((u) => u._id !== watch('leadPhotographer'))
                     .map((u) => (
                       <label
                         key={u._id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-[var(--table-row-hover)] px-1 py-0.5 rounded"
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
                       >
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
+                        <Checkbox
                           checked={supportIds.includes(u._id)}
-                          onChange={(e) =>
+                          onCheckedChange={(c) =>
                             setSupportIds((prev) =>
-                              e.target.checked
-                                ? [...prev, u._id]
-                                : prev.filter((id) => id !== u._id),
+                              c ? [...prev, u._id] : prev.filter((id) => id !== u._id),
                             )
                           }
                         />
-                        <span className="text-sm theme-text-primary">
+                        <span className="text-sm">
                           {u.username}
                           {u.name ? ` (${u.name})` : ''}
                         </span>
-                        -<span className="text-xs theme-text-muted">{ROLE_LABELS[3]}</span>
+                        <span className="text-xs text-muted-foreground">— {ROLE_LABELS[3]}</span>
                       </label>
                     ))}
                   {photographers.length === 0 && (
-                    <p className="text-sm theme-text-muted px-1">Không có người dùng phù hợp</p>
+                    <p className="text-sm text-muted-foreground px-1">
+                      Không có người dùng phù hợp
+                    </p>
                   )}
                 </div>
-              </div>
+              </FormField>
             )}
-            <div className="lg:col-span-3">
-              <label className="label">Ghi chú</label>
-              <textarea {...register('notes')} className="input" rows={2} />
-            </div>
+            <FormField label="Ghi chú" htmlFor="notes" className="lg:col-span-3">
+              <Textarea id="notes" rows={2} {...register('notes')} />
+            </FormField>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
-      <ConfirmModal
-        isOpen={!!confirmId}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá lịch chụp này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
 
       {/* Detail modal */}
-      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết lịch chụp" size="lg">
+      <Modal
+        open={!!detail}
+        onOpenChange={(o) => !o && setDetail(null)}
+        title="Chi tiết lịch chụp"
+        size="lg"
+      >
         {detail &&
           (() => {
             const customer = detail.customer;
@@ -1029,7 +1078,7 @@ const SchedulesPage = () => {
               tone?: 'primary' | 'rose' | 'emerald' | 'violet' | 'amber' | 'sky';
             }) => {
               const tones: Record<string, string> = {
-                primary: 'bg-primary-500/10 text-primary-500',
+                primary: 'bg-primary/10 text-primary',
                 rose: 'bg-rose-500/10 text-rose-500',
                 emerald: 'bg-emerald-500/10 text-emerald-500',
                 violet: 'bg-violet-500/10 text-violet-500',
@@ -1038,21 +1087,25 @@ const SchedulesPage = () => {
               };
               return (
                 <div
-                  className={`group flex items-start gap-3 rounded-xl border border-[color:var(--card-border)] bg-[var(--card-bg)] px-3.5 py-3 transition-all hover:shadow-md hover:border-primary-500/40 ${
-                    full ? 'sm:col-span-2' : ''
-                  }`}
+                  className={cn(
+                    'group flex items-start gap-3 rounded-xl border bg-card px-3.5 py-3 transition-all hover:shadow-md hover:border-primary/40',
+                    full && 'sm:col-span-2',
+                  )}
                 >
                   <span
-                    className={`shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg ${tones[tone]} transition-transform group-hover:scale-110`}
+                    className={cn(
+                      'shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg transition-transform group-hover:scale-110',
+                      tones[tone],
+                    )}
                   >
                     {icon}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[10px] uppercase tracking-[0.08em] font-semibold theme-text-muted">
+                    <div className="text-[10px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">
                       {label}
                     </div>
-                    <div className="text-sm theme-text-primary mt-1 break-words leading-relaxed">
-                      {value || <span className="theme-text-muted italic">Chưa có</span>}
+                    <div className="text-sm mt-1 break-words leading-relaxed">
+                      {value || <span className="text-muted-foreground italic">Chưa có</span>}
                     </div>
                   </div>
                 </div>
@@ -1061,25 +1114,27 @@ const SchedulesPage = () => {
 
             return (
               <div className="space-y-5 -mx-2">
-                {/* Hero header */}
                 <div
                   className="relative overflow-hidden rounded-2xl px-5 py-5"
                   style={{
                     background: `linear-gradient(135deg, hsl(${heroHue}, 70%, 50%) 0%, hsl(${(heroHue + 40) % 360}, 75%, 45%) 100%)`,
                   }}
                 >
-                  {/* Decorative blobs */}
                   <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
                   <div className="absolute -bottom-12 -left-8 w-32 h-32 rounded-full bg-black/10 blur-2xl" />
 
                   <div className="relative flex items-start justify-between gap-3 flex-wrap">
                     <div className="min-w-0 text-white">
                       <div className="inline-flex items-center gap-2 mb-2">
-                        <span
-                          className={`badge ${statusColor[detail.status]} backdrop-blur-sm bg-white/90`}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-transparent backdrop-blur-sm bg-white/90',
+                            statusColor[detail.status],
+                          )}
                         >
                           {statusLabel[detail.status]}
-                        </span>
+                        </Badge>
                       </div>
                       <h3 className="text-2xl font-bold tracking-tight truncate drop-shadow-sm">
                         {customer?.className ?? '—'}
@@ -1089,12 +1144,12 @@ const SchedulesPage = () => {
                       )}
                       <div className="mt-3 flex items-center gap-4 flex-wrap text-sm text-white/95">
                         <span className="inline-flex items-center gap-1.5">
-                          <FaCalendarAlt />
+                          <Calendar className="h-4 w-4" />
                           <span className="font-medium">{formatDate(detail.shootDate)}</span>
                         </span>
                         {(detail.startTime || detail.endTime) && (
                           <span className="inline-flex items-center gap-1.5">
-                            <FaRegClock />
+                            <Clock className="h-4 w-4" />
                             <span className="font-medium">
                               {detail.startTime ?? ''}
                               {detail.endTime ? ` – ${detail.endTime}` : ''}
@@ -1123,20 +1178,18 @@ const SchedulesPage = () => {
                   </div>
                 </div>
 
-                {/* Sections */}
                 <div className="px-2 space-y-5">
-                  {/* Section: Buổi chụp */}
                   <section>
                     <div className="flex items-center gap-2 mb-2.5">
-                      <span className="h-px flex-1 bg-[color:var(--card-border)]" />
-                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold theme-text-muted">
+                      <span className="h-px flex-1 bg-border" />
+                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
                         Thông tin buổi chụp
                       </span>
-                      <span className="h-px flex-1 bg-[color:var(--card-border)]" />
+                      <span className="h-px flex-1 bg-border" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <InfoItem
-                        icon={<FaMapMarkerAlt />}
+                        icon={<MapPin className="h-4 w-4" />}
                         label="Địa điểm"
                         value={detail.location}
                         tone="rose"
@@ -1150,7 +1203,7 @@ const SchedulesPage = () => {
                             <div className="flex flex-col">
                               <span className="font-semibold">{pkg.name}</span>
                               {typeof pkg.pricePerMember === 'number' && (
-                                <span className="text-xs theme-text-muted">
+                                <span className="text-xs text-muted-foreground">
                                   {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
                                 </span>
                               )}
@@ -1161,18 +1214,17 @@ const SchedulesPage = () => {
                     </div>
                   </section>
 
-                  {/* Section: Đội ngũ */}
                   <section>
                     <div className="flex items-center gap-2 mb-2.5">
-                      <span className="h-px flex-1 bg-[color:var(--card-border)]" />
-                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold theme-text-muted">
+                      <span className="h-px flex-1 bg-border" />
+                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
                         Đội ngũ phụ trách
                       </span>
-                      <span className="h-px flex-1 bg-[color:var(--card-border)]" />
+                      <span className="h-px flex-1 bg-border" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <InfoItem
-                        icon={<FaUserTie />}
+                        icon={<Briefcase className="h-4 w-4" />}
                         label="Sale"
                         tone="sky"
                         value={
@@ -1185,7 +1237,7 @@ const SchedulesPage = () => {
                         }
                       />
                       <InfoItem
-                        icon={<FaUserTie />}
+                        icon={<Briefcase className="h-4 w-4" />}
                         label="Leader"
                         tone="primary"
                         value={
@@ -1198,7 +1250,7 @@ const SchedulesPage = () => {
                         }
                       />
                       <InfoItem
-                        icon={<FaUsers />}
+                        icon={<UsersIcon className="h-4 w-4" />}
                         label={`Support${supportList.length ? ` · ${supportList.length} người` : ''}`}
                         tone="violet"
                         full
@@ -1221,18 +1273,17 @@ const SchedulesPage = () => {
                     </div>
                   </section>
 
-                  {/* Ghi chú */}
                   {detail.notes && (
                     <section>
                       <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/5 px-4 py-3.5 flex items-start gap-3">
                         <span className="shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-300">
-                          <FaRegStickyNote />
+                          <StickyNote className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-[10px] uppercase tracking-[0.08em] font-semibold text-amber-700 dark:text-amber-300">
                             Ghi chú
                           </div>
-                          <div className="text-sm theme-text-primary mt-1 whitespace-pre-line break-words leading-relaxed">
+                          <div className="text-sm mt-1 whitespace-pre-line break-words leading-relaxed">
                             {detail.notes}
                           </div>
                         </div>
@@ -1241,17 +1292,18 @@ const SchedulesPage = () => {
                   )}
                 </div>
 
-                <div className="flex justify-end px-2 pt-3 theme-divider-top">
-                  <button
+                <div className="flex justify-end px-2 pt-3 border-t">
+                  <Button
+                    variant="link"
+                    className="text-destructive"
                     onClick={() => {
                       const id = detail._id;
                       setDetail(null);
                       handleDelete(id);
                     }}
-                    className="inline-flex items-center gap-1.5 text-red-500 hover:text-red-600 text-sm font-medium pt-2 hover:underline"
                   >
                     Xoá lịch chụp
-                  </button>
+                  </Button>
                 </div>
               </div>
             );

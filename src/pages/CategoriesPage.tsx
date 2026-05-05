@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import {
-  FaArrowDown,
-  FaArrowUp,
-  FaPencilAlt,
-  FaPlus,
-  FaRegFolderOpen,
-  FaTrash,
-} from 'react-icons/fa';
+import { ArrowDown, ArrowUp, FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { categoryService } from '../services/categoryService';
-import { ConfirmModal, Modal } from '../components/organisms';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCategories } from '../store/slices/categoriesSlice';
-import { toast } from 'react-toastify';
-import { Select } from '../components/atoms';
 import type { Category } from '../types';
+import {
+  Button,
+  ConfirmDialog,
+  FormField,
+  Input,
+  Modal,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 const CategoriesPage = () => {
   const dispatch = useAppDispatch();
@@ -62,8 +67,6 @@ const CategoriesPage = () => {
     }
   };
 
-  const handleDelete = (id: string) => setConfirmId(id);
-
   const doDelete = async () => {
     if (!confirmId) return;
     try {
@@ -79,168 +82,166 @@ const CategoriesPage = () => {
   const income = categories.filter((c) => c.type === 'income');
   const expense = categories.filter((c) => c.type === 'expense');
 
+  const groups = [
+    {
+      key: 'income',
+      label: 'Khoản thu',
+      list: income,
+      icon: <ArrowDown className="h-4 w-4" />,
+      classes: {
+        bg: 'bg-emerald-500/10',
+        text: 'text-emerald-600 dark:text-emerald-400',
+        ring: 'ring-emerald-500/20',
+        dot: 'bg-emerald-500',
+      },
+    },
+    {
+      key: 'expense',
+      label: 'Khoản chi',
+      list: expense,
+      icon: <ArrowUp className="h-4 w-4" />,
+      classes: {
+        bg: 'bg-rose-500/10',
+        text: 'text-rose-600 dark:text-rose-400',
+        ring: 'ring-rose-500/20',
+        dot: 'bg-rose-500',
+      },
+    },
+  ];
+
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <span className="page-kicker">Settings</span>
-          <h2 className="page-title">Danh mục thu / chi</h2>
-          <p className="page-subtitle">Quản lý các danh mục khoản thu và khoản chi.</p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="btn-primary self-start md:self-auto inline-flex items-center gap-2"
-        >
-          <FaPlus className="text-xs" />
-          Thêm danh mục
-        </button>
-      </div>
+      <PageHeader
+        kicker="Settings"
+        title="Danh mục thu / chi"
+        description="Quản lý các danh mục khoản thu và khoản chi."
+        action={
+          <Button variant="gradient" onClick={openCreate}>
+            <Plus />
+            Thêm danh mục
+          </Button>
+        }
+      />
 
       <div className="grid md:grid-cols-2 gap-6">
-        {[
-          {
-            key: 'income',
-            label: 'Khoản thu',
-            list: income,
-            icon: <FaArrowDown />,
-            accent: 'emerald',
-          },
-          {
-            key: 'expense',
-            label: 'Khoản chi',
-            list: expense,
-            icon: <FaArrowUp />,
-            accent: 'rose',
-          },
-        ].map(({ key, label, list, icon, accent }) => {
-          const accentClasses =
-            accent === 'emerald'
-              ? {
-                  bg: 'bg-emerald-500/10',
-                  text: 'text-emerald-600 dark:text-emerald-400',
-                  ring: 'ring-emerald-500/20',
-                  dot: 'bg-emerald-500',
-                }
-              : {
-                  bg: 'bg-rose-500/10',
-                  text: 'text-rose-600 dark:text-rose-400',
-                  ring: 'ring-rose-500/20',
-                  dot: 'bg-rose-500',
-                };
-          return (
-            <div
-              key={key}
-              className="card p-0 overflow-hidden border border-[color:var(--card-border)]"
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[color:var(--card-border)]">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ring-1 ${accentClasses.bg} ${accentClasses.text} ${accentClasses.ring}`}
-                  >
-                    {icon}
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-semibold theme-text-primary">{label}</h3>
-                    <p className="text-xs theme-text-muted">{list.length} danh mục</p>
-                  </div>
+        {groups.map(({ key, label, list, icon, classes }) => (
+          <div key={key} className="rounded-xl border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'inline-flex h-9 w-9 items-center justify-center rounded-lg ring-1',
+                    classes.bg,
+                    classes.text,
+                    classes.ring,
+                  )}
+                >
+                  {icon}
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold">{label}</h3>
+                  <p className="text-xs text-muted-foreground">{list.length} danh mục</p>
                 </div>
               </div>
-
-              <ul className="divide-y divide-[color:var(--card-border)]">
-                {list.map((c) => (
-                  <li
-                    key={c._id}
-                    className="group flex items-center justify-between gap-3 px-5 py-3 hover:bg-[var(--table-row-hover)] transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${accentClasses.dot}`} />
-                      <span className="text-sm font-medium theme-text-primary truncate">
-                        {c.name}
-                      </span>
-                      {c.isDefault && (
-                        <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-slate-500/10 theme-text-muted">
-                          Mặc định
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(c)}
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
-                        title="Sửa"
-                      >
-                        <FaPencilAlt className="text-xs" />
-                      </button>
-                      {!c.isDefault && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(c._id)}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                          title="Xoá"
-                        >
-                          <FaTrash className="text-xs" />
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-                {list.length === 0 && (
-                  <li className="flex flex-col items-center justify-center gap-2 px-5 py-10 theme-text-muted">
-                    <FaRegFolderOpen className="text-2xl opacity-60" />
-                    <span className="text-sm">Chưa có danh mục</span>
-                  </li>
-                )}
-              </ul>
             </div>
-          );
-        })}
+
+            <ul className="divide-y">
+              {list.map((c) => (
+                <li
+                  key={c._id}
+                  className="group flex items-center justify-between gap-3 px-5 py-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={cn('h-2 w-2 rounded-full flex-shrink-0', classes.dot)} />
+                    <span className="text-sm font-medium truncate">{c.name}</span>
+                    {c.isDefault && (
+                      <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        Mặc định
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
+                      onClick={() => openEdit(c)}
+                      title="Sửa"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {!c.isDefault && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => setConfirmId(c._id)}
+                        title="Xoá"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+              {list.length === 0 && (
+                <li className="flex flex-col items-center justify-center gap-2 px-5 py-10 text-muted-foreground">
+                  <FolderOpen className="h-6 w-6 opacity-60" />
+                  <span className="text-sm">Chưa có danh mục</span>
+                </li>
+              )}
+            </ul>
+          </div>
+        ))}
       </div>
 
       <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         title={editing ? 'Sửa danh mục' : 'Thêm danh mục'}
         size="sm"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div>
-            <label className="label">Tên danh mục *</label>
-            <input {...register('name', { required: true })} className="input" />
-          </div>
-          <div>
-            <label className="label">Loại *</label>
+          <FormField label="Tên danh mục" required htmlFor="name">
+            <Input id="name" {...register('name', { required: true })} />
+          </FormField>
+          <FormField label="Loại" required>
             <Controller
               name="type"
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <Select
-                  options={[
-                    { value: 'income', label: 'Thu' },
-                    { value: 'expense', label: 'Chi' },
-                  ]}
-                  value={field.value ?? ''}
-                  onChange={(v) => field.onChange(v)}
-                />
+                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Thu</SelectItem>
+                    <SelectItem value="expense">Chi</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
-          </div>
+          </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
-            </button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
+            </Button>
+            <Button type="submit" variant="gradient" disabled={isSubmitting}>
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
-      <ConfirmModal
-        isOpen={!!confirmId}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá danh mục này?"
         onConfirm={doDelete}
-        onCancel={() => setConfirmId(null)}
       />
     </div>
   );
