@@ -10,9 +10,21 @@ interface Props {
 }
 
 const ProtectedRoute = ({ children, requiredRole, allowedRoles }: Props) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isBootstrapping, user } = useAuth();
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Wait for the bootstrap refresh check before making any redirect decision
+  if (isBootstrapping) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">Đang xác thực...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/portfolio" replace />;
   if (requiredRole !== undefined && !user?.roles?.includes(requiredRole))
     return <Navigate to="/" replace />;
   if (allowedRoles && !user?.roles?.some((r) => allowedRoles.includes(r)))

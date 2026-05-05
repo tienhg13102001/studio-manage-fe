@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { User } from '../types';
 import { authService } from '../services/authService';
 
@@ -9,6 +9,7 @@ interface AuthContextValue {
   logout: () => void;
   updateUser: (patch: Partial<User>) => void;
   isAuthenticated: boolean;
+  isBootstrapping: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,6 +20,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return stored ? (JSON.parse(stored) as User) : null;
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+  const [isBootstrapping, setIsBootstrapping] = useState<boolean>(() => !!localStorage.getItem('token'));
+
+  // On mount: if a token exists, call /auth/refresh to validate it and get a
+  // fresh token + up-to-date user data (e.g. role changes since last login).
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+
+    authService
+      .refresh()
+      .then((res) => {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user));
+        setToken(res.token);
+        setUser(res.user);
+      })
+      .catch(() => {
+        // Token is invalid/expired — clear everything; axios interceptor will
+        // redirect to /login, but we also clean up state here defensively.
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setIsBootstrapping(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await authService.login(username, password);
@@ -46,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}
+      value={{ user, token, login, logout, updateUser, isAuthenticated: !!token, isBootstrapping }}
     >
       {children}
     </AuthContext.Provider>

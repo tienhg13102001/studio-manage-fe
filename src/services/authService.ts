@@ -10,4 +10,5 @@ export const authService = {
   login: (username: string, password: string) =>
     api.post<LoginResponse>('/auth/login', { username, password }).then((r) => r.data),
   getMe: () => api.get<{ user: User }>('/auth/me').then((r) => r.data.user),
+  refresh: () => api.post<LoginResponse>('/auth/refresh').then((r) => r.data),
 };
