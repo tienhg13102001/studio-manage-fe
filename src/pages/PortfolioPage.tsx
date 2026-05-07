@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import tnv07899 from '../assets/images/TNV07899.webp';
+import tnv00048 from '../assets/images/TNV00048.webp';
+import tnv00817 from '../assets/images/TNV00817.webp';
 import { toast } from 'react-toastify';
 import Logo from '../components/atoms/Logo';
 import { useTheme } from '../context/ThemeContext';
@@ -883,21 +886,9 @@ const PortfolioPage = () => {
 /* ── Sub-components ──────────────────────────── */
 
 const heroCards = [
-  {
-    icon: '🎓',
-    label: 'CỬ NHÂN',
-    bg: 'linear-gradient(135deg, #fbbf24, #f97316)',
-  },
-  {
-    icon: '👘',
-    label: 'ÁO DÀI',
-    bg: 'linear-gradient(135deg, #f472b6, #ec4899)',
-  },
-  {
-    icon: '🎬',
-    label: 'CINEMATIC',
-    bg: 'linear-gradient(135deg, #22d3ee, #6366f1)',
-  },
+  { bg: `url(${tnv00817}) center / cover no-repeat` },
+  { bg: `url(${tnv00048}) center / cover no-repeat` },
+  { bg: `url(${tnv07899}) center / cover no-repeat` },
 ];
 
 // 3 positions arranged in a circle around the collage (more spaced apart).
@@ -934,7 +925,7 @@ const HeroCollage = () => {
             const H = 288;
             return (
               <div
-                key={card.label}
+                key={i}
                 className="absolute top-1/2 left-1/2 rounded-3xl shadow-2xl overflow-hidden"
                 style={{
                   width: W,
@@ -948,10 +939,6 @@ const HeroCollage = () => {
                   transformStyle: 'preserve-3d',
                 }}
               >
-                <div className="w-full h-full flex flex-col items-center justify-center text-white">
-                  <div className="text-6xl">{card.icon}</div>
-                  <div className="mt-3 text-sm font-bold tracking-widest">{card.label}</div>
-                </div>
               </div>
             );
           })}
