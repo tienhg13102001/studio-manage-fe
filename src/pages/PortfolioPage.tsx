@@ -78,7 +78,7 @@ const steps = [
   {
     n: '04',
     title: 'Hậu kỳ & bàn giao',
-    desc: 'Trả ảnh thô trong 3 ngày, ảnh blend & video hoàn chỉnh trong 14 ngày. Album in 30 ngày.',
+    desc: 'Chỉnh sửa màu theo yêu cầu, bàn giao ảnh và video sau khoảng 1-2 tuần sau buổi chụp.',
   },
 ];
 
