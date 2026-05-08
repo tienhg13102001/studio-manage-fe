@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import tnv07899 from '../assets/images/TNV07899.webp';
 import tnv00048 from '../assets/images/TNV00048.webp';
 import tnv00817 from '../assets/images/TNV00817.webp';
+import tnv03816 from '../assets/images/TNV03816.webp';
+import tnv05927 from '../assets/images/TNV05927.webp';
+import tnv06047 from '../assets/images/TNV06047.webp';
 import { toast } from 'react-toastify';
 import Logo from '../components/atoms/Logo';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +17,7 @@ import type { Package } from '../types';
 
 /* ── Static content ──────────────────────────── */
 
+const AboutImage = [tnv03816, tnv05927, tnv06047, tnv07899, tnv00817];
 const services = [
   {
     icon: '📷',
@@ -22,39 +26,36 @@ const services = [
   },
   {
     icon: '🎬',
-    title: 'Quay phim & Hậu kỳ',
+    title: 'Quay phim',
     desc: 'Video kỷ yếu chuẩn điện ảnh 4K, dựng theo phong cách MV cùng âm nhạc và màu phim chuyên nghiệp.',
   },
   {
-    icon: '📖',
-    title: 'Thiết kế album',
-    desc: 'Album in cao cấp, layout riêng cho từng lớp. Tặng kèm bản digital chia sẻ cho cả tập thể.',
-  },
-  {
-    icon: '💄',
-    title: 'Makeup & Stylist',
-    desc: 'Đội ngũ makeup, làm tóc đồng hành xuyên suốt buổi chụp giúp các bạn luôn rạng rỡ trên sân khấu.',
+    icon: '🖌️',
+    title: 'Hậu kỳ & in ấn',
+    desc: 'Ảnh được blend màu chuyên nghiệp, chỉnh sửa theo yêu cầu. Album in cao cấp với giấy ảnh chất lượng, thiết kế tinh tế.',
   },
   {
     icon: '👔',
-    title: 'Trang phục biểu diễn',
+    title: 'Trang phục',
     desc: 'Hơn 200 mẫu trang phục: cử nhân, áo dài, học sinh, vintage, cosplay… phù hợp đa dạng concept.',
   },
   {
-    icon: '🚐',
-    title: 'Tour ngoại cảnh',
-    desc: 'Đưa lớp đi chụp tại các điểm hot: Đà Lạt, Mộc Châu, biển, làng cổ… trọn gói di chuyển – ăn ở.',
+    icon: '🎨',
+    title: 'Trang trí & đạo cụ',
+    desc: 'Cung cấp các đạo cụ, phông nền, và trang trí phù hợp với từng concept chụp.',
   },
+  {
+    icon: '💡',
+    title: 'Tư vấn & lên ý tưởng',
+    desc: 'Đội ngũ tư vấn giàu kinh nghiệm hỗ trợ lớp lên ý tưởng concept, lựa chọn trang phục và địa điểm chụp phù hợp.',
+  }
 ];
 
 const concepts = [
   { tag: 'Cử nhân', tone: 'from-amber-400 to-orange-500', icon: '🎓' },
   { tag: 'Áo dài Việt', tone: 'from-rose-400 to-pink-500', icon: '👘' },
-  { tag: 'Vintage', tone: 'from-yellow-400 to-amber-600', icon: '📻' },
   { tag: 'Cinematic', tone: 'from-cyan-400 to-blue-500', icon: '🎬' },
-  { tag: 'Cổ phục', tone: 'from-fuchsia-400 to-purple-500', icon: '🏯' },
   { tag: 'Học đường', tone: 'from-emerald-400 to-teal-500', icon: '🏫' },
-  { tag: 'Y2K', tone: 'from-pink-400 to-fuchsia-500', icon: '💿' },
   { tag: 'Outdoor', tone: 'from-lime-400 to-green-500', icon: '🌿' },
 ];
 
@@ -413,7 +414,7 @@ const PortfolioPage = () => {
               chụp kỷ yếu thành một ngày đáng nhớ trong đời.
             </p>
             <p className="mt-4 text-slate-600 dark:text-slate-300 leading-relaxed">
-              Hơn 5 năm đồng hành cùng các lớp 12 và sinh viên trên khắp Hà Nội, chúng tôi tự hào là
+              Hơn 5 năm đồng hành cùng các lớp và sinh viên trên khắp cả nước, chúng tôi tự hào là
               studio được nhiều trường lựa chọn nhờ sự chỉn chu trong từng tiểu tiết.
             </p>
             <ul className="mt-6 space-y-3">
@@ -454,7 +455,9 @@ const PortfolioPage = () => {
                       }, 70%, 60%))`,
                       opacity: 0.7,
                     }}
-                  />
+                  >
+                    <img src={AboutImage[Math.floor(Math.random() * AboutImage.length)]} alt="TNV03816" className="w-full h-full object-cover rounded-lg" />
+                  </div>
                 ))}
               </div>
               <div className="relative z-10">
@@ -494,8 +497,7 @@ const PortfolioPage = () => {
               Trọn gói cho ngày kỷ yếu hoàn hảo
             </h2>
             <p className="mt-4 text-slate-600 dark:text-slate-300">
-              Từ ý tưởng, trang phục, makeup cho tới video & album — Yume lo trọn để bạn chỉ việc
-              tận hưởng.
+                Từ chụp ảnh, quay phim đến trang phục và hậu kỳ, Yume Studio cung cấp giải pháp toàn diện để biến ngày kỷ yếu của bạn thành một trải nghiệm đáng nhớ và trọn vẹn nhất.
             </p>
           </div>
           <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
