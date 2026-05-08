@@ -48,7 +48,7 @@ const services = [
     icon: '💡',
     title: 'Tư vấn & lên ý tưởng',
     desc: 'Đội ngũ tư vấn giàu kinh nghiệm hỗ trợ lớp lên ý tưởng concept, lựa chọn trang phục và địa điểm chụp phù hợp.',
-  }
+  },
 ];
 
 const concepts = [
@@ -73,39 +73,12 @@ const steps = [
   {
     n: '03',
     title: 'Buổi chụp & quay',
-    desc: 'Ekip 5–8 người (photographer, quay phim, makeup, stylist) đồng hành cùng lớp xuyên suốt.',
+    desc: 'Ekip 3-4 người (photographer, quay phim) đồng hành cùng lớp xuyên suốt.',
   },
   {
     n: '04',
     title: 'Hậu kỳ & bàn giao',
     desc: 'Trả ảnh thô trong 3 ngày, ảnh blend & video hoàn chỉnh trong 14 ngày. Album in 30 ngày.',
-  },
-];
-
-const fallbackPackages: PackageDisplay[] = [
-  {
-    id: 'fallback-small',
-    name: 'Lớp nhỏ',
-    price: 'Liên hệ',
-    note: 'Phù hợp lớp ≤ 25 bạn',
-    items: ['1 buổi chụp', '1 concept', 'Ảnh đã blend', 'Album digital chia sẻ'],
-    featured: false,
-  },
-  {
-    id: 'fallback-full',
-    name: 'Trọn gói Yume',
-    price: 'Liên hệ',
-    note: 'Lựa chọn được yêu thích nhất',
-    items: ['Full day', 'Nhiều concept', 'Video kỷ yếu 4K', 'Album in cao cấp'],
-    featured: true,
-  },
-  {
-    id: 'fallback-tour',
-    name: 'Tour ngoại cảnh',
-    price: 'Liên hệ',
-    note: 'Đà Lạt – Mộc Châu – Biển',
-    items: ['2 ngày 1 đêm', 'Trọn gói di chuyển', 'Ekip mở rộng', 'Video MV cinematic'],
-    featured: false,
   },
 ];
 
@@ -144,9 +117,7 @@ const toDisplay = (list: Package[]): PackageDisplay[] => {
     if (p.editingScope) items.push(editingScopeLabel[p.editingScope]);
     if (p.deliveryDays) items.push(`Bàn giao trong ${p.deliveryDays} ngày`);
     if (p.costumes && p.costumes.length) {
-      const names = p.costumes
-        .map((c) => c?.name?.trim())
-        .filter((n): n is string => Boolean(n));
+      const names = p.costumes.map((c) => c?.name?.trim()).filter((n): n is string => Boolean(n));
       if (names.length) {
         items.push(`Trang phục: ${names.join(', ')}`);
       } else {
@@ -244,9 +215,9 @@ const PortfolioPage = () => {
   }, []);
 
   const displayPackages = useMemo<PackageDisplay[]>(() => {
-    if (pkgList === null) return fallbackPackages;
+    if (pkgList === null) return [];
     const mapped = toDisplay(pkgList);
-    return mapped.length ? mapped : fallbackPackages;
+    return mapped.length ? mapped : [];
   }, [pkgList]);
 
   const stats = useMemo(
@@ -456,7 +427,11 @@ const PortfolioPage = () => {
                       opacity: 0.7,
                     }}
                   >
-                    <img src={AboutImage[Math.floor(Math.random() * AboutImage.length)]} alt="TNV03816" className="w-full h-full object-cover rounded-lg" />
+                    <img
+                      src={AboutImage[Math.floor(Math.random() * AboutImage.length)]}
+                      alt="TNV03816"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   </div>
                 ))}
               </div>
@@ -497,7 +472,8 @@ const PortfolioPage = () => {
               Trọn gói cho ngày kỷ yếu hoàn hảo
             </h2>
             <p className="mt-4 text-slate-600 dark:text-slate-300">
-                Từ chụp ảnh, quay phim đến trang phục và hậu kỳ, Yume Studio cung cấp giải pháp toàn diện để biến ngày kỷ yếu của bạn thành một trải nghiệm đáng nhớ và trọn vẹn nhất.
+              Từ chụp ảnh, quay phim đến trang phục và hậu kỳ, Yume Studio cung cấp giải pháp toàn
+              diện để biến ngày kỷ yếu của bạn thành một trải nghiệm đáng nhớ và trọn vẹn nhất.
             </p>
           </div>
           <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -842,7 +818,7 @@ const PortfolioPage = () => {
                   href="tel:0987654321"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm sm:text-base font-semibold text-amber-700 bg-white hover:bg-amber-50 shadow-md transition"
                 >
-                  📞 0987 654 321
+                  📞 0869318118
                 </a>
                 <a
                   href="mailto:hello@yumestudio.vn"
@@ -940,8 +916,7 @@ const HeroCollage = () => {
                   backfaceVisibility: 'hidden',
                   transformStyle: 'preserve-3d',
                 }}
-              >
-              </div>
+              ></div>
             );
           })}
         </div>
