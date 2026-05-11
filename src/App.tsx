@@ -9,6 +9,7 @@ import type { UserRole } from './types';
 import StudentFormPage from './pages/StudentFormPage';
 import FeedbackFormPage from './pages/FeedbackFormPage';
 import PortfolioPage from './pages/PortfolioPage';
+import ProfilePage from './pages/ProfilePage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from './hooks/usePageTitle';
@@ -83,6 +84,7 @@ function App() {
               }
             >
               {[...navItems, ...adminItems].map(renderRouteItem)}
+              <Route path="profile" element={<ProfilePage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

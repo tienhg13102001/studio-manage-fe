@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
+import { ChevronRight, Sun, Moon, Monitor, UserCircle } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, type ThemeMode } from '../../context/ThemeContext';
@@ -285,7 +285,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </nav>
 
         <div className="px-4 py-4" style={{ borderTop: '1px solid var(--user-border)' }}>
-          <div className="flex items-center gap-3 mb-3">
+          <NavLink
+            to="/profile"
+            onClick={handleNavClick}
+            className="flex items-center gap-3 mb-3 rounded-xl px-1 py-1 -mx-1 transition-colors group"
+          >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
               style={{
@@ -295,7 +299,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             >
               {(user?.name || user?.username || '?')[0].toUpperCase()}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p
                 className="text-sm font-semibold truncate"
                 style={{ color: 'var(--user-name-color)' }}
@@ -314,7 +318,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 ))}
               </div>
             </div>
-          </div>
+            <UserCircle className="w-4 h-4 flex-shrink-0 opacity-40 group-hover:opacity-70 transition-opacity" style={{ color: 'var(--text-faint)' }} />
+          </NavLink>
           <button
             onClick={handleLogout}
             className="w-full text-left text-xs transition-colors"

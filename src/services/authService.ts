@@ -11,4 +11,8 @@ export const authService = {
     api.post<LoginResponse>('/auth/login', { username, password }).then((r) => r.data),
   getMe: () => api.get<{ user: User }>('/auth/me').then((r) => r.data.user),
   refresh: () => api.post<LoginResponse>('/auth/refresh').then((r) => r.data),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.patch<{ message: string }>('/auth/change-password', { currentPassword, newPassword }).then((r) => r.data),
+  updateProfile: (data: { name?: string }) =>
+    api.patch<User>('/auth/profile', data).then((r) => r.data),
 };
