@@ -27,8 +27,11 @@ type FormValues = Omit<Customer, '_id' | 'createdAt'>;
 const CustomersPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { list: customers, loading } = useAppSelector((s) => s.customers);
+  const { list: customers, total, loading } = useAppSelector((s) => s.customers);
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -39,9 +42,15 @@ const CustomersPage = () => {
     formState: { isSubmitting, errors },
   } = useForm<FormValues>();
 
+  const buildParams = (s: string, p: number, l: number): Record<string, string | number> => {
+    const params: Record<string, string | number> = { page: p, limit: l };
+    if (s) params.search = s;
+    return params;
+  };
+
   useEffect(() => {
-    dispatch(fetchCustomers({}));
-  }, [dispatch]);
+    dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+  }, [dispatch, appliedSearch, page, pageSize]);
 
   const openCreate = () => {
     setEditing(null);
@@ -75,7 +84,7 @@ const CustomersPage = () => {
         toast.success('Thêm lớp thành công!');
       }
       setModalOpen(false);
-      dispatch(fetchCustomers({}));
+      dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -86,14 +95,17 @@ const CustomersPage = () => {
     try {
       await customerService.remove(confirmId);
       toast.success('Đã xoá lớp.');
-      dispatch(fetchCustomers({}));
+      dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
     setConfirmId(null);
   };
 
-  const runSearch = () => dispatch(fetchCustomers(search ? { search } : {}));
+  const runSearch = () => {
+    setPage(1);
+    setAppliedSearch(search);
+  };
 
   return (
     <div>
@@ -116,7 +128,8 @@ const CustomersPage = () => {
           onSearch={runSearch}
           onClear={() => {
             setSearch('');
-            dispatch(fetchCustomers({}));
+            setAppliedSearch('');
+            setPage(1);
           }}
         />
       </div>
@@ -132,6 +145,17 @@ const CustomersPage = () => {
               keyExtractor={(c) => c._id}
               emptyTitle="Chưa có dữ liệu"
               onRowClick={(c) => navigate(`/customers/${c._id}`)}
+              pagination={{
+                serverSide: true,
+                page,
+                pageSize,
+                total,
+                onPageChange: setPage,
+                onPageSizeChange: (size: number) => {
+                  setPageSize(size);
+                  setPage(1);
+                },
+              }}
               columns={[
                 {
                   key: 'className',

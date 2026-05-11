@@ -363,11 +363,14 @@ interface ScheduleFormValues {
 
 const SchedulesPage = () => {
   const dispatch = useAppDispatch();
-  const { list: schedules, loading } = useAppSelector((s) => s.schedules);
+  const { list: schedules, total, loading } = useAppSelector((s) => s.schedules);
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: packages } = useAppSelector((s) => s.packages);
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
+  const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [allCostumes, setAllCostumes] = useState<CostumeResponse[]>([]);
   const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -386,8 +389,12 @@ const SchedulesPage = () => {
     watch,
   } = useForm<ScheduleFormValues>();
 
-  const buildFilterParams = (f: FilterState): Record<string, string> => {
-    const params: Record<string, string> = {};
+  const buildFilterParams = (
+    f: FilterState,
+    p: number,
+    l: number,
+  ): Record<string, string | number> => {
+    const params: Record<string, string | number> = { page: p, limit: l };
     if (f.status) params.status = f.status;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
@@ -407,13 +414,13 @@ const SchedulesPage = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchSchedules({}));
+    dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
     dispatch(fetchCustomers({ limit: 200 }));
     dispatch(fetchPackages());
     dispatch(fetchPhotographers());
     dispatch(fetchSales());
     costumeService.getAll().then(setAllCostumes);
-  }, [dispatch]);
+  }, [dispatch, appliedFilter, page, pageSize]);
 
   const openCreate = () => {
     setEditing(null);
@@ -468,7 +475,7 @@ const SchedulesPage = () => {
         toast.success('Thêm lịch chụp thành công!');
       }
       setModalOpen(false);
-      dispatch(fetchSchedules(buildFilterParams(filter)));
+      dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -481,7 +488,7 @@ const SchedulesPage = () => {
     try {
       await scheduleService.remove(confirmId);
       toast.success('Đã xoá lịch chụp.');
-      dispatch(fetchSchedules(buildFilterParams(filter)));
+      dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -494,10 +501,14 @@ const SchedulesPage = () => {
     await scheduleService.downloadContract(s._id, filename);
   };
 
-  const applyFilter = () => dispatch(fetchSchedules(buildFilterParams(filter)));
+  const applyFilter = () => {
+    setPage(1);
+    setAppliedFilter(filter);
+  };
   const resetFilter = () => {
     setFilter(defaultFilter);
-    dispatch(fetchSchedules({}));
+    setAppliedFilter(defaultFilter);
+    setPage(1);
   };
 
   const calendarItems = useMemo(
@@ -741,6 +752,17 @@ const SchedulesPage = () => {
               emptyTitle="Chưa có dữ liệu"
               columns={scheduleColumns}
               onRowClick={(s) => setDetail(s)}
+              pagination={{
+                serverSide: true,
+                page,
+                pageSize,
+                total,
+                onPageChange: setPage,
+                onPageSizeChange: (size: number) => {
+                  setPageSize(size);
+                  setPage(1);
+                },
+              }}
             />
           </div>
 

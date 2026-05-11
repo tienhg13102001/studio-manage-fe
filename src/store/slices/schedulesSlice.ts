@@ -4,15 +4,16 @@ import type { ScheduleResponse } from '../../types';
 
 interface SchedulesState {
   list: ScheduleResponse[];
+  total: number;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: SchedulesState = { list: [], loading: false, error: null };
+const initialState: SchedulesState = { list: [], total: 0, loading: false, error: null };
 
 export const fetchSchedules = createAsyncThunk(
   'schedules/fetchAll',
-  (params?: Record<string, string | number>) => scheduleService.getAll(params).then((r) => r.data),
+  (params?: Record<string, string | number>) => scheduleService.getAll(params),
 );
 
 const schedulesSlice = createSlice({
@@ -27,7 +28,8 @@ const schedulesSlice = createSlice({
       })
       .addCase(fetchSchedules.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = action.payload.data;
+        state.total = action.payload.total;
       })
       .addCase(fetchSchedules.rejected, (state, action) => {
         state.loading = false;

@@ -4,15 +4,16 @@ import type { Customer } from '../../types';
 
 interface CustomersState {
   list: Customer[];
+  total: number;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: CustomersState = { list: [], loading: false, error: null };
+const initialState: CustomersState = { list: [], total: 0, loading: false, error: null };
 
 export const fetchCustomers = createAsyncThunk(
   'customers/fetchAll',
-  (params?: Record<string, string | number>) => customerService.getAll(params).then((r) => r.data),
+  (params?: Record<string, string | number>) => customerService.getAll(params),
 );
 
 const customersSlice = createSlice({
@@ -27,7 +28,8 @@ const customersSlice = createSlice({
       })
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = action.payload.data;
+        state.total = action.payload.total;
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;
