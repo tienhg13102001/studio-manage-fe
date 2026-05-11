@@ -319,7 +319,7 @@ const ProfilePage = () => {
     <div className="space-y-6">
       <PageHeader
         title="Hồ sơ cá nhân"
-        kicker={`@${user?.username}`}
+        kicker={`${user?.username}`}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
         <SectionCard icon={UserIcon} title="Thông tin cá nhân">
