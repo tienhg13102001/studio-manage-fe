@@ -16,6 +16,7 @@ export interface User {
   name?: string;
   roles: UserRole[];
   isActive: boolean;
+  telegramId?: string;
   createdAt?: string;
 }
 
