@@ -7,6 +7,13 @@ import tnv00817 from '../assets/images/TNV00817.webp';
 import tnv03816 from '../assets/images/TNV03816.webp';
 import tnv05927 from '../assets/images/TNV05927.webp';
 import tnv06047 from '../assets/images/TNV06047.webp';
+import hdz07441 from '../assets/images/HDZ07441.webp';
+import may01381 from '../assets/images/MAY01381.webp';
+import pbi00061 from '../assets/images/PBI00061.webp';
+import pbi01583 from '../assets/images/PBI01583.webp';
+import pbi01850 from '../assets/images/PBI01850.webp';
+import tnv00451 from '../assets/images/TNV00451.webp';
+import tnv06242 from '../assets/images/TNV06242.webp';
 import { toast } from 'react-toastify';
 import Logo from '../components/atoms/Logo';
 import { useTheme } from '../context/ThemeContext';
@@ -17,7 +24,20 @@ import type { Package } from '../types';
 
 /* ── Static content ──────────────────────────── */
 
-const AboutImage = [tnv03816, tnv05927, tnv06047, tnv07899, tnv00817];
+const AboutImage = [
+  tnv03816,
+  tnv05927,
+  tnv07899,
+  tnv00817,
+  tnv06047,
+  hdz07441,
+  pbi00061,
+  may01381,
+  pbi01583,
+  pbi01850,
+  tnv00451,
+  tnv06242,
+];
 const services = [
   {
     icon: '📷',
@@ -416,7 +436,7 @@ const PortfolioPage = () => {
               }}
             >
               <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-2 p-3">
-                {Array.from({ length: 12 }).map((_, i) => (
+                {AboutImage.map((_, i) => (
                   <div
                     key={i}
                     className="rounded-lg"
@@ -428,7 +448,7 @@ const PortfolioPage = () => {
                     }}
                   >
                     <img
-                      src={AboutImage[Math.floor(Math.random() * AboutImage.length)]}
+                      src={AboutImage[i]}
                       alt="TNV03816"
                       className="w-full h-full object-cover rounded-lg"
                     />
@@ -439,7 +459,7 @@ const PortfolioPage = () => {
                 <Logo size={120} />
               </div>
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-5 max-w-[200px] hidden sm:block border border-slate-100 dark:border-white/10">
+            <div className="absolute -bottom-20 -left-20 bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-5 max-w-[200px] hidden sm:block border border-slate-100 dark:border-white/10">
               <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Khách hàng hài lòng
               </div>
@@ -447,7 +467,7 @@ const PortfolioPage = () => {
                 98%
               </div>
             </div>
-            <div className="absolute -top-6 -right-6 bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-5 hidden sm:block border border-slate-100 dark:border-white/10">
+            <div className="absolute -top-20 -right-20 bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-5 hidden sm:block border border-slate-100 dark:border-white/10">
               <div className="flex -space-x-2">
                 <div className="w-9 h-9 rounded-full bg-amber-200 dark:bg-amber-400/40 border-2 border-white dark:border-slate-900" />
                 <div className="w-9 h-9 rounded-full bg-cyan-200 dark:bg-cyan-400/40 border-2 border-white dark:border-slate-900" />
