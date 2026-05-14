@@ -197,6 +197,14 @@ export interface FeedbackResponse extends Omit<Feedback, 'customer'> {
   customer: Customer | null;
 }
 
+export interface Season {
+  _id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  createdAt?: string;
+}
+
 /**
  * Public (unauthenticated) schedule shape returned by `/public/schedules/:customer`.
  * Intentionally narrower than `ScheduleResponse` to avoid leaking staff / booking info.

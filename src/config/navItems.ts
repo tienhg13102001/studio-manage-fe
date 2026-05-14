@@ -28,6 +28,7 @@ import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
 import FeedbackPage from '../pages/FeedbackPage';
+import SeasonPage from '@/pages/SeasonPage';
 
 export type NavIcon = ComponentType<{ className?: string }>;
 
@@ -169,4 +170,21 @@ export const adminItems: NavItem[] = [
       },
     ],
   },
+  {
+    to: '/special',
+    label: 'Đặc biệt',
+    icon: ClipboardList,
+    iconClassName: 'text-slate-300',
+    allowedRoles: [0],
+    children: [
+      {
+        to: '/seasons',
+        label: 'Mùa chụp',
+        icon: Calendar,
+        iconClassName: 'text-indigo-300',
+        allowedRoles: [0],
+        component: SeasonPage, // TODO: create season management page
+      },
+    ],
+  }
 ];
