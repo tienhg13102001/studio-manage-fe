@@ -1,4 +1,5 @@
 import api from './api';
+import type { ApiResponse } from '../types';
 
 export interface TelegramStatus {
   linked: boolean;
@@ -12,8 +13,9 @@ export interface TelegramLinkResponse {
 }
 
 export const telegramService = {
-  getStatus: () => api.get<TelegramStatus>('/telegram/status').then((r) => r.data),
+  getStatus: () =>
+    api.get<ApiResponse<TelegramStatus>>('/telegram/status').then((r) => r.data.data),
   generateLinkToken: () =>
-    api.post<TelegramLinkResponse>('/telegram/generate-link-token').then((r) => r.data),
-  unlink: () => api.delete('/telegram/unlink').then((r) => r.data),
+    api.post<ApiResponse<TelegramLinkResponse>>('/telegram/generate-link-token').then((r) => r.data.data),
+  unlink: () => api.delete<ApiResponse<null>>('/telegram/unlink').then((r) => r.data),
 };

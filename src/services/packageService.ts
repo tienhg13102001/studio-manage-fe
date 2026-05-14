@@ -1,16 +1,17 @@
 import api from './api';
-import type { Package } from '../types';
+import type { ApiResponse, Package } from '../types';
 
 // costumes is sent as string[] (IDs) when creating/updating
 type PackagePayload = Omit<Partial<Package>, 'costumes'> & { costumes?: string[] };
 
 export const packageService = {
-  getAll: () => api.get<Package[]>('/packages').then((r) => r.data),
-  getOne: (id: string) => api.get<Package>(`/packages/${id}`).then((r) => r.data),
+  getAll: () => api.get<ApiResponse<Package[]>>('/packages').then((r) => r.data.data),
+  getOne: (id: string) => api.get<ApiResponse<Package>>(`/packages/${id}`).then((r) => r.data.data),
   /** Public (no-auth) endpoint — used by the portfolio pricing section */
-  listPublic: () => api.get<Package[]>('/public/packages').then((r) => r.data),
-  create: (data: PackagePayload) => api.post<Package>('/packages', data).then((r) => r.data),
+  listPublic: () => api.get<ApiResponse<Package[]>>('/public/packages').then((r) => r.data.data),
+  create: (data: PackagePayload) =>
+    api.post<ApiResponse<Package>>('/packages', data).then((r) => r.data.data),
   update: (id: string, data: PackagePayload) =>
-    api.put<Package>(`/packages/${id}`, data).then((r) => r.data),
-  remove: (id: string) => api.delete(`/packages/${id}`),
+    api.put<ApiResponse<Package>>(`/packages/${id}`, data).then((r) => r.data.data),
+  remove: (id: string) => api.delete<ApiResponse<null>>(`/packages/${id}`),
 };

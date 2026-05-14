@@ -1,4 +1,5 @@
 import api from './api';
+import type { ApiResponse } from '../types';
 
 export interface UpcomingSchedule {
   _id: string;
@@ -22,5 +23,5 @@ export interface DashboardStats {
 
 export const dashboardService = {
   getStats: (params?: { userId?: string; months?: number }) =>
-    api.get<DashboardStats>('/dashboard', { params }).then((r) => r.data),
+    api.get<ApiResponse<DashboardStats>>('/dashboard', { params }).then((r) => r.data.data),
 };

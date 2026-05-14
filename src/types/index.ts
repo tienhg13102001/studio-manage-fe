@@ -223,3 +223,30 @@ export interface PublicScheduleResponse {
     name: string;
   } | null;
 }
+
+// ---------------------------------------------------------------------------
+// Standard API response envelopes (matches backend sendResponse utility)
+// ---------------------------------------------------------------------------
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalMale?: number;
+  totalFemale?: number;
+  totalRead?: number;
+  totalUnread?: number;
+}
+
+export interface PaginatedApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  pagination: PaginationMeta;
+}
