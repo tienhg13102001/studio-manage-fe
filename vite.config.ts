@@ -23,10 +23,17 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // React core
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // React core - phải gồm react-is & scheduler để tránh lỗi
+          // "__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED"
+          'vendor-react': [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            'react-is',
+            'scheduler',
+          ],
           // Redux
-          'vendor-redux': ['@reduxjs/toolkit', 'react-redux', 'react-is'],
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
           // Chart - tách riêng dependencies nặng
           'vendor-charts': ['recharts'],
           // Excel export
