@@ -118,10 +118,14 @@ const FinancePage = () => {
   }, [dispatch, appliedFilter.dateFrom, appliedFilter.dateTo]);
 
   useEffect(() => {
-    dispatch(fetchCustomers({ limit: 200 }));
+    dispatch(
+      fetchCustomers(
+        selectedSeasonId ? { limit: 200, season: selectedSeasonId } : { limit: 200 },
+      ),
+    );
     dispatch(fetchCategories());
     if (canRefund) dispatch(fetchUsers());
-  }, [dispatch, canRefund]);
+  }, [dispatch, canRefund, selectedSeasonId]);
 
   const openCreate = () => {
     setEditing(null);

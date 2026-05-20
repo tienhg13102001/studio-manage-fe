@@ -17,6 +17,7 @@ import {
 import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
+import { useAppSelector } from '../store';
 import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import {
   Badge,
@@ -63,6 +64,7 @@ interface ImportRow {
 }
 
 const CustomerSizePage = () => {
+  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [students, setStudents] = useState<StudentResponse[]>([]);
@@ -121,8 +123,11 @@ const CustomerSizePage = () => {
   }, [formGender, modalOpen, scheduleCostumes, setValue]);
 
   useEffect(() => {
-    customerService.getAll({ limit: 200 }).then((r) => setCustomers(r.data));
-  }, []);
+    const params: Record<string, string | number> = { limit: 200 };
+    if (selectedSeasonId) params.season = selectedSeasonId;
+    customerService.getAll(params).then((r) => setCustomers(r.data));
+    setSelectedCustomer(null);
+  }, [selectedSeasonId]);
 
   useEffect(() => {
     setShowDupOnly(false);

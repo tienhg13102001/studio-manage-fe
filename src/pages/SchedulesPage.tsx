@@ -417,7 +417,11 @@ const SchedulesPage = () => {
 
   useEffect(() => {
     dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
-    dispatch(fetchCustomers({ limit: 200 }));
+    dispatch(
+      fetchCustomers(
+        selectedSeasonId ? { limit: 200, season: selectedSeasonId } : { limit: 200 },
+      ),
+    );
     dispatch(fetchPackages());
     dispatch(fetchPhotographers());
     dispatch(fetchSales());
