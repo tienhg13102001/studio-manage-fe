@@ -367,6 +367,7 @@ const SchedulesPage = () => {
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: packages } = useAppSelector((s) => s.packages);
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
+  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
   const [page, setPage] = useState(1);
@@ -399,6 +400,7 @@ const SchedulesPage = () => {
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
     if (f.customer) params.customer = f.customer;
+    if (selectedSeasonId) params.season = selectedSeasonId;
     return params;
   };
 
@@ -420,7 +422,7 @@ const SchedulesPage = () => {
     dispatch(fetchPhotographers());
     dispatch(fetchSales());
     costumeService.getAll().then(setAllCostumes);
-  }, [dispatch, appliedFilter, page, pageSize]);
+  }, [dispatch, appliedFilter, page, pageSize, selectedSeasonId]);
 
   const openCreate = () => {
     setEditing(null);

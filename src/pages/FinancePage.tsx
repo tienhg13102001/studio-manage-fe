@@ -68,6 +68,7 @@ const FinancePage = () => {
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: categories } = useAppSelector((s) => s.categories);
   const { list: users } = useAppSelector((s) => s.users);
+  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
   const [page, setPage] = useState(1);
@@ -99,12 +100,13 @@ const FinancePage = () => {
     if (f.createdBy) params.createdBy = f.createdBy;
     if (f.dateFrom) params.dateFrom = f.dateFrom;
     if (f.dateTo) params.dateTo = f.dateTo;
+    if (selectedSeasonId) params.season = selectedSeasonId;
     return params;
   };
 
   useEffect(() => {
     dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
-  }, [dispatch, appliedFilter, page, pageSize]);
+  }, [dispatch, appliedFilter, page, pageSize, selectedSeasonId]);
 
   useEffect(() => {
     dispatch(

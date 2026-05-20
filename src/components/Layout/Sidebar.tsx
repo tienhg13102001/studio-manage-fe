@@ -6,6 +6,8 @@ import { useTheme, type ThemeMode } from '../../context/ThemeContext';
 import { ROLE_LABELS } from '../../types';
 import { navItems, adminItems, type NavItem } from '../../config/navItems';
 import { Logo } from '../atoms';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { fetchSeasons, setSelectedSeason } from '../../store/slices/seasonsSlice';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,8 +19,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { themeMode, resolvedTheme, setThemeMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchSeasons());
+  }, [dispatch]);
 
   const getInitialOpen = () => {
     const open: Record<string, boolean> = {};
@@ -269,6 +277,30 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {/* Season selector */}
+          <div className="mb-3 pb-3" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+            <p className="px-1 mb-1.5 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--nav-section-label)' }}>
+              Mùa chụp
+            </p>
+            <select
+              value={selectedSeasonId}
+              onChange={(e) => dispatch(setSelectedSeason(e.target.value))}
+              className="w-full text-sm px-2.5 py-1.5 rounded-lg outline-none cursor-pointer"
+              style={{
+                background: 'var(--input-bg, var(--card-bg))',
+                border: '1px solid var(--input-border, var(--card-border))',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <option value="">Tất cả mùa</option>
+              {seasons.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {navItems.map(renderNavItem)}
 
           {user?.roles?.some((r) => adminItems.some((item) => item.allowedRoles?.includes(r))) && (

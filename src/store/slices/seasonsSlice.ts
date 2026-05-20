@@ -1,21 +1,31 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { seasonService } from '../../services/seasonService';
 import type { Season } from '../../types';
 
 interface SeasonsState {
   list: Season[];
+  selectedSeasonId: string;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: SeasonsState = { list: [], loading: false, error: null };
+const initialState: SeasonsState = {
+  list: [],
+  selectedSeasonId: '',
+  loading: false,
+  error: null,
+};
 
 export const fetchSeasons = createAsyncThunk('seasons/fetchAll', () => seasonService.getAll());
 
 const seasonsSlice = createSlice({
   name: 'seasons',
   initialState,
-  reducers: {},
+  reducers: {
+    setSelectedSeason: (state, action: PayloadAction<string>) => {
+      state.selectedSeasonId = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchSeasons.pending, (state) => {
@@ -33,4 +43,5 @@ const seasonsSlice = createSlice({
   },
 });
 
+export const { setSelectedSeason } = seasonsSlice.actions;
 export default seasonsSlice.reducer;

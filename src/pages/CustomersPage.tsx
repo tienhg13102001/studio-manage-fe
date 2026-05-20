@@ -28,6 +28,7 @@ const CustomersPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { list: customers, total, loading } = useAppSelector((s) => s.customers);
+  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -45,12 +46,13 @@ const CustomersPage = () => {
   const buildParams = (s: string, p: number, l: number): Record<string, string | number> => {
     const params: Record<string, string | number> = { page: p, limit: l };
     if (s) params.search = s;
+    if (selectedSeasonId) params.season = selectedSeasonId;
     return params;
   };
 
   useEffect(() => {
     dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
-  }, [dispatch, appliedSearch, page, pageSize]);
+  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId]);
 
   const openCreate = () => {
     setEditing(null);
