@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Phone, School } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { customerService } from '../services/customerService';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -17,6 +17,11 @@ import {
   Modal,
   PageHeader,
   SearchInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   TableSkeleton,
   Textarea,
 } from '@/components/ui';
@@ -28,7 +33,7 @@ const CustomersPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { list: customers, total, loading } = useAppSelector((s) => s.customers);
-  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
+  const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -40,6 +45,7 @@ const CustomersPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting, errors },
   } = useForm<FormValues>();
 
@@ -66,6 +72,7 @@ const CustomersPage = () => {
       totalMale: 0,
       totalFemale: 0,
       notes: '',
+      season: selectedSeasonId || undefined,
     });
     setModalOpen(true);
   };
@@ -442,6 +449,26 @@ const CustomersPage = () => {
               <Input
                 id="contactAddress"
                 {...register('contactAddress', { required: 'Vui lòng nhập địa chỉ' })}
+              />
+            </FormField>
+            <FormField label="Mùa chụp" htmlFor="season" className="col-span-2 sm:col-span-1">
+              <Controller
+                name="season"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || null)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn mùa --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             </FormField>
             <FormField label="Ghi chú" htmlFor="notes" className="col-span-2 sm:col-span-3">

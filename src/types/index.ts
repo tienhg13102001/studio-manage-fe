@@ -31,6 +31,7 @@ export interface Customer {
   totalMale?: number;
   totalFemale?: number;
   notes?: string;
+  season?: string | null;
   createdAt?: string;
 }
 
@@ -129,6 +130,7 @@ export interface Transaction {
   date: string;
   createdBy: string | null;
   accountantRefunded?: boolean;
+  season?: string | null;
   createdAt?: string;
 }
 

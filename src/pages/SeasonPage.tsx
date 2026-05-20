@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarRange, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { seasonService } from '../services/seasonService';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -10,6 +10,7 @@ import {
   Button,
   ConfirmDialog,
   DataTable,
+  DatePicker,
   FormField,
   Input,
   Modal,
@@ -227,15 +228,31 @@ const SeasonPage = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Ngày bắt đầu" error={errors.startDate?.message}>
-              <Input
-                type="date"
-                {...register('startDate', { required: 'Vui lòng chọn ngày bắt đầu' })}
+              <Controller
+                name="startDate"
+                control={control}
+                rules={{ required: 'Vui lòng chọn ngày bắt đầu' }}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn ngày bắt đầu"
+                  />
+                )}
               />
             </FormField>
             <FormField label="Ngày kết thúc" error={errors.endDate?.message}>
-              <Input
-                type="date"
-                {...register('endDate', { required: 'Vui lòng chọn ngày kết thúc' })}
+              <Controller
+                name="endDate"
+                control={control}
+                rules={{ required: 'Vui lòng chọn ngày kết thúc' }}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn ngày kết thúc"
+                  />
+                )}
               />
             </FormField>
           </div>

@@ -22,6 +22,7 @@ import {
   Combobox,
   ConfirmDialog,
   DataTable,
+  DatePicker,
   FormField,
   Input,
   Label,
@@ -68,7 +69,7 @@ const FinancePage = () => {
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: categories } = useAppSelector((s) => s.categories);
   const { list: users } = useAppSelector((s) => s.users);
-  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
+  const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
   const [page, setPage] = useState(1);
@@ -129,7 +130,11 @@ const FinancePage = () => {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ type: 'income', date: new Date().toISOString().slice(0, 10) });
+    reset({
+      type: 'income',
+      date: new Date().toISOString().slice(0, 10),
+      season: selectedSeasonId || undefined,
+    });
     setModalOpen(true);
   };
 
@@ -434,17 +439,17 @@ const FinancePage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-end">
           <FormField label="Từ ngày">
-            <Input
-              type="date"
+            <DatePicker
               value={filter.dateFrom}
-              onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
+              onChange={(v) => setFilter((f) => ({ ...f, dateFrom: v ?? '' }))}
+              placeholder="Từ ngày"
             />
           </FormField>
           <FormField label="Đến ngày">
-            <Input
-              type="date"
+            <DatePicker
               value={filter.dateTo}
-              onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
+              onChange={(v) => setFilter((f) => ({ ...f, dateTo: v ?? '' }))}
+              placeholder="Đến ngày"
             />
           </FormField>
           <div className="flex gap-2 md:justify-end">
@@ -747,7 +752,18 @@ const FinancePage = () => {
               />
             </FormField>
             <FormField label="Ngày" required htmlFor="date">
-              <Input id="date" type="date" {...register('date', { required: true })} />
+              <Controller
+                name="date"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn ngày"
+                  />
+                )}
+              />
             </FormField>
             <FormField label="Lớp (tuỳ chọn)" className="sm:col-span-2">
               <Controller
@@ -797,6 +813,26 @@ const FinancePage = () => {
                 />
               </FormField>
             )}
+            <FormField label="Mùa chụp">
+              <Controller
+                name="season"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || null)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn mùa --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
             <FormField label="Mô tả" htmlFor="description" className="sm:col-span-2">
               <Textarea id="description" rows={2} {...register('description')} />
             </FormField>

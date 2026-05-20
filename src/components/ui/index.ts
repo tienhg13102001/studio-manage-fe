@@ -1,5 +1,7 @@
 // Barrel export for shadcn/ui components used across the app.
 export * from './badge';
+export * from './calendar';
+export * from './date-picker';
 export * from './button';
 export * from './card';
 export * from './checkbox';

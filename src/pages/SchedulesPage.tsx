@@ -6,6 +6,7 @@ import {
   Combobox,
   ConfirmDialog,
   DataTable,
+  DatePicker,
   FormField,
   Input,
   Modal,
@@ -359,6 +360,7 @@ interface ScheduleFormValues {
   leadPhotographer?: string;
   bookedBy?: string;
   notes?: string;
+  season?: string | null;
 }
 
 const SchedulesPage = () => {
@@ -367,7 +369,7 @@ const SchedulesPage = () => {
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: packages } = useAppSelector((s) => s.packages);
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
-  const { selectedSeasonId } = useAppSelector((s) => s.seasons);
+  const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
   const [page, setPage] = useState(1);
@@ -431,7 +433,7 @@ const SchedulesPage = () => {
     setSupportIds([]);
     setSelectedCostumes([]);
     setCostumeTouched(false);
-    reset({ status: 'pending' });
+    reset({ status: 'pending', season: selectedSeasonId || null });
     setModalOpen(true);
   };
 
@@ -717,17 +719,17 @@ const SchedulesPage = () => {
               placeholder="Tất cả lớp"
             />
           </div>
-          <Input
-            type="date"
-            className="flex-1 min-w-[8rem]"
+          <DatePicker
             value={filter.dateFrom}
-            onChange={(e) => setFilter((f) => ({ ...f, dateFrom: e.target.value }))}
-          />
-          <Input
-            type="date"
+            onChange={(v) => setFilter((f) => ({ ...f, dateFrom: v ?? '' }))}
+            placeholder="Từ ngày"
             className="flex-1 min-w-[8rem]"
+          />
+          <DatePicker
             value={filter.dateTo}
-            onChange={(e) => setFilter((f) => ({ ...f, dateTo: e.target.value }))}
+            onChange={(v) => setFilter((f) => ({ ...f, dateTo: v ?? '' }))}
+            placeholder="Đến ngày"
+            className="flex-1 min-w-[8rem]"
           />
           <Button variant="gradient" onClick={applyFilter}>
             Lọc
@@ -962,7 +964,18 @@ const SchedulesPage = () => {
               </div>
             )}
             <FormField label="Ngày chụp" required htmlFor="shootDate">
-              <Input id="shootDate" type="date" {...register('shootDate', { required: true })} />
+              <Controller
+                name="shootDate"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn ngày chụp"
+                  />
+                )}
+              />
               {errors.shootDate && (
                 <p className="text-xs text-destructive mt-1">Vui lòng chọn ngày chụp.</p>
               )}
@@ -1043,6 +1056,26 @@ const SchedulesPage = () => {
                 </div>
               </FormField>
             )}
+            <FormField label="Mùa chụp">
+              <Controller
+                name="season"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || null)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn mùa --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
             <FormField label="Ghi chú" htmlFor="notes" className="lg:col-span-3">
               <Textarea id="notes" rows={2} {...register('notes')} />
             </FormField>
