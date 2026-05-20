@@ -1,37 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Calendar,
-  Table as TableIcon,
-  Clock,
-  MapPin,
-  StickyNote,
-  Briefcase,
-  Users as UsersIcon,
-  Search,
-  Shirt,
-  Mars,
-  Venus,
-  VenusAndMars,
-  Check,
-  X,
-} from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'react-toastify';
-import { costumeService } from '../services/costumeService';
-import { scheduleService } from '../services/scheduleService';
-import type { ScheduleResponse, CostumeResponse } from '../types';
-import { ROLE_LABELS } from '../types';
-import { formatDate } from '../utils/format';
-import {
-  SCHEDULE_STATUS_COLOR as statusColor,
-  SCHEDULE_STATUS_LABEL as statusLabel,
-} from '../utils/scheduleConstants';
-import { useAppDispatch, useAppSelector } from '../store';
-import { fetchSchedules } from '../store/slices/schedulesSlice';
-import { fetchCustomers } from '../store/slices/customersSlice';
-import { fetchPackages } from '../store/slices/packagesSlice';
-import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
-import { ScheduleCalendar } from '../components/organisms';
+import type { Column } from '@/components/ui';
 import {
   Badge,
   Button,
@@ -55,8 +22,44 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui';
-import type { Column } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import {
+  Briefcase,
+  Calendar,
+  Check,
+  Clock,
+  Delete,
+  Edit,
+  MapPin,
+  Mars,
+  Paperclip,
+  Search,
+  Shirt,
+  StickyNote,
+  Table as TableIcon,
+  Users as UsersIcon,
+  Venus,
+  VenusAndMars,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import { ScheduleCalendar } from '../components/organisms';
+import { costumeService } from '../services/costumeService';
+import { scheduleService } from '../services/scheduleService';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchCustomers } from '../store/slices/customersSlice';
+import { fetchPackages } from '../store/slices/packagesSlice';
+import { fetchSchedules } from '../store/slices/schedulesSlice';
+import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
+import type { CostumeResponse, ScheduleResponse } from '../types';
+import { ROLE_LABELS } from '../types';
+import { formatDate } from '../utils/format';
+import {
+  SCHEDULE_STATUS_COLOR as statusColor,
+  SCHEDULE_STATUS_LABEL as statusLabel,
+} from '../utils/scheduleConstants';
 
 interface FilterState {
   status: string;
@@ -142,10 +145,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
     return costumes.filter((c) => {
       if (genderFilter !== 'all' && c.gender !== genderFilter) return false;
       if (!q) return true;
-      return (
-        c.name.toLowerCase().includes(q) ||
-        (c.type?.name?.toLowerCase().includes(q) ?? false)
-      );
+      return c.name.toLowerCase().includes(q) || (c.type?.name?.toLowerCase().includes(q) ?? false);
     });
   }, [costumes, search, genderFilter]);
 
@@ -418,9 +418,7 @@ const SchedulesPage = () => {
   useEffect(() => {
     dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
     dispatch(
-      fetchCustomers(
-        selectedSeasonId ? { limit: 200, season: selectedSeasonId } : { limit: 200 },
-      ),
+      fetchCustomers(selectedSeasonId ? { limit: 200, season: selectedSeasonId } : { limit: 200 }),
     );
     dispatch(fetchPackages());
     dispatch(fetchPhotographers());
@@ -537,11 +535,11 @@ const SchedulesPage = () => {
     {
       key: 'date',
       header: 'Ngày chụp',
-      className: 'font-medium max-w-14',
+      className: 'font-medium',
       render: (s) => (
         <div className="flex flex-col">
           <span>{formatDate(s.shootDate)} </span>
-          <span className="text-muted-foreground text-xs whitespace-nowrap">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap break-keep">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
         </div>
       ),
     },
@@ -550,8 +548,12 @@ const SchedulesPage = () => {
       header: 'Lớp',
       render: (s) => (
         <div className="flex flex-col">
-          <span className="font-medium text-primary">{s.customer?.className ?? '—'}</span>
-          <span className="text-muted-foreground text-xs">{s.customer?.school ?? ''}</span>
+          <span className="font-medium text-primary whitespace-nowrap break-keep">
+            {s.customer?.className ?? '—'}
+          </span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap break-keep">
+            {s.customer?.school ?? ''}
+          </span>
         </div>
       ),
     },
@@ -610,7 +612,7 @@ const SchedulesPage = () => {
       header: 'Ghi chú',
       render: (s) => (
         <span
-          className="block max-w-96 truncate text-muted-foreground whitespace-pre-line"
+          className="block truncate text-muted-foreground whitespace-pre-line"
           title={s.notes || ''}
         >
           {s.notes || '—'}
@@ -622,7 +624,7 @@ const SchedulesPage = () => {
       header: '',
       align: 'right',
       render: (s) => (
-        <span className="space-x-2">
+        <span className="space-x-2 flex">
           <Button
             variant="link"
             size="sm"
@@ -632,7 +634,7 @@ const SchedulesPage = () => {
               handleDownloadContract(s);
             }}
           >
-            Hợp đồng
+            <Paperclip className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="link"
@@ -643,7 +645,7 @@ const SchedulesPage = () => {
               openEdit(s);
             }}
           >
-            Sửa
+            <Edit className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="link"
@@ -654,7 +656,7 @@ const SchedulesPage = () => {
               handleDelete(s._id);
             }}
           >
-            Xoá
+            <Delete className="h-3.5 w-3.5" />
           </Button>
         </span>
       ),
@@ -777,9 +779,7 @@ const SchedulesPage = () => {
               const customer = s.customer;
               const leadName = s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? null;
               const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
-              const supports = s.supportPhotographers
-                .map((u) => u.name ?? u.username)
-                .join(', ');
+              const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
               return (
                 <div key={s._id} className="rounded-xl border bg-card p-4">
                   <div className="flex items-start justify-between mb-2 gap-2">
@@ -818,15 +818,13 @@ const SchedulesPage = () => {
                     {leadName && (
                       <div className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 shrink-0 text-blue-500" />
-                        <span>Leader:</span>{' '}
-                        <span className="text-foreground">{leadName}</span>
+                        <span>Leader:</span> <span className="text-foreground">{leadName}</span>
                       </div>
                     )}
                     {supports && (
                       <div className="flex items-center gap-2">
                         <UsersIcon className="h-4 w-4 shrink-0 text-violet-500" />
-                        <span>Support:</span>{' '}
-                        <span className="text-foreground">{supports}</span>
+                        <span>Support:</span> <span className="text-foreground">{supports}</span>
                       </div>
                     )}
                     {s.notes && (
@@ -964,11 +962,7 @@ const SchedulesPage = () => {
               </div>
             )}
             <FormField label="Ngày chụp" required htmlFor="shootDate">
-              <Input
-                id="shootDate"
-                type="date"
-                {...register('shootDate', { required: true })}
-              />
+              <Input id="shootDate" type="date" {...register('shootDate', { required: true })} />
               {errors.shootDate && (
                 <p className="text-xs text-destructive mt-1">Vui lòng chọn ngày chụp.</p>
               )}

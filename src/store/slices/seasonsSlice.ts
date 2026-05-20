@@ -35,6 +35,16 @@ const seasonsSlice = createSlice({
       .addCase(fetchSeasons.fulfilled, (state, action) => {
         state.loading = false;
         state.list = action.payload;
+        // Tự động chọn mùa chứa ngày hôm nay nếu chưa chọn gì
+        if (!state.selectedSeasonId) {
+          const today = new Date();
+          const current = action.payload.find(
+            (s) => new Date(s.startDate) <= today && today <= new Date(s.endDate),
+          );
+          if (current) {
+            state.selectedSeasonId = current._id;
+          }
+        }
       })
       .addCase(fetchSeasons.rejected, (state, action) => {
         state.loading = false;
