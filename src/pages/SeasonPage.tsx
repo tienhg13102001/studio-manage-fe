@@ -41,6 +41,7 @@ const SeasonPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting, errors },
   } = useForm<SeasonFormValues>();
 
