@@ -85,14 +85,16 @@ const FeedbackFormPage = () => {
     const load = async () => {
       try {
         if (paramCustomerId) {
-          const { data } = await api.get<ClassInfo>(`/public/customers/${paramCustomerId}`);
+          const { data } = await api.get<{ data: ClassInfo }>(
+            `/public/customers/${paramCustomerId}`,
+          );
           if (!cancelled) {
-            setFixedClass(data);
-            setValue('customer', data._id);
+            setFixedClass(data.data);
+            setValue('customer', data.data._id);
           }
         } else {
-          const { data } = await api.get<ClassInfo[]>('/public/customers');
-          if (!cancelled) setClasses(data);
+          const { data } = await api.get<{ data: ClassInfo[] }>('/public/customers');
+          if (!cancelled) setClasses(data.data);
         }
       } catch {
         if (!cancelled) setLoadError(true);
