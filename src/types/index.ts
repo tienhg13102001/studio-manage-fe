@@ -91,6 +91,7 @@ export interface Schedule {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
   season?: string | null;
+  contractUrl?: string;
   createdAt?: string;
 }
 

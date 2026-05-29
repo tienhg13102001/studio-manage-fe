@@ -69,6 +69,20 @@ interface FilterState {
   customer: string;
 }
 
+interface ContractFormValues {
+  shootDate: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  contactName: string;
+  contactPhone: string;
+  contactAddress: string;
+  total: number;
+  totalMale: number;
+  totalFemale: number;
+  notes: string;
+}
+
 const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
 const ALL = '__all__';
 
@@ -383,6 +397,9 @@ const SchedulesPage = () => {
   const [detail, setDetail] = useState<ScheduleResponse | null>(null);
   const [costumeTouched, setCostumeTouched] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [contractSchedule, setContractSchedule] = useState<ScheduleResponse | null>(null);
+  const [contractDocUrl, setContractDocUrl] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -391,6 +408,14 @@ const SchedulesPage = () => {
     formState: { isSubmitting, errors },
     watch,
   } = useForm<ScheduleFormValues>();
+
+  const {
+    register: registerContract,
+    handleSubmit: handleContractSubmitForm,
+    reset: resetContract,
+    control: contractControl,
+    formState: { isSubmitting: isContractSubmitting },
+  } = useForm<ContractFormValues>();
 
   const buildFilterParams = (
     f: FilterState,
@@ -501,10 +526,56 @@ const SchedulesPage = () => {
     setConfirmId(null);
   };
 
-  const handleDownloadContract = async (s: ScheduleResponse) => {
-    const customer = s.customer;
-    const filename = `${customer?.className?.replace(/\s+/g, '-') ?? s._id}-${customer?.school?.replace(/\s+/g, '-') ?? ''}`;
-    await scheduleService.downloadContract(s._id, filename);
+  const handleDownloadContract = (s: ScheduleResponse) => {
+    setContractSchedule(s);
+    setContractDocUrl(s.contractUrl ?? null);
+    resetContract({
+      shootDate: s.shootDate ? s.shootDate.slice(0, 10) : '',
+      startTime: s.startTime ?? '',
+      endTime: s.endTime ?? '',
+      location: s.location ?? '',
+      contactName: s.customer?.contactName ?? '',
+      contactPhone: s.customer?.contactPhone ?? '',
+      contactAddress: s.customer?.contactAddress ?? '',
+      total: s.customer?.total ?? 0,
+      totalMale: s.customer?.totalMale ?? 0,
+      totalFemale: s.customer?.totalFemale ?? 0,
+      notes: s.notes ?? '',
+    });
+  };
+
+  const handleContractSubmit = async (formData: ContractFormValues) => {
+    if (!contractSchedule) return;
+    const payload = { ...contractSchedule, ...formData };
+    try {
+      const res = await fetch(
+        'https://script.google.com/macros/s/AKfycbwJjvZBvPq1c006B-6i5_gXJ8Ar0RqM3F3qtelnJT61MX9B7nKKqIh12XJvp14rUoo/exec',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        },
+      );
+      const json = await res.json();
+      if (json.document_url) {
+        setContractDocUrl(json.document_url);
+        await scheduleService.update(contractSchedule._id, { contractUrl: json.document_url });
+        dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
+        toast.success(json.message ?? 'Tạo hợp đồng thành công!');
+      } else {
+        toast.error('Không nhận được link hợp đồng.');
+      }
+    } catch {
+      toast.error('Tạo hợp đồng thất bại, vui lòng thử lại.');
+    }
+  };
+
+  const handleSendContract = async () => {
+    if (!contractDocUrl) return;
+    await navigator.clipboard.writeText(contractDocUrl);
+    toast.success('Đã copy link hợp đồng!');
+    setContractSchedule(null);
+    setContractDocUrl(null);
   };
 
   const applyFilter = () => {
@@ -1061,7 +1132,10 @@ const SchedulesPage = () => {
                 name="season"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || null)}>
+                  <Select
+                    value={field.value ?? ''}
+                    onValueChange={(v) => field.onChange(v || null)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="-- Chọn mùa --" />
                     </SelectTrigger>
@@ -1363,6 +1437,142 @@ const SchedulesPage = () => {
               </div>
             );
           })()}
+      </Modal>
+
+      <Modal
+        open={!!contractSchedule}
+        onOpenChange={(o) => !o && setContractSchedule(null)}
+        title="Xác nhận thông tin hợp đồng"
+        size="lg"
+      >
+        {contractSchedule && (
+          <form onSubmit={handleContractSubmitForm(handleContractSubmit)} className="space-y-5">
+            <div className="text-sm font-medium text-muted-foreground mb-1">
+              {contractSchedule.customer?.className}
+              {contractSchedule.customer?.school ? ` — ${contractSchedule.customer.school}` : ''}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Ngày chụp" required>
+                <Controller
+                  name="shootDate"
+                  control={contractControl}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Chọn ngày chụp"
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField label="Địa điểm">
+                <Input placeholder="Địa điểm chụp" {...registerContract('location')} />
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Giờ bắt đầu">
+                <Input type="time" {...registerContract('startTime')} />
+              </FormField>
+              <FormField label="Giờ kết thúc">
+                <Input type="time" {...registerContract('endTime')} />
+              </FormField>
+            </div>
+
+            <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Người liên hệ" required>
+                <Input placeholder="Họ tên" {...registerContract('contactName')} />
+              </FormField>
+              <FormField label="Số điện thoại">
+                <Input placeholder="SĐT" {...registerContract('contactPhone')} />
+              </FormField>
+            </div>
+
+            <FormField label="Địa chỉ">
+              <Input placeholder="Địa chỉ liên hệ" {...registerContract('contactAddress')} />
+            </FormField>
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Tổng học sinh">
+                <Input
+                  type="number"
+                  min={0}
+                  {...registerContract('total', { valueAsNumber: true })}
+                />
+              </FormField>
+              <FormField label="Nam">
+                <Input
+                  type="number"
+                  min={0}
+                  {...registerContract('totalMale', { valueAsNumber: true })}
+                />
+              </FormField>
+              <FormField label="Nữ">
+                <Input
+                  type="number"
+                  min={0}
+                  {...registerContract('totalFemale', { valueAsNumber: true })}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Ghi chú">
+              <Textarea rows={3} placeholder="Ghi chú hợp đồng..." {...registerContract('notes')} />
+            </FormField>
+
+            {contractDocUrl && (
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">Hợp đồng</p>
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm overflow-hidden">
+                  <a
+                    href={contractDocUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={contractDocUrl}
+                    className="flex-1 min-w-0 truncate text-primary underline underline-offset-2"
+                  >
+                    {(() => {
+                      const idx = contractDocUrl.indexOf('/open');
+                      return idx !== -1 ? contractDocUrl.slice(0, idx + 5) + '...' : contractDocUrl;
+                    })()}
+                  </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(contractDocUrl);
+                      toast.success('Đã copy link hợp đồng!');
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setContractSchedule(null);
+                  setContractDocUrl(null);
+                }}
+              >
+                Đóng
+              </Button>
+              {!contractDocUrl && (
+                <Button type="submit" disabled={isContractSubmitting}>
+                  {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
+                </Button>
+              )}
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
