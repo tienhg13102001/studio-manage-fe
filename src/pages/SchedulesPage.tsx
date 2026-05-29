@@ -570,13 +570,13 @@ const SchedulesPage = () => {
     }
   };
 
-  const handleSendContract = async () => {
-    if (!contractDocUrl) return;
-    await navigator.clipboard.writeText(contractDocUrl);
-    toast.success('Đã copy link hợp đồng!');
-    setContractSchedule(null);
-    setContractDocUrl(null);
-  };
+  // const handleSendContract = async () => {
+  //   if (!contractDocUrl) return;
+  //   await navigator.clipboard.writeText(contractDocUrl);
+  //   toast.success('Đã copy link hợp đồng!');
+  //   setContractSchedule(null);
+  //   setContractDocUrl(null);
+  // };
 
   const applyFilter = () => {
     setPage(1);
