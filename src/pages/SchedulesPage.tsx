@@ -549,7 +549,7 @@ const SchedulesPage = () => {
     const payload = { ...contractSchedule, ...formData };
     try {
       const res = await fetch(
-        'https://script.google.com/macros/s/AKfycbxIECT18NsBkfTWx15cBnKphthRtH2kvS9Dl4z_H65ygfuQB7LGaBrJXqM2rooGAzs/exec',
+        'https://script.google.com/macros/s/AKfycbzgl6HRhrlbo_nf_ZgmIXxeWRGgd7OlGMdMm2JQ0QISTQ0Z_ZHTb0E6W-DS1LRFSmw/exec',
         {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
