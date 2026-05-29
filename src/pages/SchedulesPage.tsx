@@ -1565,11 +1565,11 @@ const SchedulesPage = () => {
               >
                 Đóng
               </Button>
-              {!contractDocUrl && (
+              {/* {!contractDocUrl && ( */}
                 <Button type="submit" disabled={isContractSubmitting}>
                   {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
                 </Button>
-              )}
+              {/* )} */}
             </div>
           </form>
         )}
