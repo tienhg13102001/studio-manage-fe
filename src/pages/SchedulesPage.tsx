@@ -1172,7 +1172,7 @@ const SchedulesPage = () => {
         open={!!confirmId}
         onOpenChange={(o) => !o && setConfirmId(null)}
         title="Xác nhận xoá"
-        message="Bạn có chắc muốn xoá lịch chụp này?"
+        message="Bạn có chắc muốn xoá lịch chụp này? Thao tác sẽ xoá luôn folder ảnh trên Google Drive và dòng tương ứng trong Google Sheet quản lý."
         onConfirm={doDelete}
       />
 
