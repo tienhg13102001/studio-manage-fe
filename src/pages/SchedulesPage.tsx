@@ -31,6 +31,7 @@ import {
   Clock,
   Delete,
   Edit,
+  FolderOpen,
   MapPin,
   Mars,
   Paperclip,
@@ -498,15 +499,17 @@ const SchedulesPage = () => {
       supportPhotographers: supportIds,
     };
     try {
-      if (editing) {
-        await scheduleService.update(editing._id, payload);
-        toast.success('Cập nhật lịch chụp thành công!');
-      } else {
-        await scheduleService.create(payload);
-        toast.success('Thêm lịch chụp thành công!');
-      }
+      const isEditing = !!editing;
+      // create đợi backend tạo folder Drive xong mới trả về, nên getOne đã có
+      // driveFolderUrl đầy đủ → mở thẳng modal chi tiết.
+      const saved = isEditing
+        ? await scheduleService.update(editing!._id, payload)
+        : await scheduleService.create(payload);
+      toast.success(isEditing ? 'Cập nhật lịch chụp thành công!' : 'Thêm lịch chụp thành công!');
       setModalOpen(false);
       dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
+
+      setDetail(await scheduleService.getOne(saved._id));
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -1338,6 +1341,26 @@ const SchedulesPage = () => {
                               )}
                             </div>
                           ) : null
+                        }
+                      />
+                      <InfoItem
+                        icon={<FolderOpen className="h-4 w-4" />}
+                        label="Folder ảnh"
+                        tone="amber"
+                        full
+                        value={
+                          detail.driveFolderUrl ? (
+                            <a
+                              href={detail.driveFolderUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-primary underline underline-offset-2 hover:opacity-80 break-all"
+                            >
+                              Mở folder trên Google Drive
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground italic">Đang tạo folder…</span>
+                          )
                         }
                       />
                     </div>

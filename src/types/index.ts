@@ -92,6 +92,8 @@ export interface Schedule {
   notes?: string;
   season?: string | null;
   contractUrl?: string;
+  driveFolderUrl?: string;
+  driveFolderId?: string;
   createdAt?: string;
 }
 
