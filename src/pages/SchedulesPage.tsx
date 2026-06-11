@@ -35,6 +35,7 @@ import {
   MapPin,
   Mars,
   Paperclip,
+  Plus,
   Search,
   Shirt,
   StickyNote,
@@ -45,7 +46,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { ScheduleCalendar } from '../components/organisms';
 import { costumeService } from '../services/costumeService';
@@ -55,7 +56,7 @@ import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchSchedules } from '../store/slices/schedulesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
-import type { CostumeResponse, ScheduleResponse } from '../types';
+import type { CostumeResponse, ExtraService, ScheduleResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
 import {
@@ -364,6 +365,19 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
   );
 };
 
+interface ExtraServiceFormRow {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  note?: string;
+}
+
+/** Ép về số hợp lệ; ô number bị xoá trắng cho NaN → quy về 0. */
+const toSafeNumber = (v: unknown): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
 interface ScheduleFormValues {
   customer: string;
   package?: string;
@@ -376,6 +390,7 @@ interface ScheduleFormValues {
   bookedBy?: string;
   notes?: string;
   season?: string | null;
+  extraServices: ExtraServiceFormRow[];
 }
 
 const SchedulesPage = () => {
@@ -408,7 +423,12 @@ const SchedulesPage = () => {
     control,
     formState: { isSubmitting, errors },
     watch,
-  } = useForm<ScheduleFormValues>();
+  } = useForm<ScheduleFormValues>({ defaultValues: { extraServices: [] } });
+
+  const { fields: extraServiceFields, append: appendExtraService, remove: removeExtraService } = useFieldArray({
+    control,
+    name: 'extraServices',
+  });
 
   const {
     register: registerContract,
@@ -459,7 +479,7 @@ const SchedulesPage = () => {
     setSupportIds([]);
     setSelectedCostumes([]);
     setCostumeTouched(false);
-    reset({ status: 'pending', season: selectedSeasonId || null });
+    reset({ status: 'pending', season: selectedSeasonId || null, extraServices: [] });
     setModalOpen(true);
   };
 
@@ -481,6 +501,12 @@ const SchedulesPage = () => {
       notes: s.notes,
       leadPhotographer: leadId,
       bookedBy: s.bookedBy?._id ?? '',
+      extraServices: (s.extraServices ?? []).map((es) => ({
+        name: es.name,
+        quantity: es.quantity,
+        unitPrice: es.unitPrice,
+        note: es.note,
+      })),
     });
     setModalOpen(true);
   };
@@ -497,6 +523,11 @@ const SchedulesPage = () => {
       leadPhotographer: data.leadPhotographer || undefined,
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
+      extraServices: (data.extraServices ?? []).map((es): ExtraService => {
+        const quantity = toSafeNumber(es.quantity);
+        const unitPrice = toSafeNumber(es.unitPrice);
+        return { name: es.name, quantity, unitPrice, amount: quantity * unitPrice, note: es.note };
+      }),
     };
     try {
       const isEditing = !!editing;
@@ -1156,6 +1187,108 @@ const SchedulesPage = () => {
             <FormField label="Ghi chú" htmlFor="notes" className="lg:col-span-3">
               <Textarea id="notes" rows={2} {...register('notes')} />
             </FormField>
+
+            {/* Dịch vụ sử dụng thêm */}
+            <div className="lg:col-span-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium">Dịch vụ sử dụng thêm</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => appendExtraService({ name: '', quantity: 1, unitPrice: 0, note: '' })}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Thêm dịch vụ
+                </Button>
+              </div>
+              {extraServiceFields.length > 0 && (
+                <div className="rounded-xl border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50 border-b text-xs text-muted-foreground">
+                        <th className="px-3 py-2 text-left font-medium">Tên</th>
+                        <th className="px-3 py-2 text-left font-medium w-24">Số lượng</th>
+                        <th className="px-3 py-2 text-left font-medium w-32">Đơn giá (₫)</th>
+                        <th className="px-3 py-2 text-left font-medium w-32">Thành tiền</th>
+                        <th className="px-3 py-2 text-left font-medium">Ghi chú</th>
+                        <th className="px-2 py-2 w-8" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {extraServiceFields.map((field, idx) => {
+                        const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
+                        const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
+                        const amount = qty * price;
+                        return (
+                          <tr key={field.id}>
+                            <td className="px-3 py-1.5">
+                              <Input
+                                {...register(`extraServices.${idx}.name`)}
+                                placeholder="Tên dịch vụ"
+                                className="h-8 text-sm"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <Input
+                                {...register(`extraServices.${idx}.quantity`, { valueAsNumber: true })}
+                                type="number"
+                                min={1}
+                                className="h-8 text-sm"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <Input
+                                {...register(`extraServices.${idx}.unitPrice`, { valueAsNumber: true })}
+                                type="number"
+                                min={0}
+                                className="h-8 text-sm"
+                              />
+                            </td>
+                            <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
+                              {amount.toLocaleString('vi-VN')}₫
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <Input
+                                {...register(`extraServices.${idx}.note`)}
+                                placeholder="Ghi chú"
+                                className="h-8 text-sm"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <button
+                                type="button"
+                                onClick={() => removeExtraService(idx)}
+                                className="text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/30 border-t">
+                        <td colSpan={3} className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right">
+                          Tổng cộng:
+                        </td>
+                        <td className="px-3 py-2 text-sm font-semibold whitespace-nowrap">
+                          {extraServiceFields
+                            .reduce((sum, _, idx) => {
+                              const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
+                              const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
+                              return sum + qty * price;
+                            }, 0)
+                            .toLocaleString('vi-VN')}₫
+                        </td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
@@ -1439,6 +1572,59 @@ const SchedulesPage = () => {
                             {detail.notes}
                           </div>
                         </div>
+                      </div>
+                    </section>
+                  )}
+
+                  {detail.extraServices && detail.extraServices.length > 0 && (
+                    <section>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <span className="h-px flex-1 bg-border" />
+                        <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+                          Dịch vụ sử dụng thêm
+                        </span>
+                        <span className="h-px flex-1 bg-border" />
+                      </div>
+                      <div className="rounded-xl border overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-muted/50 border-b text-xs text-muted-foreground">
+                              <th className="px-3 py-2 text-left font-medium">Tên</th>
+                              <th className="px-3 py-2 text-right font-medium">Số lượng</th>
+                              <th className="px-3 py-2 text-right font-medium">Đơn giá</th>
+                              <th className="px-3 py-2 text-right font-medium">Thành tiền</th>
+                              <th className="px-3 py-2 text-left font-medium">Ghi chú</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {detail.extraServices.map((es, idx) => (
+                              <tr key={idx}>
+                                <td className="px-3 py-2 font-medium">{es.name}</td>
+                                <td className="px-3 py-2 text-right text-muted-foreground">{es.quantity}</td>
+                                <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">
+                                  {es.unitPrice.toLocaleString('vi-VN')}₫
+                                </td>
+                                <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
+                                  {es.amount.toLocaleString('vi-VN')}₫
+                                </td>
+                                <td className="px-3 py-2 text-muted-foreground">{es.note ?? '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="bg-muted/30 border-t">
+                              <td colSpan={3} className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right">
+                                Tổng cộng:
+                              </td>
+                              <td className="px-3 py-2 text-sm font-semibold text-right whitespace-nowrap">
+                                {detail.extraServices
+                                  .reduce((sum, es) => sum + es.amount, 0)
+                                  .toLocaleString('vi-VN')}₫
+                              </td>
+                              <td />
+                            </tr>
+                          </tfoot>
+                        </table>
                       </div>
                     </section>
                   )}

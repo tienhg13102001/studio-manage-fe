@@ -71,6 +71,14 @@ export interface Package {
   createdAt?: string;
 }
 
+export interface ExtraService {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  note?: string;
+}
+
 /**
  * Schedule model — relations are stored as ObjectId strings.
  * Use this type for create/update payloads.
@@ -94,6 +102,7 @@ export interface Schedule {
   contractUrl?: string;
   driveFolderUrl?: string;
   driveFolderId?: string;
+  extraServices?: ExtraService[];
   createdAt?: string;
 }
 
