@@ -4,7 +4,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile
+# NAS mạng chậm → tăng network-timeout để tránh ESOCKETTIMEDOUT khi tải package
+RUN yarn install --frozen-lockfile --network-timeout 600000
 
 COPY . .
 
