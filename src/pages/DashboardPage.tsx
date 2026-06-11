@@ -223,7 +223,7 @@ const DashboardPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">Xin chào, {displayName}! Sản phẩm được Deploy trên nas</h2>
+        <h2 className="text-2xl font-bold">Xin chào, {displayName}!</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Chúc bạn một ngày làm việc tốt lành!</p>
         <p className="text-sm text-muted-foreground mt-0.5">
           {new Date().toLocaleDateString('vi-VN', {
