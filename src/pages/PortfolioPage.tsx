@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-
-// Ảnh phục vụ tĩnh từ public/images (Vite copy nguyên trạng, không qua bước transform/hash)
+import Logo from '../components/atoms/Logo';
+import { useTheme } from '../context/ThemeContext';
+import { customerService } from '../services/customerService';
+import { feedbackService } from '../services/feedbackService';
+import { packageService } from '../services/packageService';
+import type { Package } from '../types';
 const tnv07899 = '/images/TNV07899.webp';
 const tnv00048 = '/images/TNV00048.webp';
 const tnv00817 = '/images/TNV00817.webp';
@@ -17,12 +21,6 @@ const pbi01583 = '/images/PBI01583.webp';
 const pbi01850 = '/images/PBI01850.webp';
 const tnv00451 = '/images/TNV00451.webp';
 const tnv06242 = '/images/TNV06242.webp';
-import Logo from '../components/atoms/Logo';
-import { useTheme } from '../context/ThemeContext';
-import { customerService } from '../services/customerService';
-import { feedbackService } from '../services/feedbackService';
-import { packageService } from '../services/packageService';
-import type { Package } from '../types';
 
 /* ── Static content ──────────────────────────── */
 
