@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
+import { formatDate } from '../utils/format';
 import {
   AlertTriangle,
   Calendar,
@@ -209,7 +209,7 @@ const CustomerSizePage = () => {
     }
 
     const info = `
-Ngày chụp: ${schedule ? dayjs(schedule.shootDate).format('DD/MM/YYYY') : 'N/A'}
+Ngày chụp: ${schedule ? formatDate(schedule.shootDate) : 'N/A'}
 Lớp: ${selectedCustomer?.className}
 Trường: ${selectedCustomer?.school ?? 'N/A'}
 Sĩ số nam: ${totalMale}

@@ -1,11 +1,17 @@
+# syntax=docker/dockerfile:1.4
 # ── Stage 1: Build Vite/React app ──────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Gom cache yarn vào 1 thư mục cố định để dùng với BuildKit cache mount bên dưới
+ENV YARN_CACHE_FOLDER=/root/.yarn-cache
+
 COPY package.json yarn.lock* ./
-# NAS mạng chậm → tăng network-timeout để tránh ESOCKETTIMEDOUT khi tải package
-RUN yarn install --frozen-lockfile --network-timeout 600000
+# NAS mạng chậm → tăng network-timeout để tránh ESOCKETTIMEDOUT khi tải package.
+# cache mount: giữ package đã tải giữa các lần build → đổi deps không phải tải lại từ đầu.
+RUN --mount=type=cache,target=/root/.yarn-cache \
+    yarn install --frozen-lockfile --network-timeout 600000
 
 COPY . .
 

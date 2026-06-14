@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import dayjs from 'dayjs';
+import { formatDate } from '../utils/format';
 import {
   AlertCircle,
   CalendarCheck,
@@ -169,7 +169,7 @@ const StudentFormPage = () => {
           <div className="flex flex-col">
             <p className="text-sm text-primary mt-1.5 font-medium inline-flex items-center gap-1.5">
               <CalendarCheck className="h-4 w-4" />
-              <span>Ngày chụp: {dayjs(schedule.shootDate).format('DD/MM/YYYY')}</span>
+              <span>Ngày chụp: {formatDate(schedule.shootDate)}</span>
             </p>
             {schedule.package && (
               <p className="text-sm text-emerald-600 mt-1.5 font-medium inline-flex items-center gap-1.5">

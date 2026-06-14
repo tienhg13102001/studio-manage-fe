@@ -22,24 +22,40 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core - phải gồm react-is & scheduler để tránh lỗi
-          // "__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED"
-          'vendor-react': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-            'react-is',
-            'scheduler',
-          ],
+        // Dạng hàm (thay cho object) để Rollup tự gom đúng module theo đường dẫn,
+        // tránh vòng lặp chunk (vendor-charts <-> vendor-react) do react-is bị pin nhầm.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          // Excel export (nặng, tách riêng)
+          if (id.includes('/exceljs/')) return 'vendor-exceljs'
+          // Charts: recharts + d3 (qua victory-vendor) — KHÔNG để dính react chunk
+          if (
+            id.includes('/recharts/') ||
+            id.includes('/victory-vendor/') ||
+            id.includes('/d3-')
+          )
+            return 'vendor-charts'
           // Redux
-          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
-          // Chart - tách riêng dependencies nặng
-          'vendor-charts': ['recharts'],
-          // Excel export
-          'vendor-exceljs': ['exceljs'],
+          if (id.includes('/@reduxjs/') || id.includes('/react-redux/')) return 'vendor-redux'
           // Utilities
-          'vendor-utils': ['axios', 'date-fns', 'react-hook-form', 'react-toastify'],
+          if (
+            id.includes('/axios/') ||
+            id.includes('/date-fns/') ||
+            id.includes('/react-hook-form/') ||
+            id.includes('/react-toastify/')
+          )
+            return 'vendor-utils'
+          // React core (gồm react-is & scheduler để tránh lỗi SECRET_INTERNALS).
+          // Đặt CUỐI để các lib "react-*" ở trên được phân loại trước.
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/react-router') ||
+            id.includes('/react-is/') ||
+            id.includes('/scheduler/')
+          )
+            return 'vendor-react'
+          // Còn lại: để Rollup tự quyết (tránh tách nhỏ gây vòng lặp)
         },
       },
     },
