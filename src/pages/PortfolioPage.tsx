@@ -1,20 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import tnv07899 from '../assets/images/TNV07899.webp';
-import tnv00048 from '../assets/images/TNV00048.webp';
-import tnv00817 from '../assets/images/TNV00817.webp';
-import tnv03816 from '../assets/images/TNV03816.webp';
-import tnv05927 from '../assets/images/TNV05927.webp';
-import tnv06047 from '../assets/images/TNV06047.webp';
-import hdz07441 from '../assets/images/HDZ07441.webp';
-import may01381 from '../assets/images/MAY01381.webp';
-import pbi00061 from '../assets/images/PBI00061.webp';
-import pbi01583 from '../assets/images/PBI01583.webp';
-import pbi01850 from '../assets/images/PBI01850.webp';
-import tnv00451 from '../assets/images/TNV00451.webp';
-import tnv06242 from '../assets/images/TNV06242.webp';
 import { toast } from 'react-toastify';
+
+// Ảnh phục vụ tĩnh từ public/images (Vite copy nguyên trạng, không qua bước transform/hash)
+const tnv07899 = '/images/TNV07899.webp';
+const tnv00048 = '/images/TNV00048.webp';
+const tnv00817 = '/images/TNV00817.webp';
+const tnv03816 = '/images/TNV03816.webp';
+const tnv05927 = '/images/TNV05927.webp';
+const tnv06047 = '/images/TNV06047.webp';
+const hdz07441 = '/images/HDZ07441.webp';
+const may01381 = '/images/MAY01381.webp';
+const pbi00061 = '/images/PBI00061.webp';
+const pbi01583 = '/images/PBI01583.webp';
+const pbi01850 = '/images/PBI01850.webp';
+const tnv00451 = '/images/TNV00451.webp';
+const tnv06242 = '/images/TNV06242.webp';
 import Logo from '../components/atoms/Logo';
 import { useTheme } from '../context/ThemeContext';
 import { customerService } from '../services/customerService';
