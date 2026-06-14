@@ -556,6 +556,47 @@ input[type='date']::-webkit-date-and-time-value {
   text-align: left;
 }
 
+/* ── Time input ──
+   Giữ nguyên theme shadcn <Input> (border-input, bg-transparent, rounded-md, h-9).
+   Thêm icon đồng hồ bên TRÁI cho giống DatePicker "Chọn ngày chụp" (CalendarIcon trái,
+   màu muted-foreground) và ẩn icon mặc định xấu/chìm của hệ thống. */
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+  /* icon đồng hồ lucide, stroke = muted-foreground (light: #64748b) */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: left 0.75rem center;
+  background-size: 1rem 1rem; /* h-4 w-4, khớp icon DatePicker */
+  padding-left: 2.25rem; /* chừa chỗ cho icon (như pl-9) */
+}
+/* iOS căn giữa value mặc định → ép căn trái, bỏ margin/padding thừa */
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+input[type='time']::-webkit-datetime-edit {
+  padding: 0;
+  color: inherit; /* màu chữ theo theme shadcn, kể cả dark mode */
+}
+/* Ẩn icon đồng hồ mặc định của hệ thống nhưng vẫn cho bấm cả ô để mở picker */
+input[type='time']::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+:root.dark input[type='time'] {
+  color-scheme: dark;
+  /* dark: stroke sáng hơn (#879ab8) cho dễ thấy, đồng bộ icon select */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23879ab8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10'/%3e%3cpolyline points='12 6 12 12 16 14'/%3e%3c/svg%3e");
+}
+
 /* ── Select ── */
 select.input,
 select {

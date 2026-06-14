@@ -19,6 +19,7 @@ import {
   SelectValue,
   TableSkeleton,
   Textarea,
+  TimePicker,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -425,7 +426,11 @@ const SchedulesPage = () => {
     watch,
   } = useForm<ScheduleFormValues>({ defaultValues: { extraServices: [] } });
 
-  const { fields: extraServiceFields, append: appendExtraService, remove: removeExtraService } = useFieldArray({
+  const {
+    fields: extraServiceFields,
+    append: appendExtraService,
+    remove: removeExtraService,
+  } = useFieldArray({
     control,
     name: 'extraServices',
   });
@@ -1086,14 +1091,58 @@ const SchedulesPage = () => {
               )}
             </FormField>
             <FormField label="Giờ bắt đầu" htmlFor="startTime">
-              <Input id="startTime" type="time" {...register('startTime')} />
+              <Controller
+                name="startTime"
+                control={control}
+                render={({ field }) => (
+                  <TimePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn giờ bắt đầu"
+                  />
+                )}
+              />
             </FormField>
             <FormField label="Giờ kết thúc" htmlFor="endTime">
-              <Input id="endTime" type="time" {...register('endTime')} />
+              <Controller
+                name="endTime"
+                control={control}
+                render={({ field }) => (
+                  <TimePicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Chọn giờ kết thúc"
+                  />
+                )}
+              />
             </FormField>
-            <FormField label="Địa điểm" htmlFor="location" className="lg:col-span-3">
+            <FormField label="Mùa chụp">
+              <Controller
+                name="season"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ''}
+                    onValueChange={(v) => field.onChange(v || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn mùa --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField label="Địa điểm" htmlFor="location" className="lg:col-span-2">
               <Input id="location" {...register('location')} />
             </FormField>
+
             <FormField label="Người chốt lớp (Sale)">
               <Controller
                 name="bookedBy"
@@ -1161,29 +1210,7 @@ const SchedulesPage = () => {
                 </div>
               </FormField>
             )}
-            <FormField label="Mùa chụp">
-              <Controller
-                name="season"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? ''}
-                    onValueChange={(v) => field.onChange(v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-- Chọn mùa --" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {seasons.map((s) => (
-                        <SelectItem key={s._id} value={s._id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
+
             <FormField label="Ghi chú" htmlFor="notes" className="lg:col-span-3">
               <Textarea id="notes" rows={2} {...register('notes')} />
             </FormField>
@@ -1197,7 +1224,9 @@ const SchedulesPage = () => {
                   variant="outline"
                   size="sm"
                   className="h-8 text-xs gap-1"
-                  onClick={() => appendExtraService({ name: '', quantity: 1, unitPrice: 0, note: '' })}
+                  onClick={() =>
+                    appendExtraService({ name: '', quantity: 1, unitPrice: 0, note: '' })
+                  }
                 >
                   <Plus className="h-3.5 w-3.5" /> Thêm dịch vụ
                 </Button>
@@ -1231,7 +1260,9 @@ const SchedulesPage = () => {
                             </td>
                             <td className="px-3 py-1.5">
                               <Input
-                                {...register(`extraServices.${idx}.quantity`, { valueAsNumber: true })}
+                                {...register(`extraServices.${idx}.quantity`, {
+                                  valueAsNumber: true,
+                                })}
                                 type="number"
                                 min={1}
                                 className="h-8 text-sm"
@@ -1239,7 +1270,9 @@ const SchedulesPage = () => {
                             </td>
                             <td className="px-3 py-1.5">
                               <Input
-                                {...register(`extraServices.${idx}.unitPrice`, { valueAsNumber: true })}
+                                {...register(`extraServices.${idx}.unitPrice`, {
+                                  valueAsNumber: true,
+                                })}
                                 type="number"
                                 min={0}
                                 className="h-8 text-sm"
@@ -1270,7 +1303,10 @@ const SchedulesPage = () => {
                     </tbody>
                     <tfoot>
                       <tr className="bg-muted/30 border-t">
-                        <td colSpan={3} className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right">
+                        <td
+                          colSpan={3}
+                          className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right"
+                        >
                           Tổng cộng:
                         </td>
                         <td className="px-3 py-2 text-sm font-semibold whitespace-nowrap">
@@ -1280,7 +1316,8 @@ const SchedulesPage = () => {
                               const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
                               return sum + qty * price;
                             }, 0)
-                            .toLocaleString('vi-VN')}₫
+                            .toLocaleString('vi-VN')}
+                          ₫
                         </td>
                         <td colSpan={2} />
                       </tr>
@@ -1600,26 +1637,34 @@ const SchedulesPage = () => {
                             {detail.extraServices.map((es, idx) => (
                               <tr key={idx}>
                                 <td className="px-3 py-2 font-medium">{es.name}</td>
-                                <td className="px-3 py-2 text-right text-muted-foreground">{es.quantity}</td>
+                                <td className="px-3 py-2 text-right text-muted-foreground">
+                                  {es.quantity}
+                                </td>
                                 <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">
                                   {es.unitPrice.toLocaleString('vi-VN')}₫
                                 </td>
                                 <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
                                   {es.amount.toLocaleString('vi-VN')}₫
                                 </td>
-                                <td className="px-3 py-2 text-muted-foreground">{es.note ?? '—'}</td>
+                                <td className="px-3 py-2 text-muted-foreground">
+                                  {es.note ?? '—'}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot>
                             <tr className="bg-muted/30 border-t">
-                              <td colSpan={3} className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right">
+                              <td
+                                colSpan={3}
+                                className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right"
+                              >
                                 Tổng cộng:
                               </td>
                               <td className="px-3 py-2 text-sm font-semibold text-right whitespace-nowrap">
                                 {detail.extraServices
                                   .reduce((sum, es) => sum + es.amount, 0)
-                                  .toLocaleString('vi-VN')}₫
+                                  .toLocaleString('vi-VN')}
+                                ₫
                               </td>
                               <td />
                             </tr>
@@ -1683,10 +1728,30 @@ const SchedulesPage = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label="Giờ bắt đầu">
-                <Input type="time" {...registerContract('startTime')} />
+                <Controller
+                  name="startTime"
+                  control={contractControl}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Chọn giờ bắt đầu"
+                    />
+                  )}
+                />
               </FormField>
               <FormField label="Giờ kết thúc">
-                <Input type="time" {...registerContract('endTime')} />
+                <Controller
+                  name="endTime"
+                  control={contractControl}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Chọn giờ kết thúc"
+                    />
+                  )}
+                />
               </FormField>
             </div>
 
@@ -1775,9 +1840,9 @@ const SchedulesPage = () => {
                 Đóng
               </Button>
               {/* {!contractDocUrl && ( */}
-                <Button type="submit" disabled={isContractSubmitting}>
-                  {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
-                </Button>
+              <Button type="submit" disabled={isContractSubmitting}>
+                {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
+              </Button>
               {/* )} */}
             </div>
           </form>
