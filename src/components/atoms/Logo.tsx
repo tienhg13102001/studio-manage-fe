@@ -1,5 +1,4 @@
-// Ảnh phục vụ tĩnh từ public/ (Vite copy nguyên trạng, không qua bước transform/hash)
-const logoSrc = '/images/logo.webp';
+import logoSrc from '../../assets/images/logo.webp';
 
 interface LogoProps {
   size?: number;
