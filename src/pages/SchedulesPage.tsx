@@ -240,7 +240,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm trang phục..."
-              className="pl-8 h-8 text-sm"
+              className="pl-8 h-8 text-base"
             />
           </div>
           <div className="inline-flex rounded-lg border overflow-hidden text-xs">
