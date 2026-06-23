@@ -835,19 +835,19 @@ const PortfolioPage = () => {
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <a
-                  href="tel:0987654321"
+                  href="tel:0818321871"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm sm:text-base font-semibold text-amber-700 bg-white hover:bg-amber-50 shadow-md transition"
                 >
-                  📞 0869318118
+                  📞 0818321871
                 </a>
                 <a
-                  href="mailto:hello@yumestudio.vn"
+                  href="mailto:yumest23@gmail.com"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm sm:text-base font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/40 backdrop-blur transition"
                 >
-                  ✉️ hello@yumestudio.vn
+                  ✉️ yumest23@gmail.com
                 </a>
                 <a
-                  href="https://www.facebook.com"
+                  href="https://www.facebook.com/yumestudioyearbook/"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm sm:text-base font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/40 backdrop-blur transition"
@@ -856,7 +856,7 @@ const PortfolioPage = () => {
                 </a>
               </div>
               <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm text-white/90">
-                <span>📍 Hà Nội, Việt Nam</span>
+                <span>📍 168 Vũ Trọng Phụng, Thanh Xuân, Hà Nội</span>
                 <span>🕒 T2 – CN: 8:00 – 20:00</span>
               </div>
             </div>
