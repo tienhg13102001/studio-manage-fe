@@ -654,3 +654,77 @@ select {
   animation: yume-pulse 3.6s ease-in-out infinite;
   transform-origin: center;
 }
+
+/* ══════════════════════════════════════════════════
+   Yume Portfolio (redesign) — typography + motion
+   Playful editorial style. Motion is mostly driven by
+   framer-motion; only the infinite marquee lives here.
+══════════════════════════════════════════════════ */
+
+/* ── Fonts (scoped to the portfolio wrapper) ── */
+.yume-v2 {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.yume-v2 .font-display {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+.yume-v2 .font-body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Infinite marquee (feedback / schools strips) ── */
+@keyframes yume-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes yume-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.yume-marquee {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  will-change: transform;
+  animation: yume-marquee-left linear infinite;
+  animation-duration: var(--marquee-duration, 40s);
+}
+.yume-marquee[data-dir='right'] {
+  animation-name: yume-marquee-right;
+}
+.yume-marquee-track:hover .yume-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yume-marquee {
+    animation: none !important;
+  }
+}
+
+/* ── Full-bleed video background ──
+   A real <video> element covers any box directly via object-fit: cover,
+   so no letterbox bars regardless of the section's aspect ratio. */
+.yume-video-cover {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.yume-video-cover video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+}

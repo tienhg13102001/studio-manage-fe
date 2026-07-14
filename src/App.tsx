@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppLoader from './components/AppLoader';
 import Layout from './components/Layout/Layout';
 import LoginPage from './pages/LoginPage';
 import { navItems, adminItems, type NavItem } from './config/navItems';
@@ -67,29 +68,30 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <TooltipProvider delayDuration={150}>
-        <BrowserRouter>
-          <PageTitleManager />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/portfolio" element={<PortfolioPage />} />
-            <Route path="/form/:customer" element={<StudentFormPage />} />
-            <Route path="/feedback" element={<FeedbackFormPage />} />
-            <Route path="/feedback/:customer" element={<FeedbackFormPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              {[...navItems, ...adminItems].map(renderRouteItem)}
-              <Route path="profile" element={<ProfilePage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
-        </BrowserRouter>
+          <AppLoader />
+          <BrowserRouter>
+            <PageTitleManager />
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/portfolio" element={<PortfolioPage />} />
+              <Route path="/form/:customer" element={<StudentFormPage />} />
+              <Route path="/feedback" element={<FeedbackFormPage />} />
+              <Route path="/feedback/:customer" element={<FeedbackFormPage />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                {[...navItems, ...adminItems].map(renderRouteItem)}
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
+          </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
