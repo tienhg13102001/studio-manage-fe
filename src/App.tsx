@@ -10,6 +10,7 @@ import type { UserRole } from './types';
 import StudentFormPage from './pages/StudentFormPage';
 import FeedbackFormPage from './pages/FeedbackFormPage';
 import PortfolioPage from './pages/PortfolioPage';
+import WorldPage from './pages/WorldPage';
 import ProfilePage from './pages/ProfilePage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -74,6 +75,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/portfolio" element={<PortfolioPage />} />
+              <Route path="/world" element={<WorldPage />} />
               <Route path="/form/:customer" element={<StudentFormPage />} />
               <Route path="/feedback" element={<FeedbackFormPage />} />
               <Route path="/feedback/:customer" element={<FeedbackFormPage />} />

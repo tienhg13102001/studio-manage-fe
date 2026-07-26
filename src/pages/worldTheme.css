@@ -1,0 +1,161 @@
+/* ============================================================================
+   Yume overrides for the scroll-world engine.
+   These rules are UNLAYERED, so they beat the engine's `@layer sw` defaults
+   regardless of injection order (see scrubEngine.js). Everything is scoped to
+   `.sw-root`, which only exists on the /world route — harmless elsewhere.
+   Goal: a more modern look + larger typography.
+   ========================================================================== */
+
+/* Softer, narrower legibility scrim — the frosted copy card now carries most
+   of the contrast, so the heavy full-height gradient is toned down. */
+.sw-root .sw-copylayer::before {
+  width: min(50vw, 680px);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sw-bg) 55%, transparent) 0%,
+    color-mix(in srgb, var(--sw-bg) 22%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* Brand logo lockup (replaces the default gradient mark). */
+.sw-root .sw-brand__logo {
+  height: clamp(38px, 4.2vw, 50px);
+  width: auto;
+  display: block;
+}
+
+/* Frosted-glass copy card — the core "modern" move. */
+.sw-root .sw-copy {
+  width: min(44vw, 540px);
+  /* Never taller than the viewport (minus the top bar), so a long card stays
+     fully on screen when vertically centred. */
+  max-height: calc(100svh - 150px);
+  overflow: hidden;
+  padding: clamp(26px, 2.6vw, 40px);
+  border-radius: 30px;
+  /* Liquid glass: heavily translucent + strong blur so the scene shows through,
+     a bright top specular edge, an inner sheen, and a soft drop shadow. */
+  background: color-mix(in srgb, var(--sw-bg) 38%, transparent);
+  backdrop-filter: blur(30px) saturate(1.8);
+  -webkit-backdrop-filter: blur(30px) saturate(1.8);
+  border: 1px solid color-mix(in srgb, #fff 42%, transparent);
+  box-shadow:
+    0 30px 70px -26px color-mix(in srgb, var(--sw-ink) 55%, transparent),
+    inset 0 1px 1px color-mix(in srgb, #fff 65%, transparent),
+    inset 0 -18px 40px -22px color-mix(in srgb, #fff 34%, transparent);
+}
+
+/* Chapter counter — quieter, monospace, sits above the eyebrow. */
+.sw-root .sw-copy__num {
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--sw-ink) 42%, transparent);
+}
+
+/* Eyebrow with a leading accent bar. */
+.sw-root .sw-copy__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+}
+.sw-root .sw-copy__eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--sw-accent);
+}
+
+/* Bigger, tighter title. */
+.sw-root .sw-copy__title {
+  margin-top: 16px;
+  font-size: clamp(2.7rem, 5.6vw, 4.7rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-shadow: 0 2px 30px color-mix(in srgb, var(--sw-bg) 55%, transparent);
+}
+
+/* Bigger body copy, a touch more air. */
+.sw-root .sw-copy__body {
+  margin-top: 22px;
+  font-size: clamp(1.12rem, 1.5vw, 1.35rem);
+  line-height: 1.5;
+  max-width: 44ch;
+  color: color-mix(in srgb, var(--sw-ink) 82%, var(--sw-ink-soft));
+}
+
+/* Sleeker tags — outline pills, no heavy fill. */
+.sw-root .sw-copy__tags {
+  gap: 10px;
+  margin-top: 28px;
+}
+.sw-root .sw-copy__tags li {
+  font-size: 0.86rem;
+  padding: 8px 16px;
+  color: var(--sw-ink);
+  background: color-mix(in srgb, var(--sw-bg) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sw-accent) 40%, transparent);
+}
+
+/* Larger CTA buttons. */
+.sw-root .sw-copy__cta {
+  margin-top: 32px;
+}
+.sw-root .sw-btn {
+  font-size: 1rem;
+  padding: 15px 28px;
+}
+/* Tailwind Preflight ships an unlayered `a { color: inherit }`, which beats the
+   engine's layered `.sw-btn--primary { color:#fff }` and makes the primary
+   button's label invisible (dark text on the dark pill). Re-assert the colours
+   here, unlayered + higher specificity, so they win. */
+.sw-root .sw-btn--primary {
+  color: #fff;
+  background: var(--sw-ink);
+}
+.sw-root .sw-btn--ghost {
+  color: var(--sw-ink);
+}
+
+/* Chrome: a slightly larger, more confident wordmark + nav. */
+.sw-root .sw-brand__name {
+  font-size: 1.22rem;
+  letter-spacing: -0.02em;
+}
+.sw-root .sw-nav__item {
+  font-size: 0.86rem;
+  padding: 8px 16px;
+}
+
+/* Scroll hint: a touch bigger + wider tracking. */
+.sw-root .sw-hint {
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+}
+
+@media (max-width: 860px) {
+  /* Let the full-height scene show behind the glass card: drop the bottom scrim
+     that otherwise fades to a solid light block over the lower half of the image
+     (the copy's legibility now comes from the liquid-glass card itself). */
+  .sw-root .sw-copylayer::before {
+    background: none;
+  }
+  /* On phones the copy is bottom-anchored full-width — a floating glass card. */
+  .sw-root .sw-copy {
+    width: auto;
+    max-width: 600px;
+    padding: clamp(22px, 6vw, 30px);
+    border-radius: 28px;
+  }
+  .sw-root .sw-copy__title {
+    font-size: clamp(2.2rem, 8.5vw, 3rem);
+  }
+  .sw-root .sw-copy__body {
+    font-size: clamp(1.05rem, 4vw, 1.2rem);
+    max-width: none;
+  }
+}
