@@ -9,65 +9,65 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 227 27% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 227 27% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 227 27% 10%;
 
     /* Amber 500 */
     --primary: 38 92% 50%;
-    --primary-foreground: 26 83% 14%;
+    --primary-foreground: 29 87% 12%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 225 22% 96%;
+    --secondary-foreground: 227 27% 10%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 225 22% 96%;
+    --muted-foreground: 225 12% 41%;
 
     /* Cyan 400 */
     --accent: 187 85% 53%;
-    --accent-foreground: 222 47% 11%;
+    --accent-foreground: 227 27% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 347 77% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 225 20% 92%;
+    --input: 225 20% 92%;
     --ring: 38 92% 50%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 22% 6%;
-    --foreground: 210 40% 96%;
+    --background: 233 29% 6%;
+    --foreground: 225 27% 94%;
 
-    --card: 240 16% 10%;
-    --card-foreground: 210 40% 96%;
+    --card: 235 22% 10%;
+    --card-foreground: 225 27% 94%;
 
-    --popover: 240 16% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 235 22% 10%;
+    --popover-foreground: 225 27% 94%;
 
-    --primary: 38 92% 55%;
+    --primary: 38 92% 50%;
     --primary-foreground: 26 83% 14%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 231 21% 13%;
+    --secondary-foreground: 225 27% 94%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 231 21% 13%;
+    --muted-foreground: 226 16% 69%;
 
     --accent: 187 85% 58%;
-    --accent-foreground: 222 47% 11%;
+    --accent-foreground: 233 29% 6%;
 
-    --destructive: 0 62% 50%;
+    --destructive: 350 89% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 28% 22%;
-    --input: 215 28% 22%;
+    --border: 233 19% 18%;
+    --input: 232 20% 22%;
     --ring: 38 92% 55%;
   }
 }
@@ -77,7 +77,7 @@
 ══════════════════════════════════════════════════ */
 :root {
   /* Page */
-  --page-bg: #eef2f7;
+  --page-bg: #f5f6f9;
 
   /* Sidebar */
   --sidebar-bg: #ffffff;
@@ -107,8 +107,8 @@
 
   /* Card */
   --card-bg: #ffffff;
-  --card-border: rgba(148, 163, 184, 0.18);
-  --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --card-border: #e7e9ef;
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
   /* Modal */
   --modal-bg: #ffffff;
@@ -116,7 +116,7 @@
   --modal-shadow: 0 28px 72px rgba(15, 23, 42, 0.24);
 
   /* Table */
-  --table-head-bg: #f8fafc;
+  --table-head-bg: #f8f9fb;
   --table-row-hover: rgba(245, 158, 11, 0.08);
   --table-row-warning-bg: rgba(245, 158, 11, 0.12);
 
@@ -139,9 +139,9 @@
   --input-focus-ring: rgba(245, 158, 11, 0.14);
 
   /* Text */
-  --text-primary: #0f172a;
-  --text-muted: #6b7280;
-  --text-faint: #9ca3af;
+  --text-primary: #12151f;
+  --text-muted: #5b6275;
+  --text-faint: #9097a8;
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #fffbeb 0%, #fff7ed 40%, #fef3c7 100%);
@@ -154,7 +154,7 @@
 
 :root.dark {
   /* Page */
-  --page-bg: #0a0a12;
+  --page-bg: #0b0c14;
 
   /* Sidebar */
   --sidebar-bg: linear-gradient(180deg, #0d0d1f 0%, #0a0a14 100%);
@@ -178,22 +178,22 @@
   --user-logout-color: #475569;
 
   /* Topbar (mobile) */
-  --topbar-bg: rgba(10, 10, 18, 0.9);
-  --topbar-border: rgba(255, 255, 255, 0.06);
+  --topbar-bg: rgba(20, 21, 31, 0.92);
+  --topbar-border: #262838;
   --topbar-icon-color: #94a3b8;
 
   /* Card */
-  --card-bg: rgba(255, 255, 255, 0.04);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --card-bg: #14151f;
+  --card-border: #262838;
   --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 
   /* Modal */
-  --modal-bg: #121424;
+  --modal-bg: #14151f;
   --modal-border: rgba(148, 163, 184, 0.28);
   --modal-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
 
   /* Table */
-  --table-head-bg: rgba(255, 255, 255, 0.04);
+  --table-head-bg: #1a1c28;
   --table-row-hover: rgba(245, 158, 11, 0.16);
   --table-row-warning-bg: rgba(245, 158, 11, 0.14);
 
@@ -208,17 +208,17 @@
   --costume-chip-checked-text: #fef3c7;
 
   /* Input */
-  --input-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.03) 100%);
-  --input-border: rgba(148, 163, 184, 0.18);
+  --input-bg: #14151f;
+  --input-border: #2c2f42;
   --input-color: #f1f5f9;
   --input-placeholder: #64748b;
   --input-focus-border: rgba(245, 158, 11, 0.58);
   --input-focus-ring: rgba(245, 158, 11, 0.16);
 
   /* Text */
-  --text-primary: #e2e8f0;
-  --text-muted: #64748b;
-  --text-faint: #475569;
+  --text-primary: #eceef4;
+  --text-muted: #a3a9bc;
+  --text-faint: #6c7389;
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #0a0a12 0%, #2a1a05 40%, #0c1a2e 100%);
@@ -727,4 +727,11 @@ select {
   height: 100%;
   object-fit: cover;
   border: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   Redesign 2026 — shared helpers (design/app_yume_design.pen)
+══════════════════════════════════════════════════ */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }

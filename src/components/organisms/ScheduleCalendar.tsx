@@ -1,5 +1,18 @@
 import { useState, useMemo } from 'react';
-import { MapPin, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  FileText,
+  FolderOpen,
+  MapPin,
+  Pencil,
+  Trash2,
+  User as UserIcon,
+  Users as UsersIcon,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DOW_VN, SCHEDULE_STATUS_LABEL } from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
@@ -12,6 +25,13 @@ export interface CalendarScheduleItem {
   className: string;
   leadName?: string;
   notes?: string;
+  /** Optional extras shown in the side day panel. */
+  school?: string;
+  packageName?: string;
+  packagePrice?: number;
+  supportNames?: string[];
+  driveFolderUrl?: string;
+  studentCount?: number;
 }
 
 interface Props {
@@ -19,35 +39,88 @@ interface Props {
   maxBadges?: number;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  /** Open the full detail of a schedule (event chip click / title click). */
+  onOpen?: (id: string) => void;
+  onContract?: (id: string) => void;
+  /** Render the selected-day panel beside the grid (lg+) instead of below it. */
+  sidePanel?: boolean;
 }
 
-const STATUS_BADGE: Record<string, { bg: string; dot: string }> = {
-  pending: { bg: 'bg-amber-400/15 text-amber-300 dark:text-amber-300', dot: 'bg-amber-400' },
-  confirmed: { bg: 'bg-sky-400/15 text-sky-300 dark:text-sky-300', dot: 'bg-sky-400' },
-  completed: {
-    bg: 'bg-emerald-400/15 text-emerald-300 dark:text-emerald-300',
-    dot: 'bg-emerald-400',
+const STATUS_STYLE: Record<string, { chip: string; bar: string; dot: string; badge: string }> = {
+  pending: {
+    chip: 'bg-amber-500/10 text-amber-800 dark:text-amber-200',
+    bar: 'bg-amber-500',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
   },
-  cancelled: { bg: 'bg-red-400/15 text-red-300 dark:text-red-300', dot: 'bg-red-400' },
+  confirmed: {
+    chip: 'bg-blue-500/10 text-blue-800 dark:text-blue-200',
+    bar: 'bg-blue-500',
+    dot: 'bg-blue-500',
+    badge: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  },
+  completed: {
+    chip: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
+    bar: 'bg-emerald-500',
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  },
+  cancelled: {
+    chip: 'bg-rose-500/10 text-rose-800 dark:text-rose-200',
+    bar: 'bg-rose-500',
+    dot: 'bg-rose-500',
+    badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+  },
 };
 
-const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => {
+const DOW_LONG = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseKey = (key: string) =>
+  new Date(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10));
+
+const StatusPill = ({ status }: { status: string }) => {
+  const st = STATUS_STYLE[status] ?? STATUS_STYLE.pending;
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+        st.badge,
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {SCHEDULE_STATUS_LABEL[status] ?? status}
+    </span>
+  );
+};
+
+const ScheduleCalendar = ({
+  items,
+  maxBadges = 3,
+  onEdit,
+  onDelete,
+  onOpen,
+  onContract,
+  sidePanel = false,
+}: Props) => {
   const [calendarDate, setCalendarDate] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const today = toKey(new Date());
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => (sidePanel ? today : null));
 
+  /** Full weeks (Mon–Sun), including leading/trailing days of adjacent months. */
   const calendarDays = useMemo(() => {
     const { year, month } = calendarDate;
-    const rawFirstDay = new Date(year, month, 1).getDay();
-    const firstDay = (rawFirstDay + 6) % 7;
+    const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days: (string | null)[] = Array(firstDay).fill(null);
-    for (let d = 1; d <= daysInMonth; d++) {
-      days.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-    }
-    return days;
+    const cells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+    return Array.from({ length: cells }, (_, i) => {
+      const d = new Date(year, month, 1 - firstDay + i);
+      return { key: toKey(d), inMonth: d.getMonth() === month };
+    });
   }, [calendarDate]);
 
   const byDay = useMemo(() => {
@@ -57,48 +130,92 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
       if (!map[key]) map[key] = [];
       map[key].push(s);
     });
+    Object.values(map).forEach((list) =>
+      list.sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? '')),
+    );
     return map;
   }, [items]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const selectedItems = selectedDay ? (byDay[selectedDay] ?? []) : [];
 
-  return (
-    <div className="rounded-2xl overflow-hidden border theme-card-border bg-[var(--card-bg)]">
+  const upcoming = useMemo(() => {
+    if (!sidePanel || !selectedDay) return [];
+    return items
+      .filter((s) => s.shootDate.slice(0, 10) > selectedDay)
+      .sort((a, b) =>
+        (a.shootDate.slice(0, 10) + (a.startTime ?? '')).localeCompare(
+          b.shootDate.slice(0, 10) + (b.startTime ?? ''),
+        ),
+      )
+      .slice(0, 3);
+  }, [items, selectedDay, sidePanel]);
+
+  const shiftMonth = (delta: number) =>
+    setCalendarDate(({ year, month }) => {
+      const d = new Date(year, month + delta, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+
+  const goToday = () => {
+    const now = new Date();
+    setCalendarDate({ year: now.getFullYear(), month: now.getMonth() });
+    setSelectedDay(today);
+  };
+
+  const selectDay = (key: string) => {
+    if (sidePanel) setSelectedDay(key);
+    else setSelectedDay(key === selectedDay ? null : key);
+  };
+
+  const navBtn =
+    'inline-flex h-[34px] items-center justify-center rounded-[9px] border bg-card text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5';
+
+  const grid = (
+    <div className="overflow-hidden rounded-[14px] border bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b theme-card-border">
-        <button
-          onClick={() =>
-            setCalendarDate(({ year, month }) =>
-              month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 },
-            )
-          }
-          className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="font-bold theme-text-primary text-base tracking-wide">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+        <span className="font-display text-lg font-bold tracking-tight text-foreground">
           Tháng {calendarDate.month + 1} / {calendarDate.year}
         </span>
-        <button
-          onClick={() =>
-            setCalendarDate(({ year, month }) =>
-              month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 },
-            )
-          }
-          className="w-8 h-8 flex items-center justify-center rounded-lg theme-text-muted hover:bg-[var(--table-row-hover)] transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="hidden items-center gap-3 text-xs text-muted-foreground md:flex">
+            {Object.keys(STATUS_STYLE).map((k) => (
+              <span key={k} className="inline-flex items-center gap-1.5">
+                <span className={cn('h-2 w-2 rounded-full', STATUS_STYLE[k].dot)} />
+                {SCHEDULE_STATUS_LABEL[k]}
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => shiftMonth(-1)}
+              className={cn(navBtn, 'w-[34px]')}
+              aria-label="Tháng trước"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={goToday} className={cn(navBtn, 'px-3')}>
+              Hôm nay
+            </button>
+            <button
+              type="button"
+              onClick={() => shiftMonth(1)}
+              className={cn(navBtn, 'w-[34px]')}
+              aria-label="Tháng sau"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 border-b theme-card-border bg-[var(--table-head-bg)]">
-        {DOW_VN.map((d, i) => (
+      <div className="grid grid-cols-7 border-y bg-muted/60">
+        {DOW_VN.map((d) => (
           <div
             key={d}
-            className={`text-center text-xs font-semibold py-2 ${
-              i >= 5 ? 'text-rose-400' : 'theme-text-faint'
-            }`}
+            className="px-2 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground sm:px-3"
           >
             {d}
           </div>
@@ -106,143 +223,284 @@ const ScheduleCalendar = ({ items, maxBadges = 3, onEdit, onDelete }: Props) => 
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 divide-x divide-y divide-[color:var(--card-border)]">
-        {calendarDays.map((day, i) => {
-          const dayItems = day ? (byDay[day] ?? []) : [];
-          const isToday = day === today;
-          const isSelected = day === selectedDay;
-          const dayNum = day ? parseInt(day.slice(8)) : 0;
-          const colIndex = i % 7;
-          const isWeekend = colIndex >= 5;
+      <div className="grid grid-cols-7">
+        {calendarDays.map(({ key, inMonth }, i) => {
+          const dayItems = byDay[key] ?? [];
+          const isToday = key === today;
+          const isSelected = key === selectedDay;
+          const dayNum = parseInt(key.slice(8));
+          const isLastCol = i % 7 === 6;
 
           return (
             <div
-              key={i}
-              onClick={() => day && setSelectedDay(isSelected ? null : day)}
-              className={[
-                'min-h-[4.5rem] p-1.5 transition-colors relative',
-                !day
-                  ? 'bg-[var(--table-head-bg)] cursor-default'
-                  : isSelected
-                    ? 'cursor-pointer bg-amber-500/10'
-                    : isToday
-                      ? 'cursor-pointer bg-amber-500/5'
-                      : 'cursor-pointer hover:bg-[var(--table-row-hover)]',
-              ].join(' ')}
-            >
-              {isSelected && <span className="absolute inset-x-0 top-0 h-0.5 bg-amber-400" />}
-              {day && (
-                <>
-                  <div className="flex justify-end mb-1">
-                    <span
-                      className={[
-                        'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                        isToday ? 'text-white' : isWeekend ? 'text-rose-400' : 'theme-text-primary',
-                      ].join(' ')}
-                      style={isToday ? { background: '#d97706' } : undefined}
-                    >
-                      {dayNum}
-                    </span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {dayItems.slice(0, maxBadges).map((s) => {
-                      const badge = STATUS_BADGE[s.status] ?? STATUS_BADGE.pending;
-                      return (
-                        <div
-                          key={s._id}
-                          className={`flex items-center gap-1 text-[10px] truncate rounded px-1 py-0.5 leading-tight ${badge.bg}`}
-                          title={s.className}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dot}`} />
-                          <span className="truncate">{s.className}</span>
-                        </div>
-                      );
-                    })}
-                    {dayItems.length > maxBadges && (
-                      <div className="text-[10px] theme-text-faint pl-1">
-                        +{dayItems.length - maxBadges} more
-                      </div>
-                    )}
-                  </div>
-                </>
+              key={key}
+              onClick={() => selectDay(key)}
+              className={cn(
+                'relative min-h-[4.5rem] cursor-pointer border-b p-1 transition-colors sm:min-h-[6.5rem] sm:p-2',
+                !isLastCol && 'border-r',
+                isSelected
+                  ? 'bg-primary-100/70 dark:bg-primary/10'
+                  : inMonth
+                    ? 'hover:bg-muted/50'
+                    : 'bg-muted/40 hover:bg-muted/60',
               )}
+            >
+              {isSelected && <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" />}
+              <div className="mb-1 flex">
+                <span
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular',
+                    isToday
+                      ? 'bg-foreground text-background'
+                      : isSelected
+                        ? 'text-primary-700 dark:text-primary'
+                        : inMonth
+                          ? 'text-foreground'
+                          : 'text-muted-foreground/70',
+                  )}
+                >
+                  {dayNum}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {dayItems.slice(0, maxBadges).map((s) => {
+                  const st = STATUS_STYLE[s.status] ?? STATUS_STYLE.pending;
+                  return (
+                    <div
+                      key={s._id}
+                      onClick={
+                        onOpen
+                          ? (e) => {
+                              e.stopPropagation();
+                              onOpen(s._id);
+                            }
+                          : undefined
+                      }
+                      className={cn(
+                        'relative truncate rounded-[5px] py-0.5 pl-2 pr-1 text-[10px] font-medium leading-tight sm:text-[11px]',
+                        st.chip,
+                        !inMonth && 'opacity-70',
+                        onOpen && 'hover:brightness-95',
+                      )}
+                      title={[s.startTime, s.className, s.school].filter(Boolean).join(' ')}
+                    >
+                      <span
+                        className={cn('absolute inset-y-0.5 left-0.5 w-[3px] rounded-full', st.bar)}
+                      />
+                      {s.startTime && (
+                        <span className="mr-1 hidden tabular sm:inline">{s.startTime}</span>
+                      )}
+                      {s.className}
+                      {s.school && <span className="hidden sm:inline"> {s.school}</span>}
+                    </div>
+                  );
+                })}
+                {dayItems.length > maxBadges && (
+                  <div className="pl-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                    +{dayItems.length - maxBadges} lịch nữa
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
 
-      {/* Selected day detail */}
-      {selectedDay && (byDay[selectedDay] ?? []).length > 0 && (
-        <div className="border-t theme-card-border p-4">
-          <p className="text-xs font-semibold theme-text-faint uppercase tracking-wider mb-3">
+  const actionBtn =
+    'inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-[10px] border bg-card text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5';
+
+  const renderEventCard = (s: CalendarScheduleItem) => (
+    <div key={s._id} className="rounded-[14px] border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        {s.startTime || s.endTime ? (
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground tabular">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            {s.startTime}
+            {s.endTime ? ` – ${s.endTime}` : ''}
+          </span>
+        ) : (
+          <span />
+        )}
+        <StatusPill status={s.status} />
+      </div>
+      <button
+        type="button"
+        disabled={!onOpen}
+        onClick={() => onOpen?.(s._id)}
+        className="mt-2.5 block w-full text-left font-display text-base font-bold tracking-tight text-foreground enabled:hover:text-primary-700 dark:enabled:hover:text-primary"
+      >
+        {s.className}
+        {s.school ? ` · ${s.school}` : ''}
+      </button>
+      {s.packageName && (
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          {s.packageName}
+          {typeof s.packagePrice === 'number' &&
+            ` · ${s.packagePrice.toLocaleString('vi-VN')}₫/thành viên`}
+        </div>
+      )}
+      <dl className="mt-3 space-y-2 text-[13px]">
+        {s.location && (
+          <div className="flex gap-3">
+            <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" /> Địa điểm
+            </dt>
+            <dd className="min-w-0 break-words text-foreground">{s.location}</dd>
+          </div>
+        )}
+        {s.leadName && (
+          <div className="flex gap-3">
+            <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
+              <UserIcon className="h-3.5 w-3.5" /> Leader
+            </dt>
+            <dd className="min-w-0 text-foreground">{s.leadName}</dd>
+          </div>
+        )}
+        {s.supportNames && s.supportNames.length > 0 && (
+          <div className="flex gap-3">
+            <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
+              <UsersIcon className="h-3.5 w-3.5" /> Support
+            </dt>
+            <dd className="min-w-0 text-foreground">{s.supportNames.join(', ')}</dd>
+          </div>
+        )}
+        {s.driveFolderUrl && (
+          <div className="flex gap-3">
+            <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
+              <FolderOpen className="h-3.5 w-3.5" /> Folder ảnh
+            </dt>
+            <dd className="min-w-0">
+              <a
+                href={s.driveFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Mở trên Google Drive <ExternalLink className="h-3 w-3" />
+              </a>
+            </dd>
+          </div>
+        )}
+      </dl>
+      {s.notes && (
+        <div className="mt-3 whitespace-pre-line rounded-[10px] bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          {s.notes}
+        </div>
+      )}
+      {(onContract || onEdit || onDelete) && (
+        <div className="mt-4 flex gap-2">
+          {onContract && (
+            <button type="button" onClick={() => onContract(s._id)} className={actionBtn}>
+              <FileText className="h-4 w-4" /> Hợp đồng
+            </button>
+          )}
+          {onEdit && (
+            <button type="button" onClick={() => onEdit(s._id)} className={actionBtn}>
+              <Pencil className="h-4 w-4" /> Sửa
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(s._id)}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-card text-rose-600 transition-colors hover:bg-rose-500/10"
+              title="Xoá"
+              aria-label="Xoá"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  if (sidePanel) {
+    const selDate = selectedDay ? parseKey(selectedDay) : null;
+    const studentTotal = selectedItems.reduce((sum, s) => sum + (s.studentCount ?? 0), 0);
+    return (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {grid}
+        <div className="space-y-3">
+          {selDate && (
+            <div className="rounded-[14px] border bg-card px-5 py-4">
+              <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary-700 dark:text-primary">
+                {DOW_LONG[selDate.getDay()]}
+              </div>
+              <div className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground">
+                {selDate.getDate()} tháng {selDate.getMonth() + 1}, {selDate.getFullYear()}
+              </div>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                {selectedItems.length} lịch chụp
+                {studentTotal > 0 && ` · ${studentTotal} học sinh`}
+              </div>
+            </div>
+          )}
+          {selectedItems.length > 0 ? (
+            selectedItems.map(renderEventCard)
+          ) : (
+            <div className="rounded-[14px] border border-dashed bg-card py-8 text-center text-sm text-muted-foreground">
+              Không có lịch ngày này
+            </div>
+          )}
+          {upcoming.length > 0 && (
+            <div className="pt-2">
+              <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                Tiếp theo
+              </div>
+              <div className="space-y-2">
+                {upcoming.map((s) => {
+                  const key = s.shootDate.slice(0, 10);
+                  return (
+                    <button
+                      key={s._id}
+                      type="button"
+                      onClick={() => {
+                        const d = parseKey(key);
+                        setCalendarDate({ year: d.getFullYear(), month: d.getMonth() });
+                        setSelectedDay(key);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[12px] border bg-card px-3.5 py-2.5 text-left text-sm transition-colors hover:border-primary/40"
+                    >
+                      <span className="font-semibold text-primary-700 tabular dark:text-primary">
+                        {key.slice(8, 10)}/{key.slice(5, 7)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-foreground">
+                        {s.className}
+                        {s.school ? ` · ${s.school}` : ''}
+                      </span>
+                      <StatusPill status={s.status} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {grid}
+      {selectedDay && (
+        <div className="mt-3">
+          <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
             {parseInt(selectedDay.slice(8))} tháng {parseInt(selectedDay.slice(5, 7))},{' '}
             {selectedDay.slice(0, 4)}
           </p>
-          <div className="space-y-2">
-            {(byDay[selectedDay] ?? []).map((s) => {
-              const badge = STATUS_BADGE[s.status] ?? STATUS_BADGE.pending;
-              return (
-                <div
-                  key={s._id}
-                  className="flex items-start justify-between rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2.5 hover:bg-[var(--table-row-hover)] transition-colors"
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="font-semibold text-sm theme-text-primary truncate">
-                      {s.className}
-                    </div>
-                    {(s.startTime || s.endTime) && (
-                      <div className="text-xs theme-text-muted flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        {s.startTime}
-                        {s.endTime ? ` – ${s.endTime}` : ''}
-                      </div>
-                    )}
-                    {s.location && (
-                      <div className="text-xs theme-text-muted flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                        <span className="truncate">{s.location}</span>
-                      </div>
-                    )}
-                    {s.notes && (
-                      <div className="text-[11px] text-amber-400/80 mt-0.5">※ {s.notes}</div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                    <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg}`}
-                    >
-                      {SCHEDULE_STATUS_LABEL[s.status] ?? s.status}
-                    </span>
-                    {(onEdit || onDelete) && (
-                      <div className="flex gap-2">
-                        {onEdit && (
-                          <button
-                            onClick={() => onEdit(s._id)}
-                            className="text-xs theme-text-muted hover:text-amber-400 transition-colors"
-                          >
-                            Sửa
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => onDelete(s._id)}
-                            className="text-xs theme-text-muted hover:text-red-400 transition-colors"
-                          >
-                            Xoá
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      {selectedDay && (byDay[selectedDay] ?? []).length === 0 && (
-        <div className="border-t theme-card-border py-6 text-center theme-text-faint text-sm">
-          Không có lịch ngày này
+          {selectedItems.length > 0 ? (
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {selectedItems.map(renderEventCard)}
+            </div>
+          ) : (
+            <div className="rounded-[14px] border border-dashed bg-card py-6 text-center text-sm text-muted-foreground">
+              Không có lịch ngày này
+            </div>
+          )}
         </div>
       )}
     </div>

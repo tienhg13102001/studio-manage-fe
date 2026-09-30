@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Copy, Lightbulb, Phone, RefreshCw, Trash2 } from 'lucide-react';
+import { Copy, Lightbulb, Link2, Phone, Star } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { feedbackService } from '../services/feedbackService';
-import type { Customer, FeedbackResponse } from '../types';
+import type { Customer, FeedbackItem, FeedbackResponse } from '../types';
 import { formatDateTime } from '../utils/format';
 import {
   Badge,
@@ -10,8 +10,8 @@ import {
   ConfirmDialog,
   EmptyState,
   PageHeader,
-  RatingBlock,
   Spinner,
+  Stars,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +49,34 @@ const avatarColor = (seed: string): string => {
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;
   return colors[Math.abs(hash) % colors.length];
 };
+
+const ratingColor = (r: number) => {
+  if (r >= 4) return 'text-emerald-600 dark:text-emerald-400';
+  if (r >= 3) return 'text-amber-600 dark:text-amber-400';
+  return 'text-rose-600 dark:text-rose-400';
+};
+
+const RatingPanel = ({ label, item }: { label: string; item: FeedbackItem }) => (
+  <div className="rounded-xl bg-muted/60 px-4 py-3">
+    <div className="flex items-center justify-between gap-2 mb-1.5">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <Stars value={item.rating} />
+        <span className={cn('text-xs font-bold', ratingColor(item.rating))}>{item.rating}/5</span>
+      </div>
+    </div>
+    {item.description && (
+      <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">
+        {item.description}
+      </p>
+    )}
+  </div>
+);
+
+const average = (values: number[]) =>
+  values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+
+const fmtAvg = (n: number) => n.toFixed(1).replace('.', ',');
 
 const buildPublicLink = () => `${window.location.origin}/feedback`;
 
@@ -94,6 +122,16 @@ const FeedbackPage = () => {
     return Math.max(1, Math.ceil(count / LIMIT));
   }, [filter, total, totalRead, totalUnread]);
 
+  const stats = useMemo(() => {
+    const crew = list.map((f) => f.crewFeedback.rating);
+    const album = list.map((f) => f.albumFeedback.rating);
+    const dist = [5, 4, 3, 2, 1].map((star) => {
+      const n = crew.filter((r) => r === star).length;
+      return { star, pct: crew.length ? Math.round((n / crew.length) * 100) : 0 };
+    });
+    return { count: list.length, crew: average(crew), album: average(album), dist };
+  }, [list]);
+
   const toggleRead = async (fb: FeedbackResponse) => {
     try {
       const updated = await feedbackService.markRead(fb._id, !fb.isRead);
@@ -136,14 +174,63 @@ const FeedbackPage = () => {
         description="Xem và quản lý các đánh giá từ khách hàng của bạn."
         action={
           <Button variant={linkCopied ? 'gradient' : 'outline'} onClick={copyLink}>
-            <Copy />
+            {linkCopied ? <Copy /> : <Link2 />}
             {linkCopied ? 'Đã sao chép' : 'Sao chép link gửi phản hồi'}
           </Button>
         }
       />
 
+      {/* Summary (computed from the loaded page) */}
+      {stats.count > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          {(
+            [
+              { label: 'Ekip chụp ảnh', value: stats.crew },
+              { label: 'Album ảnh', value: stats.album },
+            ] as const
+          ).map((c) => (
+            <div key={c.label} className="rounded-[14px] border bg-card p-5">
+              <p className="text-sm text-muted-foreground">{c.label}</p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="font-display text-3xl font-bold">{fmtAvg(c.value)}</span>
+                <Stars value={Math.round(c.value)} size="md" />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                trung bình · {stats.count} đánh giá trên trang hiện tại
+              </p>
+            </div>
+          ))}
+          <div className="rounded-[14px] border bg-card p-5">
+            <p className="text-sm text-muted-foreground mb-2">
+              Phân bố điểm ekip
+              <span className="block text-xs">
+                trên trang hiện tại
+                {filter !== 'all' && ` · ${filter === 'unread' ? 'Chưa đọc' : 'Đã đọc'}`}
+              </span>
+            </p>
+            <div className="space-y-1.5">
+              {stats.dist.map((d) => (
+                <div key={d.star} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex w-6 items-center gap-0.5">
+                    {d.star}
+                    <Star className="h-3 w-3" />
+                  </span>
+                  <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${d.pct}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right tabular">{d.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto rounded-xl p-2 bg-card border">
+      <div className="inline-flex max-w-full gap-1 mb-4 overflow-x-auto rounded-xl p-1 bg-muted">
         {(
           [
             { v: 'all', label: 'Tất cả', count: total },
@@ -157,17 +244,19 @@ const FeedbackPage = () => {
               key={opt.v}
               onClick={() => setFilter(opt.v)}
               className={cn(
-                'shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors',
+                'shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-[9px] text-sm font-medium transition-colors',
                 active
-                  ? 'bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(245,158,11,0.28)]'
-                  : 'bg-muted/40 text-muted-foreground border hover:bg-muted',
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               <span className="leading-none">{opt.label}</span>
               <span
                 className={cn(
                   'inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold leading-none',
-                  active ? 'bg-white/25 text-primary-foreground' : 'bg-card border',
+                  opt.v === 'unread' && opt.count > 0
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted-foreground/15 text-muted-foreground',
                 )}
               >
                 {opt.count}
@@ -192,14 +281,14 @@ const FeedbackPage = () => {
               <div
                 key={fb._id}
                 className={cn(
-                  'rounded-xl border bg-card p-4 transition-shadow',
-                  !fb.isRead && 'border-primary/60 shadow-[0_0_0_1px_rgba(245,158,11,0.25)]',
+                  'rounded-[14px] border bg-card p-5 transition-shadow',
+                  !fb.isRead && 'border-primary shadow-[0_0_0_3px_rgba(245,158,11,0.15)]',
                 )}
               >
                 <div className="flex items-start gap-3 mb-3">
                   <div
                     className={cn(
-                      'w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm',
+                      'w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-sm',
                       avatarColor(seed),
                     )}
                   >
@@ -213,9 +302,8 @@ const FeedbackPage = () => {
                       {!fb.isRead && (
                         <Badge
                           variant="outline"
-                          className="border-transparent bg-primary/15 text-primary"
+                          className="border-transparent bg-primary px-2 text-[11px] text-primary-foreground"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                           Mới
                         </Badge>
                       )}
@@ -233,13 +321,13 @@ const FeedbackPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                  <RatingBlock label="Ekip chụp ảnh" item={fb.crewFeedback} />
-                  <RatingBlock label="Album" item={fb.albumFeedback} />
+                  <RatingPanel label="Ekip chụp ảnh" item={fb.crewFeedback} />
+                  <RatingPanel label="Album" item={fb.albumFeedback} />
                 </div>
 
                 {fb.content && (
                   <div className="mb-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-muted-foreground">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-1 text-muted-foreground">
                       Cảm nhận chung
                     </p>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{fb.content}</p>
@@ -247,8 +335,8 @@ const FeedbackPage = () => {
                 )}
 
                 {fb.suggestion && (
-                  <div className="mt-2 rounded-lg p-3 border border-amber-400/40 bg-amber-500/10">
-                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide mb-1 inline-flex items-center gap-1.5">
+                  <div className="mt-3 rounded-xl p-3 px-4 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                    <p className="text-xs font-semibold mb-0.5 inline-flex items-center gap-1.5">
                       <Lightbulb className="h-3.5 w-3.5" />
                       <span>Đề xuất cải thiện</span>
                     </p>
@@ -256,25 +344,21 @@ const FeedbackPage = () => {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-3 mt-3 border-t">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
+                <div className="flex justify-end gap-4 pt-3 mt-3">
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => toggleRead(fb)}
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
                     {fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                  </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-destructive"
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400"
                     onClick={() => setConfirmId(fb._id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
                     Xoá
-                  </Button>
+                  </button>
                 </div>
               </div>
             );
@@ -284,14 +368,15 @@ const FeedbackPage = () => {
 
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6">
-          <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <Button variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             ‹ Trước
           </Button>
           <span className="text-sm px-2 text-muted-foreground">
             Trang <span className="font-semibold text-foreground">{page}</span> / {totalPages}
           </span>
           <Button
-            variant="outline"
+            variant="ghost"
+            className="text-primary-700 dark:text-primary"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >

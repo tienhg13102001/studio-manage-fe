@@ -4,26 +4,20 @@ import { useForm } from 'react-hook-form';
 import { formatDate } from '../utils/format';
 import {
   AlertCircle,
+  Building2,
   CalendarCheck,
-  CheckCircle2,
+  Check,
   Gift,
   Mars,
-  School,
+  Send,
+  UserPlus,
   Venus,
 } from 'lucide-react';
+import Logo from '../components/atoms/Logo';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { PublicScheduleResponse } from '../types';
-import {
-  Button,
-  Card,
-  CardContent,
-  FormField,
-  Input,
-  Label,
-  PageLoader,
-  Textarea,
-} from '@/components/ui';
+import { Button, FormField, Input, Label, PageLoader, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface FormValues {
@@ -37,11 +31,37 @@ interface FormValues {
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+interface Summary {
+  name: string;
+  height: number | undefined;
+  weight: number | undefined;
+  costumes: string[];
+}
+
+const PageShell = ({ children, sheet }: { children: React.ReactNode; sheet?: boolean }) => (
+  <div className="min-h-screen bg-[#FBFAF7] dark:bg-background">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+      <div className="flex items-center gap-2.5 px-5 pb-3 pt-5">
+        <Logo size={32} />
+        <span className="font-display text-[15px] font-bold">Yume Studio</span>
+      </div>
+      {sheet ? (
+        children
+      ) : (
+        <div className="flex flex-1 flex-col justify-center px-5 pb-20">{children}</div>
+      )}
+    </div>
+  </div>
+);
+
+const inputCls = 'h-[46px] rounded-xl bg-card px-3.5 text-[15px]';
+
 const StudentFormPage = () => {
   const { customer } = useParams<{ customer: string }>();
   const [schedule, setSchedule] = useState<PublicScheduleResponse | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<Status>('idle');
+  const [summary, setSummary] = useState<Summary | null>(null);
 
   const {
     register,
@@ -83,6 +103,12 @@ const StudentFormPage = () => {
 
   const onSubmit = async (data: FormValues) => {
     setSubmitStatus('loading');
+    const rawCostumes: unknown = data.costumes;
+    const costumeIds: string[] = Array.isArray(rawCostumes)
+      ? rawCostumes
+      : rawCostumes
+        ? [String(rawCostumes)]
+        : [];
     try {
       await studentService.createPublic({
         customer,
@@ -91,7 +117,15 @@ const StudentFormPage = () => {
         height: data.height !== '' ? Number(data.height) : undefined,
         weight: data.weight !== '' ? Number(data.weight) : undefined,
         notes: data.notes || undefined,
-        costumes: data.costumes,
+        costumes: costumeIds,
+      });
+      setSummary({
+        name: data.name,
+        height: data.height !== '' ? Number(data.height) : undefined,
+        weight: data.weight !== '' ? Number(data.weight) : undefined,
+        costumes: (schedule?.costumes ?? [])
+          .filter((c) => costumeIds.includes(c._id))
+          .map((c) => c.name),
       });
       setSubmitStatus('success');
       reset();
@@ -102,137 +136,162 @@ const StudentFormPage = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-sm w-full text-center">
-          <CardContent className="py-10">
-            <div className="mb-4 flex justify-center">
-              <AlertCircle className="h-12 w-12 text-amber-500" />
-            </div>
-            <p className="font-medium">Không tìm thấy lớp học</p>
-            <p className="text-sm mt-1 text-muted-foreground">Link có thể không còn hợp lệ</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PageShell>
+        <div className="text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
+            <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+          </div>
+          <p className="font-display text-xl font-bold">Không tìm thấy lớp học</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">Link có thể không còn hợp lệ</p>
+        </div>
+      </PageShell>
     );
   }
 
   if (!schedule) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-[#FBFAF7] dark:bg-background">
         <PageLoader />
       </div>
     );
   }
 
   if (submitStatus === 'success') {
+    const classLine = [schedule.customer.className, schedule.customer.school]
+      .filter(Boolean)
+      .join(' · ');
+    const rows: [string, string][] = [];
+    if (summary?.name) rows.push(['Học sinh', summary.name]);
+    rows.push(['Lớp', classLine]);
+    if (summary && (summary.height !== undefined || summary.weight !== undefined)) {
+      rows.push([
+        'Số đo',
+        [
+          summary.height !== undefined ? `${summary.height} cm` : null,
+          summary.weight !== undefined ? `${summary.weight} kg` : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      ]);
+    }
+    if (summary && summary.costumes.length > 0)
+      rows.push(['Trang phục', summary.costumes.join(', ')]);
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-sm w-full text-center">
-          <CardContent className="p-8">
-            <div className="mb-4 flex justify-center">
-              <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+      <PageShell>
+        <div className="text-center">
+          <div className="mx-auto mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-full bg-emerald-500/15">
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-600 text-white">
+              <Check className="h-7 w-7" strokeWidth={2.5} />
             </div>
-            <h2 className="text-xl font-bold mb-2">Đã ghi nhận!</h2>
-            <p className="text-sm mb-6 text-muted-foreground">
-              Thông tin của bạn đã được lưu thành công.
-            </p>
-            <Button
-              variant="gradient"
-              className="w-full"
-              onClick={() => setSubmitStatus('idle')}
-            >
-              Nhập thêm học sinh khác
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <h2 className="font-display text-2xl font-bold">Đã ghi nhận!</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">
+            Thông tin của bạn đã được lưu thành công.
+          </p>
+        </div>
+        {summary && (
+          <div className="mt-6 space-y-2.5 rounded-2xl border bg-card p-4 text-sm">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{k}</span>
+                <span className="text-right font-semibold">{v}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <Button
+          variant="outline"
+          className="mt-4 h-12 w-full rounded-xl font-semibold"
+          onClick={() => setSubmitStatus('idle')}
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Nhập thêm học sinh khác
+        </Button>
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center py-10 px-4 bg-background">
-      <Card className="w-full max-w-md p-0 overflow-hidden">
-        <div className="px-6 py-5 border-b">
-          <p className="text-xs uppercase tracking-wider mb-1 text-muted-foreground">
-            Nhập thông tin học sinh
+    <PageShell sheet>
+      <div className="px-5 pb-6 pt-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary-700 dark:text-primary">
+          Nhập thông tin học sinh
+        </p>
+        <h1 className="mt-1.5 font-display text-[28px] font-bold leading-tight">
+          {schedule.customer.className}
+        </h1>
+        {schedule.customer.school && (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            <span>{schedule.customer.school}</span>
           </p>
-          <h1 className="text-xl font-bold flex items-center gap-2 flex-wrap">
-            <span>{schedule.customer.className}</span>
-            {schedule.customer.school && (
-              <span className="text-sm font-light text-muted-foreground inline-flex items-center gap-1">
-                <School className="h-4 w-4 text-sky-500" />
-                <span>{schedule.customer.school}</span>
-              </span>
-            )}
-          </h1>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 px-3 py-1.5 text-xs font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
+            <CalendarCheck className="h-3.5 w-3.5" />
+            Ngày chụp: {formatDate(schedule.shootDate)}
+          </span>
+          {schedule.package && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              <Gift className="h-3.5 w-3.5" />
+              Gói chụp: {schedule.package.name}
+            </span>
+          )}
+        </div>
+      </div>
 
-          <div className="flex flex-col">
-            <p className="text-sm text-primary mt-1.5 font-medium inline-flex items-center gap-1.5">
-              <CalendarCheck className="h-4 w-4" />
-              <span>Ngày chụp: {formatDate(schedule.shootDate)}</span>
-            </p>
-            {schedule.package && (
-              <p className="text-sm text-emerald-600 mt-1.5 font-medium inline-flex items-center gap-1.5">
-                <Gift className="h-4 w-4" />
-                <span>Gói chụp: {schedule.package.name}</span>
-              </p>
-            )}
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex-1 space-y-5 rounded-t-[28px] border-t bg-card px-5 pb-10 pt-6 shadow-[0_-4px_24px_rgba(0,0,0,0.03)]"
+      >
+        <FormField label="Họ và tên" required htmlFor="name" error={errors.name?.message}>
+          <Input
+            id="name"
+            placeholder="Nguyễn Văn A"
+            className={inputCls}
+            {...register('name', { required: 'Vui lòng nhập họ tên' })}
+          />
+        </FormField>
+
+        <div className="space-y-1.5">
+          <Label>
+            Giới tính <span className="text-destructive">*</span>
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            {(['male', 'female'] as const).map((g) => (
+              <label
+                key={g}
+                className={cn(
+                  'flex h-[52px] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring cursor-pointer items-center justify-center gap-2 rounded-xl border bg-card text-[15px] font-semibold transition-colors hover:bg-muted',
+                  gender === g &&
+                    'border-primary bg-primary-100 hover:bg-primary-100 dark:bg-primary/15',
+                )}
+              >
+                <input
+                  type="radio"
+                  value={g}
+                  {...register('gender', { required: true })}
+                  className="peer sr-only"
+                />
+                {g === 'male' ? (
+                  <>
+                    <Mars className="h-[18px] w-[18px] text-sky-500" />
+                    <span>Nam</span>
+                  </>
+                ) : (
+                  <>
+                    <Venus className="h-[18px] w-[18px] text-pink-500" />
+                    <span>Nữ</span>
+                  </>
+                )}
+              </label>
+            ))}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
-          <FormField label="Họ và tên" required htmlFor="name" error={errors.name?.message}>
-            <Input
-              id="name"
-              placeholder="Nguyễn Văn A"
-              {...register('name', { required: 'Vui lòng nhập họ tên' })}
-            />
-          </FormField>
-
-          <div className="space-y-1.5">
-            <Label>
-              Giới tính <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex gap-3">
-              {(['male', 'female'] as const).map((g) => (
-                <label
-                  key={g}
-                  className={cn(
-                    'flex-1 inline-flex items-center justify-center gap-2 rounded-md border bg-card px-3 py-2.5 cursor-pointer hover:bg-muted',
-                    gender === g && 'border-primary bg-primary/5',
-                  )}
-                >
-                  <input
-                    type="radio"
-                    value={g}
-                    {...register('gender', { required: true })}
-                    className="accent-primary"
-                  />
-                  <span className="text-sm inline-flex items-center gap-1.5">
-                    {g === 'male' ? (
-                      <>
-                        <Mars className="h-4 w-4 text-sky-600" />
-                        <span>Nam</span>
-                      </>
-                    ) : (
-                      <>
-                        <Venus className="h-4 w-4 text-pink-500" />
-                        <span>Nữ</span>
-                      </>
-                    )}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              label="Chiều cao (cm)"
-              required
-              htmlFor="height"
-              error={errors.height?.message}
-            >
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Chiều cao" required htmlFor="height" error={errors.height?.message}>
+            <div className="relative">
               <Input
                 id="height"
                 type="number"
@@ -240,18 +299,19 @@ const StudentFormPage = () => {
                 min="50"
                 max="250"
                 placeholder="165"
+                className={cn(inputCls, 'pr-11')}
                 {...register('height', {
                   required: 'Vui lòng nhập chiều cao',
                   validate: (v) => (v !== '' && Number(v) > 0) || 'Chiều cao không hợp lệ',
                 })}
               />
-            </FormField>
-            <FormField
-              label="Cân nặng (kg)"
-              required
-              htmlFor="weight"
-              error={errors.weight?.message}
-            >
+              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                cm
+              </span>
+            </div>
+          </FormField>
+          <FormField label="Cân nặng" required htmlFor="weight" error={errors.weight?.message}>
+            <div className="relative">
               <Input
                 id="weight"
                 type="number"
@@ -259,51 +319,67 @@ const StudentFormPage = () => {
                 min="10"
                 max="200"
                 placeholder="55"
+                className={cn(inputCls, 'pr-10')}
                 {...register('weight', {
                   required: 'Vui lòng nhập cân nặng',
                   validate: (v) => (v !== '' && Number(v) > 0) || 'Cân nặng không hợp lệ',
                 })}
               />
-            </FormField>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Trang phục</Label>
-            <div className="flex flex-wrap gap-3">
-              {visibleCostumes.map((c) => (
-                <label
-                  key={c._id}
-                  className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 cursor-pointer hover:bg-muted text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    value={c._id}
-                    {...register('costumes')}
-                    className="accent-primary h-4 w-4"
-                  />
-                  <span>{c.name}</span>
-                </label>
-              ))}
+              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                kg
+              </span>
             </div>
-            <p className="text-xs ml-1 text-muted-foreground">
-              Đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
-            </p>
-          </div>
-
-          <FormField label="Ghi chú" htmlFor="notes">
-            <Textarea id="notes" rows={2} placeholder="Tuỳ chọn…" {...register('notes')} />
           </FormField>
+        </div>
 
-          {submitStatus === 'error' && (
-            <p className="text-destructive text-sm">Có lỗi xảy ra, vui lòng thử lại.</p>
-          )}
+        <div className="space-y-1.5">
+          <Label>Trang phục</Label>
+          <p className="text-xs text-muted-foreground">
+            Đây là trang phục trong gói chụp của lớp, nếu không dùng có thể bỏ chọn.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {visibleCostumes.map((c) => (
+              <label key={c._id} className="cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={c._id}
+                  {...register('costumes')}
+                  className="peer sr-only"
+                />
+                <span className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border bg-card px-3 text-sm font-medium peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-checked:border-primary peer-checked:bg-primary-100 peer-checked:text-primary-700 dark:peer-checked:bg-primary/15 dark:peer-checked:text-primary [&>svg]:hidden peer-checked:[&>svg]:block">
+                  <Check className="h-3.5 w-3.5" />
+                  {c.name}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
 
-          <Button type="submit" variant="gradient" disabled={isSubmitting} className="w-full py-3">
-            {isSubmitting ? 'Đang gửi…' : 'Gửi thông tin'}
-          </Button>
-        </form>
-      </Card>
-    </div>
+        <FormField label="Ghi chú" htmlFor="notes">
+          <Textarea
+            id="notes"
+            rows={3}
+            placeholder="Tuỳ chọn…"
+            className="rounded-xl bg-card px-3.5 py-3 text-[15px]"
+            {...register('notes')}
+          />
+        </FormField>
+
+        {submitStatus === 'error' && (
+          <p className="text-sm text-destructive">Có lỗi xảy ra, vui lòng thử lại.</p>
+        )}
+
+        <Button
+          type="submit"
+          variant="gradient"
+          disabled={isSubmitting}
+          className="h-[50px] w-full rounded-xl text-[15px] font-semibold shadow-[0_6px_16px_rgba(245,158,11,0.3)]"
+        >
+          <Send className="mr-2 h-4 w-4" />
+          {isSubmitting ? 'Đang gửi…' : 'Gửi thông tin'}
+        </Button>
+      </form>
+    </PageShell>
   );
 };
 

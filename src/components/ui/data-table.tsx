@@ -106,11 +106,13 @@ export function DataTable<T>({
   const pageSizeOptions = paginationOpts?.pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS;
 
   const wrapperCls =
-    variant === 'card' ? cn('rounded-lg border bg-card overflow-hidden', className) : className;
+    variant === 'card'
+      ? cn('rounded-[14px] border bg-card overflow-hidden', className)
+      : className;
 
   const renderTitle = () =>
     title ? (
-      <div className="px-6 py-4 border-b bg-muted/40">
+      <div className="px-5 py-4 border-b">
         {typeof title === 'string' ? (
           <h3 className="font-semibold text-foreground">{title}</h3>
         ) : (
@@ -149,19 +151,19 @@ export function DataTable<T>({
     );
   }
 
-  const cellPad = dense ? 'px-3 py-1.5' : 'px-3 py-2';
+  const cellPad = dense ? 'px-4 py-2' : 'px-5 py-3';
   const textCls = textSize === 'xs' ? 'text-xs' : 'text-sm';
 
   const table = (
     <Table className={textCls}>
-      <TableHeader className={cn('bg-muted/40', stickyHeader && 'sticky top-0 z-10')}>
+      <TableHeader className={cn('bg-muted/60', stickyHeader && 'sticky top-0 z-10')}>
         <TableRow>
           {columns.map((col) => (
             <TableHead
               key={col.key}
               className={cn(
                 cellPad,
-                'font-semibold uppercase tracking-wide text-xs text-muted-foreground',
+                'h-10 font-semibold uppercase tracking-[0.06em] text-[11px] text-muted-foreground/80',
                 alignClass[col.align ?? 'left'],
                 col.className,
               )}

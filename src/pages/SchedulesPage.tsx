@@ -2,14 +2,17 @@ import type { Column } from '@/components/ui';
 import {
   Badge,
   Button,
-  Checkbox,
   Combobox,
   ConfirmDialog,
   DataTable,
   DatePicker,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   FormField,
   Input,
-  Modal,
+  MultiSelect,
   PageHeader,
   SegmentedControl,
   Select,
@@ -26,27 +29,27 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
-  Briefcase,
   Calendar,
+  CalendarPlus,
   Check,
   Clock,
-  Delete,
-  Edit,
+  Copy,
+  ExternalLink,
+  FileText,
   FolderOpen,
+  Gift,
   MapPin,
-  Mars,
-  Paperclip,
+  Pencil,
   Plus,
   Search,
   Shirt,
   StickyNote,
   Table as TableIcon,
-  Users as UsersIcon,
-  Venus,
-  VenusAndMars,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { ScheduleCalendar } from '../components/organisms';
@@ -60,10 +63,7 @@ import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
 import type { CostumeResponse, ExtraService, ScheduleResponse } from '../types';
 import { ROLE_LABELS } from '../types';
 import { formatDate } from '../utils/format';
-import {
-  SCHEDULE_STATUS_COLOR as statusColor,
-  SCHEDULE_STATUS_LABEL as statusLabel,
-} from '../utils/scheduleConstants';
+import { SCHEDULE_STATUS_LABEL as statusLabel } from '../utils/scheduleConstants';
 
 interface FilterState {
   status: string;
@@ -89,14 +89,24 @@ interface ContractFormValues {
 const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
 const ALL = '__all__';
 
-const getInitials = (fullName: string) =>
-  fullName
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'danger'> = {
+  pending: 'warning',
+  confirmed: 'info',
+  completed: 'success',
+  cancelled: 'danger',
+};
+
+const StatusBadge = ({ status, className }: { status: string; className?: string }) => (
+  <Badge variant={STATUS_VARIANT[status] ?? 'neutral'} dot className={className}>
+    {statusLabel[status] ?? status}
+  </Badge>
+);
+
+/** Vietnamese names: the given name is the last word → use its first letter. */
+const getInitial = (fullName: string) => {
+  const words = fullName.trim().split(/\s+/);
+  return (words[words.length - 1]?.[0] ?? '?').toUpperCase();
+};
 
 const getHue = (s: string) => {
   let hash = 0;
@@ -104,46 +114,123 @@ const getHue = (s: string) => {
   return Math.abs(hash) % 360;
 };
 
-const UserAvatar = ({ name, size = 32 }: { name: string; size?: number }) => {
-  const hue = getHue(name);
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className="rounded-full inline-flex items-center justify-center text-xs font-semibold text-white ring-2 ring-background shadow-sm select-none cursor-default"
-          style={{
-            backgroundColor: `hsl(${hue}, 65%, 45%)`,
-            width: size,
-            height: size,
-          }}
-          aria-label={name}
-        >
-          {getInitials(name)}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{name}</TooltipContent>
-    </Tooltip>
-  );
+const AVATAR_TONES = [
+  'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200',
+  'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-200',
+  'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200',
+  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200',
+  'bg-pink-100 text-pink-800 dark:bg-pink-500/20 dark:text-pink-200',
+  'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200',
+];
+
+const avatarTone = (name: string) => AVATAR_TONES[getHue(name) % AVATAR_TONES.length];
+
+const UserAvatar = ({
+  name,
+  size = 26,
+  tooltip,
+  className,
+}: {
+  name: string;
+  size?: number;
+  tooltip?: string;
+  className?: string;
+}) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span
+        className={cn(
+          'inline-flex shrink-0 cursor-default select-none items-center justify-center rounded-full text-[11px] font-bold ring-2 ring-card',
+          avatarTone(name),
+          className,
+        )}
+        style={{ width: size, height: size }}
+        aria-label={tooltip ?? name}
+      >
+        {getInitial(name)}
+      </span>
+    </TooltipTrigger>
+    <TooltipContent>{tooltip ?? name}</TooltipContent>
+  </Tooltip>
+);
+
+/** Soft tinted square icon tile. */
+const IconTile = ({ className, children }: { className?: string; children: React.ReactNode }) => (
+  <span
+    className={cn(
+      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4',
+      className,
+    )}
+  >
+    {children}
+  </span>
+);
+
+const SectionLabel = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      'text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground',
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
+
+const iconActionCls =
+  'inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground';
+
+const filterControlCls = 'h-[38px] rounded-[10px] border-border bg-card shadow-none';
+
+const DOW_LONG = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+const formatDateWithDow = (iso: string) => {
+  const d = new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+  return Number.isNaN(d.getTime())
+    ? formatDate(iso)
+    : `${DOW_LONG[d.getDay()]}, ${formatDate(iso)}`;
 };
 
-const GENDER_META: Record<
-  'male' | 'female' | 'unisex',
-  { label: string; icon: React.ReactNode; cls: string }
-> = {
+const InfoRow = ({
+  icon,
+  tone,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  tone: string;
+  label: string;
+  children?: React.ReactNode;
+}) => (
+  <div className="flex items-center gap-3">
+    <IconTile className={tone}>{icon}</IconTile>
+    <div className="min-w-0">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="break-words text-sm font-medium text-foreground">
+        {children || <span className="font-normal italic text-muted-foreground">Chưa có</span>}
+      </div>
+    </div>
+  </div>
+);
+
+const GENDER_META: Record<'male' | 'female' | 'unisex', { label: string; cls: string }> = {
   male: {
     label: 'Nam',
-    icon: <Mars className="h-3 w-3" />,
-    cls: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
+    cls: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
   },
   female: {
     label: 'Nữ',
-    icon: <Venus className="h-3 w-3" />,
-    cls: 'bg-pink-500/10 text-pink-500 border-pink-500/30',
+    cls: 'bg-pink-500/15 text-pink-700 dark:text-pink-300',
   },
   unisex: {
     label: 'Unisex',
-    icon: <VenusAndMars className="h-3 w-3" />,
-    cls: 'bg-violet-500/10 text-violet-500 border-violet-500/30',
+    cls: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
   },
 };
 
@@ -194,12 +281,12 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
   if (costumes.length === 0) {
     return (
       <div>
-        <div className="text-sm font-medium mb-1.5">
+        <SectionLabel className="mb-3">
           Trang phục <span className="text-destructive">*</span>
-        </div>
-        <div className="rounded-lg border border-dashed border-destructive/50 bg-destructive/5 px-4 py-6 text-center">
-          <Shirt className="mx-auto h-6 w-6 text-destructive mb-2" />
-          <p className="text-sm text-destructive font-medium">
+        </SectionLabel>
+        <div className="rounded-[12px] border border-dashed border-destructive/50 bg-destructive/5 px-4 py-6 text-center">
+          <Shirt className="mx-auto mb-2 h-6 w-6 text-destructive" />
+          <p className="text-sm font-medium text-destructive">
             Gói chụp này chưa có trang phục nào được liên kết.
           </p>
         </div>
@@ -209,42 +296,28 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-sm font-medium flex items-center gap-2">
-          <Shirt className="h-4 w-4 text-primary" />
-          Trang phục <span className="text-destructive">*</span>
-          {selected.length > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-semibold">
-              {selected.length}/{costumes.length} đã chọn
-            </span>
-          )}
-        </div>
-        {selected.length > 0 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-auto px-2 py-1 text-xs"
-            onClick={() => onChange([])}
-          >
-            <X className="h-3 w-3 mr-1" /> Bỏ chọn tất cả
-          </Button>
-        )}
-      </div>
+      <SectionLabel className="mb-3">
+        Trang phục <span className="text-destructive">*</span>
+      </SectionLabel>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="flex flex-wrap items-center gap-2 px-2.5 py-2 border-b">
-          <div className="relative flex-1 min-w-[10rem]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      <div
+        className={cn(
+          'rounded-[12px] border bg-muted/50 p-3 sm:p-4',
+          showError && 'border-destructive/60',
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[10rem] flex-1 sm:max-w-[240px]">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm trang phục..."
-              className="pl-8 h-8 text-base"
+              className="h-9 bg-card pl-8 text-base sm:text-sm"
             />
           </div>
-          <div className="inline-flex rounded-lg border overflow-hidden text-xs">
+          <div className="inline-flex items-center gap-0.5 rounded-[9px] bg-muted p-[3px] text-xs">
             {(['all', 'male', 'female', 'unisex'] as const).map((g) => {
               const active = genderFilter === g;
               const labels: Record<typeof g, string> = {
@@ -259,10 +332,10 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                   type="button"
                   onClick={() => setGenderFilter(g)}
                   className={cn(
-                    'px-2.5 py-1.5 transition-colors',
+                    'rounded-[7px] px-2.5 py-1 transition-colors',
                     active
-                      ? 'bg-primary text-primary-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-muted',
+                      ? 'bg-card font-semibold text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
+                      : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {labels[g]}
@@ -270,11 +343,27 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
               );
             })}
           </div>
+          <div className="ml-auto flex items-center gap-3 text-[13px]">
+            {selected.length > 0 && (
+              <span className="font-semibold text-primary-700 tabular dark:text-primary">
+                {selected.length}/{costumes.length} đã chọn
+              </span>
+            )}
+            {selected.length > 0 && (
+              <button
+                type="button"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => onChange([])}
+              >
+                Bỏ chọn tất cả
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="max-h-72 overflow-y-auto p-2 space-y-3">
+        <div className="mt-3 max-h-72 space-y-3 overflow-y-auto pr-1">
           {groups.length === 0 ? (
-            <div className="text-center py-6 text-sm text-muted-foreground">
+            <div className="py-6 text-center text-sm text-muted-foreground">
               Không tìm thấy trang phục phù hợp.
             </div>
           ) : (
@@ -283,20 +372,16 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
               const someSelected = g.items.some((c) => selected.includes(c._id));
               return (
                 <div key={g.id}>
-                  <div className="flex items-center justify-between mb-1.5 px-1">
+                  <div className="mb-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {g.name}
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      <span className="text-[13px] font-semibold text-foreground">{g.name}</span>
+                      <span className="text-[11px] text-muted-foreground tabular">
                         {g.items.length}
                       </span>
                     </div>
-                    <Button
+                    <button
                       type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
+                      className="text-xs font-medium text-primary-700 hover:underline dark:text-primary"
                       onClick={() => toggleGroup(g.items, allSelected)}
                     >
                       {allSelected
@@ -304,9 +389,9 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                         : someSelected
                           ? 'Chọn hết nhóm'
                           : 'Chọn tất cả'}
-                    </Button>
+                    </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {g.items.map((c) => {
                       const checked = selected.includes(c._id);
                       const meta = GENDER_META[c.gender];
@@ -314,10 +399,10 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                         <label
                           key={c._id}
                           className={cn(
-                            'group flex items-center gap-2 px-2 py-1.5 rounded-lg border cursor-pointer transition-all',
+                            'group inline-flex max-w-full cursor-pointer items-center gap-2 rounded-[9px] border bg-card px-2.5 py-1.5 transition-colors',
                             checked
-                              ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
-                              : 'border-border hover:border-primary/50 hover:bg-muted',
+                              ? 'border-primary bg-primary-100/60 dark:bg-primary/10'
+                              : 'border-border hover:border-primary/50',
                           )}
                         >
                           <input
@@ -328,23 +413,22 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                           />
                           <span
                             className={cn(
-                              'shrink-0 w-4 h-4 rounded border inline-flex items-center justify-center transition-colors',
+                              'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
                               checked
-                                ? 'bg-primary border-primary text-primary-foreground'
+                                ? 'border-primary bg-primary text-primary-foreground'
                                 : 'border-muted-foreground/40 group-hover:border-primary',
                             )}
                           >
-                            {checked && <Check className="h-2.5 w-2.5" />}
+                            {checked && <Check className="h-3 w-3" strokeWidth={3} />}
                           </span>
-                          <span className="text-sm truncate flex-1">{c.name}</span>
+                          <span className="truncate text-[13px] text-foreground">{c.name}</span>
                           <span
                             className={cn(
-                              'shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium',
+                              'shrink-0 rounded-[5px] px-1.5 py-px text-[10px] font-semibold',
                               meta.cls,
                             )}
-                            title={meta.label}
                           >
-                            {meta.icon}
+                            {meta.label}
                           </span>
                         </label>
                       );
@@ -358,7 +442,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
       </div>
 
       {showError && (
-        <p className="text-xs text-destructive mt-1.5 flex items-center gap-1">
+        <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
           <X className="h-3 w-3" /> Vui lòng chọn ít nhất một trang phục.
         </p>
       )}
@@ -396,6 +480,8 @@ interface ScheduleFormValues {
 
 const SchedulesPage = () => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { list: schedules, total, loading } = useAppSelector((s) => s.schedules);
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: packages } = useAppSelector((s) => s.packages);
@@ -487,6 +573,14 @@ const SchedulesPage = () => {
     reset({ status: 'pending', season: selectedSeasonId || null, extraServices: [] });
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if ((location.state as { openCreate?: boolean } | null)?.openCreate) {
+      openCreate();
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openEdit = (s: ScheduleResponse) => {
     setEditing(s);
@@ -639,19 +733,38 @@ const SchedulesPage = () => {
         notes: s.notes,
         className: s.customer?.className ?? '—',
         leadName: s.leadPhotographer?.name ?? s.leadPhotographer?.username,
+        school: s.customer?.school,
+        packageName: s.package?.name,
+        packagePrice: s.package?.pricePerMember,
+        supportNames: s.supportPhotographers
+          .map((u) => u.name ?? u.username)
+          .filter(Boolean) as string[],
+        driveFolderUrl: s.driveFolderUrl,
+        studentCount: s.customer?.total,
       })),
     [schedules],
   );
+
+  // Status counts are only meaningful when every matching schedule is on this page.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    schedules.forEach((s) => {
+      counts[s.status] = (counts[s.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [schedules]);
+  const showStatusCounts = schedules.length > 0 && schedules.length >= total;
+
+  const findSchedule = (id: string) => schedules.find((x) => x._id === id);
 
   const scheduleColumns: Column<ScheduleResponse>[] = [
     {
       key: 'date',
       header: 'Ngày chụp',
-      className: 'font-medium',
       render: (s) => (
         <div className="flex flex-col">
-          <span>{formatDate(s.shootDate)} </span>
-          <span className="text-muted-foreground text-xs whitespace-nowrap break-keep">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
+          <span className="font-semibold text-foreground tabular">{formatDate(s.shootDate)}</span>
+          <span className="whitespace-nowrap break-keep text-xs text-muted-foreground tabular">{`${s.startTime ?? ''}${s.endTime ? ` – ${s.endTime}` : ''}`}</span>
         </div>
       ),
     },
@@ -660,10 +773,10 @@ const SchedulesPage = () => {
       header: 'Lớp',
       render: (s) => (
         <div className="flex flex-col">
-          <span className="font-medium text-primary whitespace-nowrap break-keep">
+          <span className="whitespace-nowrap break-keep font-semibold text-foreground">
             {s.customer?.className ?? '—'}
           </span>
-          <span className="text-muted-foreground text-xs whitespace-nowrap break-keep">
+          <span className="whitespace-nowrap break-keep text-xs text-muted-foreground">
             {s.customer?.school ?? ''}
           </span>
         </div>
@@ -672,39 +785,27 @@ const SchedulesPage = () => {
     {
       key: 'package',
       header: 'Gói chụp',
-      className: 'text-muted-foreground',
+      className: 'whitespace-nowrap text-foreground/80',
       render: (s) => s.package?.name ?? '—',
     },
     {
-      key: 'sale',
-      header: 'Sale',
+      key: 'crew',
+      header: 'Ekip',
       render: (s) => {
-        const fullName = s.bookedBy?.name ?? s.bookedBy?.username;
-        if (!fullName) return '—';
-        return <UserAvatar name={fullName} />;
-      },
-    },
-    {
-      key: 'leader',
-      header: 'Leader',
-      render: (s) => {
-        const fullName = s.leadPhotographer?.name ?? s.leadPhotographer?.username;
-        if (!fullName) return '—';
-        return <UserAvatar name={fullName} />;
-      },
-    },
-    {
-      key: 'support',
-      header: 'Support',
-      render: (s) => {
-        const names = s.supportPhotographers
-          .map((u) => u.name ?? u.username)
-          .filter(Boolean) as string[];
-        if (names.length === 0) return '—';
+        const sale = s.bookedBy?.name ?? s.bookedBy?.username;
+        const lead = s.leadPhotographer?.name ?? s.leadPhotographer?.username;
+        const crew = [
+          ...(sale ? [{ name: sale, role: 'Sale' }] : []),
+          ...(lead ? [{ name: lead, role: 'Leader' }] : []),
+          ...(
+            s.supportPhotographers.map((u) => u.name ?? u.username).filter(Boolean) as string[]
+          ).map((name) => ({ name, role: 'Support' })),
+        ];
+        if (crew.length === 0) return <span className="text-muted-foreground">—</span>;
         return (
-          <span className="inline-flex -space-x-2">
-            {names.map((n, i) => (
-              <UserAvatar key={i} name={n} size={28} />
+          <span className="inline-flex -space-x-1.5">
+            {crew.map((c, i) => (
+              <UserAvatar key={i} name={c.name} tooltip={`${c.role}: ${c.name}`} />
             ))}
           </span>
         );
@@ -713,67 +814,72 @@ const SchedulesPage = () => {
     {
       key: 'status',
       header: 'Trạng thái',
-      render: (s) => (
-        <Badge variant="outline" className={cn('border-transparent', statusColor[s.status])}>
-          {statusLabel[s.status]}
-        </Badge>
-      ),
+      render: (s) => <StatusBadge status={s.status} className="whitespace-nowrap" />,
     },
     {
       key: 'notes',
       header: 'Ghi chú',
-      render: (s) => (
-        <span
-          className="block truncate text-muted-foreground whitespace-pre-line"
-          title={s.notes || ''}
-        >
-          {s.notes || '—'}
-        </span>
-      ),
+      render: (s) =>
+        s.notes ? (
+          <span
+            className="inline-flex max-w-[220px] items-center gap-1.5 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"
+            title={s.notes}
+          >
+            <StickyNote className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{s.notes}</span>
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       key: 'actions',
       header: '',
       align: 'right',
       render: (s) => (
-        <span className="space-x-2 flex">
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-emerald-600"
+        <span className="inline-flex items-center gap-0.5">
+          <button
+            type="button"
+            className={iconActionCls}
+            title="Hợp đồng"
+            aria-label="Hợp đồng"
             onClick={(e) => {
               e.stopPropagation();
               handleDownloadContract(s);
             }}
           >
-            <Paperclip className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs"
+            <FileText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={iconActionCls}
+            title="Sửa"
+            aria-label="Sửa"
             onClick={(e) => {
               e.stopPropagation();
               openEdit(s);
             }}
           >
-            <Edit className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-destructive"
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={cn(iconActionCls, 'text-rose-600 hover:bg-rose-500/10 hover:text-rose-600')}
+            title="Xoá"
+            aria-label="Xoá"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete(s._id);
             }}
           >
-            <Delete className="h-3.5 w-3.5" />
-          </Button>
+            <Trash2 className="h-4 w-4" />
+          </button>
         </span>
       ),
     },
   ];
+
+  const formFieldCls = 'h-10 rounded-[10px]';
 
   return (
     <div>
@@ -782,7 +888,7 @@ const SchedulesPage = () => {
         title="Lịch chụp"
         description="Theo dõi và sắp xếp lịch chụp ảnh theo ngày."
         action={
-          <div className="flex items-center gap-2 justify-between w-full md:w-auto">
+          <div className="flex w-full items-center justify-between gap-2 md:w-auto">
             <SegmentedControl
               value={viewMode}
               onChange={(v) => setViewMode(v as 'table' | 'calendar')}
@@ -791,81 +897,96 @@ const SchedulesPage = () => {
                 { value: 'calendar', label: 'Lịch', icon: <Calendar className="h-3.5 w-3.5" /> },
               ]}
             />
-            <Button variant="gradient" onClick={openCreate}>
-              + Thêm lịch
+            <Button onClick={openCreate}>
+              <Plus /> Thêm lịch
             </Button>
           </div>
         }
       />
 
-      <div className="rounded-xl border bg-card p-4 mb-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-1 min-w-[8rem]">
-            <Select
-              value={filter.status || ALL}
-              onValueChange={(v) => setFilter((f) => ({ ...f, status: v === ALL ? '' : v }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                {Object.entries(statusLabel).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>
-                    {l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1 min-w-[8rem]">
-            <Combobox
-              options={[
-                { value: '', label: 'Tất cả lớp' },
-                ...customers.map((c) => ({ value: c._id, label: c.className })),
-              ]}
-              value={filter.customer}
-              onChange={(v) => setFilter((f) => ({ ...f, customer: v }))}
-              placeholder="Tất cả lớp"
-            />
-          </div>
-          <DatePicker
-            value={filter.dateFrom}
-            onChange={(v) => setFilter((f) => ({ ...f, dateFrom: v ?? '' }))}
-            placeholder="Từ ngày"
-            className="flex-1 min-w-[8rem]"
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Select
+          value={filter.status || ALL}
+          onValueChange={(v) => setFilter((f) => ({ ...f, status: v === ALL ? '' : v }))}
+        >
+          <SelectTrigger className={cn(filterControlCls, 'w-full sm:w-[180px]')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+            {Object.entries(statusLabel).map(([v, l]) => (
+              <SelectItem key={v} value={v}>
+                {l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="w-full sm:w-[200px]">
+          <Combobox
+            options={[
+              { value: '', label: 'Tất cả lớp' },
+              ...customers.map((c) => ({ value: c._id, label: c.className })),
+            ]}
+            value={filter.customer}
+            onChange={(v) => setFilter((f) => ({ ...f, customer: v }))}
+            placeholder="Tất cả lớp"
+            className={filterControlCls}
           />
-          <DatePicker
-            value={filter.dateTo}
-            onChange={(v) => setFilter((f) => ({ ...f, dateTo: v ?? '' }))}
-            placeholder="Đến ngày"
-            className="flex-1 min-w-[8rem]"
-          />
-          <Button variant="gradient" onClick={applyFilter}>
-            Lọc
-          </Button>
-          <Button variant="outline" onClick={resetFilter}>
-            Xoá lọc
-          </Button>
         </div>
+        <DatePicker
+          value={filter.dateFrom}
+          onChange={(v) => setFilter((f) => ({ ...f, dateFrom: v ?? '' }))}
+          placeholder="Từ ngày"
+          className={cn(filterControlCls, 'min-w-[8rem] flex-1 sm:w-[160px] sm:flex-none')}
+        />
+        <DatePicker
+          value={filter.dateTo}
+          onChange={(v) => setFilter((f) => ({ ...f, dateTo: v ?? '' }))}
+          placeholder="Đến ngày"
+          className={cn(filterControlCls, 'min-w-[8rem] flex-1 sm:w-[160px] sm:flex-none')}
+        />
+        <Button variant="outline" onClick={applyFilter}>
+          <Search /> Lọc
+        </Button>
+        <Button variant="link" className="px-2" onClick={resetFilter}>
+          Xoá lọc
+        </Button>
+        {showStatusCounts && (
+          <div className="flex flex-wrap items-center gap-1.5 lg:ml-auto">
+            {Object.keys(statusLabel)
+              .filter((k) => statusCounts[k])
+              .map((k) => (
+                <Badge key={k} variant={STATUS_VARIANT[k]} dot className="font-medium">
+                  {statusLabel[k]} · {statusCounts[k]}
+                </Badge>
+              ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
-        <TableSkeleton cols={11} />
+        <TableSkeleton cols={7} />
       ) : viewMode === 'calendar' ? (
-        <div className="rounded-xl border bg-card p-4">
-          <ScheduleCalendar
-            items={calendarItems}
-            onEdit={(id) => {
-              const s = schedules.find((x) => x._id === id);
-              if (s) openEdit(s);
-            }}
-            onDelete={handleDelete}
-          />
-        </div>
+        <ScheduleCalendar
+          items={calendarItems}
+          sidePanel
+          onOpen={(id) => {
+            const s = findSchedule(id);
+            if (s) setDetail(s);
+          }}
+          onContract={(id) => {
+            const s = findSchedule(id);
+            if (s) handleDownloadContract(s);
+          }}
+          onEdit={(id) => {
+            const s = findSchedule(id);
+            if (s) openEdit(s);
+          }}
+          onDelete={handleDelete}
+        />
       ) : (
         <>
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden overflow-x-auto md:block">
             <DataTable<ScheduleResponse>
               data={schedules}
               keyExtractor={(s) => s._id}
@@ -886,93 +1007,102 @@ const SchedulesPage = () => {
             />
           </div>
 
-          <div className="md:hidden space-y-3">
+          <div className="space-y-3 md:hidden">
             {schedules.map((s) => {
               const customer = s.customer;
               const leadName = s.leadPhotographer?.name ?? s.leadPhotographer?.username ?? null;
               const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
               const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
               return (
-                <div key={s._id} className="rounded-xl border bg-card p-4">
-                  <div className="flex items-start justify-between mb-2 gap-2">
+                <div key={s._id} className="rounded-[14px] border bg-card p-4">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-semibold">{formatDate(s.shootDate)}</div>
-                      <div className="text-primary text-sm mt-0.5 truncate">
+                      <div className="text-[15px] font-semibold text-foreground">
                         {customer?.className ?? '—'}
-                        {customer?.school && (
-                          <span className="text-muted-foreground"> · {customer.school}</span>
-                        )}
                       </div>
+                      {customer?.school && (
+                        <div className="truncate text-xs text-muted-foreground">
+                          {customer.school}
+                        </div>
+                      )}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={cn('border-transparent shrink-0', statusColor[s.status])}
-                    >
-                      {statusLabel[s.status]}
-                    </Badge>
+                    <StatusBadge status={s.status} className="shrink-0" />
                   </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    {(s.startTime || s.endTime) && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 shrink-0 text-primary" />
-                        <span>
+                  <div className="mt-3 space-y-1.5 text-[13px] text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      <span className="font-medium text-foreground tabular">
+                        {formatDate(s.shootDate)}
+                      </span>
+                      {(s.startTime || s.endTime) && (
+                        <span className="inline-flex items-center gap-1 tabular">
+                          <Clock className="ml-1 h-3.5 w-3.5 shrink-0" />
                           {s.startTime}
                           {s.endTime ? ` – ${s.endTime}` : ''}
                         </span>
+                      )}
+                    </div>
+                    {s.package?.name && (
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-3.5 w-3.5 shrink-0" />
+                        <span className="text-foreground/80">{s.package.name}</span>
                       </div>
                     )}
                     {s.location && (
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 shrink-0 text-rose-500" />
-                        <span>{s.location}</span>
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        <span className="text-foreground/80">{s.location}</span>
                       </div>
                     )}
                     {leadName && (
                       <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 shrink-0 text-blue-500" />
+                        <UserAvatar name={leadName} size={20} className="text-[10px]" />
                         <span>Leader:</span> <span className="text-foreground">{leadName}</span>
                       </div>
                     )}
                     {supports && (
                       <div className="flex items-center gap-2">
-                        <UsersIcon className="h-4 w-4 shrink-0 text-violet-500" />
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-bold text-violet-700 dark:text-violet-300">
+                          {s.supportPhotographers.length}
+                        </span>
                         <span>Support:</span> <span className="text-foreground">{supports}</span>
                       </div>
                     )}
                     {s.notes && (
-                      <div className="mt-1 flex items-start gap-2 rounded-md border border-yellow-400/40 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300 text-xs font-medium px-2 py-1 whitespace-pre-line">
-                        <StickyNote className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <div className="mt-2 flex items-start gap-2 whitespace-pre-line rounded-[10px] bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                        <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>{s.notes}</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t">
+                  <div className="mt-3 flex items-center gap-1 border-t pt-3">
                     <Button
-                      variant="link"
+                      variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs text-emerald-600"
+                      className="h-8 px-2"
                       onClick={() => handleDownloadContract(s)}
                     >
-                      Hợp đồng
+                      <FileText /> Hợp đồng
                     </Button>
                     <Button
-                      variant="link"
+                      variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs"
+                      className="h-8 px-2"
                       onClick={() => openEdit(s)}
                     >
-                      Sửa
+                      <Pencil /> Sửa
                     </Button>
                     <Button
-                      variant="link"
+                      variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs text-destructive"
+                      className="h-8 px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
                       onClick={() => handleDelete(s._id)}
                     >
-                      Xoá
+                      <Trash2 /> Xoá
                     </Button>
                     {bookedByName && (
-                      <span className="ml-auto bg-primary/15 text-primary text-xs font-medium px-2 py-0.5 rounded-full border border-primary/30">
+                      <span className="ml-auto inline-flex items-center gap-1.5 truncate rounded-full bg-primary-100 py-0.5 pl-0.5 pr-2.5 text-xs font-medium text-primary-700 dark:bg-primary/15 dark:text-primary">
+                        <UserAvatar name={bookedByName} size={20} className="text-[10px]" />
                         {bookedByName}
                       </span>
                     )}
@@ -981,7 +1111,7 @@ const SchedulesPage = () => {
               );
             })}
             {schedules.length === 0 && (
-              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+              <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
                 Chưa có dữ liệu
               </div>
             )}
@@ -989,354 +1119,371 @@ const SchedulesPage = () => {
         </>
       )}
 
-      <Modal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        title={editing ? 'Sửa lịch chụp' : 'Thêm lịch chụp'}
-        size="lg"
-      >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <FormField label="Lớp" required>
-              <Controller
-                name="customer"
-                control={control}
-                rules={{ required: true }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Combobox
-                      options={customers.map((c) => ({
-                        value: c._id,
-                        label: `${c.className} – ${c.school}`,
-                      }))}
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      placeholder="-- Chọn lớp --"
-                    />
-                    {fieldState.error && (
-                      <p className="text-xs text-destructive mt-1">Vui lòng chọn lớp.</p>
-                    )}
-                  </>
-                )}
-              />
-            </FormField>
-            <FormField label="Gói chụp" required>
-              <Controller
-                name="package"
-                control={control}
-                rules={{ required: true }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Combobox
-                      options={packages.map((p) => ({
-                        value: p._id,
-                        label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
-                      }))}
-                      value={field.value ?? ''}
-                      onChange={(v) => field.onChange(v || undefined)}
-                      placeholder="-- Chọn gói chụp --"
-                    />
-                    {fieldState.error && (
-                      <p className="text-xs text-destructive mt-1">Vui lòng chọn gói chụp.</p>
-                    )}
-                  </>
-                )}
-              />
-            </FormField>
-            <FormField label="Trạng thái">
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value ?? 'pending'} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(statusLabel).map(([v, l]) => (
-                        <SelectItem key={v} value={v}>
-                          {l}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
-            {selectedPackageId && (
-              <div className="lg:col-span-3">
-                <CostumePicker
-                  costumes={availableCostumes}
-                  selected={selectedCostumes}
-                  onChange={setSelectedCostumes}
-                  showError={costumeTouched && selectedCostumes.length === 0}
-                />
-              </div>
-            )}
-            <FormField label="Ngày chụp" required htmlFor="shootDate">
-              <Controller
-                name="shootDate"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <DatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Chọn ngày chụp"
-                  />
-                )}
-              />
-              {errors.shootDate && (
-                <p className="text-xs text-destructive mt-1">Vui lòng chọn ngày chụp.</p>
-              )}
-            </FormField>
-            <FormField label="Giờ bắt đầu" htmlFor="startTime">
-              <Controller
-                name="startTime"
-                control={control}
-                render={({ field }) => (
-                  <TimePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Chọn giờ bắt đầu"
-                  />
-                )}
-              />
-            </FormField>
-            <FormField label="Giờ kết thúc" htmlFor="endTime">
-              <Controller
-                name="endTime"
-                control={control}
-                render={({ field }) => (
-                  <TimePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Chọn giờ kết thúc"
-                  />
-                )}
-              />
-            </FormField>
-            <FormField label="Mùa chụp">
-              <Controller
-                name="season"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? ''}
-                    onValueChange={(v) => field.onChange(v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-- Chọn mùa --" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {seasons.map((s) => (
-                        <SelectItem key={s._id} value={s._id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
-            <FormField label="Địa điểm" htmlFor="location" className="lg:col-span-2">
-              <Input id="location" {...register('location')} />
-            </FormField>
+      {/* Add / edit modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]">
+          <div className="flex shrink-0 items-center gap-3 border-b px-5 py-4 pr-12 sm:px-6">
+            <IconTile className="h-10 w-10 rounded-[10px] bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
+              <CalendarPlus />
+            </IconTile>
+            <div className="min-w-0 text-left">
+              <DialogTitle>{editing ? 'Sửa lịch chụp' : 'Thêm lịch chụp'}</DialogTitle>
+              <DialogDescription className="mt-0.5 text-[13px]">
+                {editing
+                  ? 'Cập nhật thông tin buổi chụp, ekip và trang phục.'
+                  : 'Tạo lịch sẽ tự tạo folder ảnh trên Google Drive.'}
+              </DialogDescription>
+            </div>
+          </div>
 
-            <FormField label="Người chốt lớp (Sale)">
-              <Controller
-                name="bookedBy"
-                control={control}
-                render={({ field }) => (
-                  <Combobox
-                    options={salesUsers.map((u) => ({
-                      value: u._id,
-                      label: u.username + (u.name ? ` (${u.name})` : ''),
-                    }))}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v || undefined)}
-                    placeholder="-- Không chỉ định --"
-                  />
-                )}
-              />
-            </FormField>
-            <FormField label="Thợ leader" className="lg:col-span-2">
-              <Controller
-                name="leadPhotographer"
-                control={control}
-                render={({ field }) => (
-                  <Combobox
-                    options={photographers.map((u) => ({
-                      value: u._id,
-                      label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
-                    }))}
-                    value={field.value ?? ''}
-                    onChange={(v) => field.onChange(v || undefined)}
-                    placeholder="-- Không chỉ định --"
-                  />
-                )}
-              />
-            </FormField>
-            {watch('leadPhotographer') && (
-              <FormField label="Thợ support" className="lg:col-span-3">
-                <div className="border rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
-                  {photographers
-                    .filter((u) => u._id !== watch('leadPhotographer'))
-                    .map((u) => (
-                      <label
-                        key={u._id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
-                      >
-                        <Checkbox
-                          checked={supportIds.includes(u._id)}
-                          onCheckedChange={(c) =>
-                            setSupportIds((prev) =>
-                              c ? [...prev, u._id] : prev.filter((id) => id !== u._id),
-                            )
-                          }
+          <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-6">
+              <section>
+                <SectionLabel className="mb-3">Thông tin buổi chụp</SectionLabel>
+                <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <FormField label="Lớp" required>
+                    <Controller
+                      name="customer"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Combobox
+                            options={customers.map((c) => ({
+                              value: c._id,
+                              label: `${c.className} – ${c.school}`,
+                            }))}
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            placeholder="-- Chọn lớp --"
+                            className={formFieldCls}
+                          />
+                          {fieldState.error && (
+                            <p className="mt-1 text-xs text-destructive">Vui lòng chọn lớp.</p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Gói chụp" required>
+                    <Controller
+                      name="package"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Combobox
+                            options={packages.map((p) => ({
+                              value: p._id,
+                              label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
+                            }))}
+                            value={field.value ?? ''}
+                            onChange={(v) => field.onChange(v || undefined)}
+                            placeholder="-- Chọn gói chụp --"
+                            className={formFieldCls}
+                          />
+                          {fieldState.error && (
+                            <p className="mt-1 text-xs text-destructive">Vui lòng chọn gói chụp.</p>
+                          )}
+                        </>
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Trạng thái">
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value ?? 'pending'} onValueChange={field.onChange}>
+                          <SelectTrigger className={cn(formFieldCls, 'bg-card')}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusLabel).map(([v, l]) => (
+                              <SelectItem key={v} value={v}>
+                                {l}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Ngày chụp" required htmlFor="shootDate">
+                    <Controller
+                      name="shootDate"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Chọn ngày chụp"
+                          className={formFieldCls}
                         />
-                        <span className="text-sm">
-                          {u.username}
-                          {u.name ? ` (${u.name})` : ''}
-                        </span>
-                        <span className="text-xs text-muted-foreground">— {ROLE_LABELS[3]}</span>
-                      </label>
-                    ))}
-                  {photographers.length === 0 && (
-                    <p className="text-sm text-muted-foreground px-1">
-                      Không có người dùng phù hợp
-                    </p>
+                      )}
+                    />
+                    {errors.shootDate && (
+                      <p className="mt-1 text-xs text-destructive">Vui lòng chọn ngày chụp.</p>
+                    )}
+                  </FormField>
+                  <FormField label="Giờ bắt đầu" htmlFor="startTime">
+                    <Controller
+                      name="startTime"
+                      control={control}
+                      render={({ field }) => (
+                        <TimePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Chọn giờ bắt đầu"
+                          className={formFieldCls}
+                        />
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Giờ kết thúc" htmlFor="endTime">
+                    <Controller
+                      name="endTime"
+                      control={control}
+                      render={({ field }) => (
+                        <TimePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Chọn giờ kết thúc"
+                          className={formFieldCls}
+                        />
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Mùa chụp">
+                    <Controller
+                      name="season"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? ''}
+                          onValueChange={(v) => field.onChange(v || null)}
+                        >
+                          <SelectTrigger className={cn(formFieldCls, 'bg-card')}>
+                            <SelectValue placeholder="-- Chọn mùa --" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {seasons.map((s) => (
+                              <SelectItem key={s._id} value={s._id}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </FormField>
+                  <FormField label="Địa điểm" htmlFor="location">
+                    <div className="relative">
+                      <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="location" className="pl-9" {...register('location')} />
+                    </div>
+                  </FormField>
+                  <FormField label="Người chốt lớp (Sale)">
+                    <Controller
+                      name="bookedBy"
+                      control={control}
+                      render={({ field }) => (
+                        <Combobox
+                          options={salesUsers.map((u) => ({
+                            value: u._id,
+                            label: u.username + (u.name ? ` (${u.name})` : ''),
+                          }))}
+                          value={field.value ?? ''}
+                          onChange={(v) => field.onChange(v || undefined)}
+                          placeholder="-- Không chỉ định --"
+                          className={formFieldCls}
+                        />
+                      )}
+                    />
+                  </FormField>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
+                  <FormField label="Thợ leader">
+                    <Controller
+                      name="leadPhotographer"
+                      control={control}
+                      render={({ field }) => (
+                        <Combobox
+                          options={photographers.map((u) => ({
+                            value: u._id,
+                            label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
+                          }))}
+                          value={field.value ?? ''}
+                          onChange={(v) => field.onChange(v || undefined)}
+                          placeholder="-- Không chỉ định --"
+                          className={formFieldCls}
+                        />
+                      )}
+                    />
+                  </FormField>
+                  {watch('leadPhotographer') && (
+                    <FormField label="Thợ support">
+                      <MultiSelect
+                        options={photographers
+                          .filter((u) => u._id !== watch('leadPhotographer'))
+                          .map((u) => ({
+                            value: u._id,
+                            label: `${u.username}${u.name ? ` (${u.name})` : ''}`,
+                          }))}
+                        value={supportIds}
+                        onChange={setSupportIds}
+                        placeholder={`-- Chọn ${ROLE_LABELS[3].toLowerCase()} support --`}
+                        emptyText="Không có người dùng phù hợp"
+                        maxBadges={8}
+                        className="min-h-10 rounded-[10px]"
+                      />
+                    </FormField>
                   )}
                 </div>
-              </FormField>
-            )}
+              </section>
 
-            <FormField label="Ghi chú" htmlFor="notes" className="lg:col-span-3">
-              <Textarea id="notes" rows={2} {...register('notes')} />
-            </FormField>
+              {selectedPackageId && (
+                <section>
+                  <CostumePicker
+                    costumes={availableCostumes}
+                    selected={selectedCostumes}
+                    onChange={setSelectedCostumes}
+                    showError={costumeTouched && selectedCostumes.length === 0}
+                  />
+                </section>
+              )}
 
-            {/* Dịch vụ sử dụng thêm */}
-            <div className="lg:col-span-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium">Dịch vụ sử dụng thêm</div>
-                <Button
+              {/* Dịch vụ sử dụng thêm */}
+              <section>
+                <SectionLabel className="mb-3">Dịch vụ sử dụng thêm</SectionLabel>
+                {extraServiceFields.length > 0 && (
+                  <div className="overflow-x-auto rounded-[12px] border">
+                    <table className="w-full min-w-[640px] text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/60 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                          <th className="px-3 py-2.5 text-left font-bold">Tên</th>
+                          <th className="w-24 px-3 py-2.5 text-left font-bold">Số lượng</th>
+                          <th className="w-32 px-3 py-2.5 text-left font-bold">Đơn giá (₫)</th>
+                          <th className="w-32 px-3 py-2.5 text-left font-bold">Thành tiền</th>
+                          <th className="px-3 py-2.5 text-left font-bold">Ghi chú</th>
+                          <th className="w-10 px-2 py-2.5" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {extraServiceFields.map((field, idx) => {
+                          const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
+                          const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
+                          const amount = qty * price;
+                          return (
+                            <tr key={field.id}>
+                              <td className="px-3 py-2">
+                                <Input
+                                  {...register(`extraServices.${idx}.name`)}
+                                  placeholder="Tên dịch vụ"
+                                  className="h-9 text-sm"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <Input
+                                  {...register(`extraServices.${idx}.quantity`, {
+                                    valueAsNumber: true,
+                                  })}
+                                  type="number"
+                                  min={1}
+                                  className="h-9 text-sm tabular"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <Input
+                                  {...register(`extraServices.${idx}.unitPrice`, {
+                                    valueAsNumber: true,
+                                  })}
+                                  type="number"
+                                  min={0}
+                                  className="h-9 text-sm tabular"
+                                />
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2 font-semibold text-foreground tabular">
+                                {amount.toLocaleString('vi-VN')}₫
+                              </td>
+                              <td className="px-3 py-2">
+                                <Input
+                                  {...register(`extraServices.${idx}.note`)}
+                                  placeholder="Ghi chú"
+                                  className="h-9 text-sm"
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <button
+                                  type="button"
+                                  onClick={() => removeExtraService(idx)}
+                                  className={cn(
+                                    iconActionCls,
+                                    'hover:bg-rose-500/10 hover:text-rose-600',
+                                  )}
+                                  title="Xoá"
+                                  aria-label="Xoá"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t bg-muted/40">
+                          <td colSpan={3} className="px-3 py-2.5 font-semibold text-foreground">
+                            Tổng cộng:
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 font-bold text-foreground tabular">
+                            {extraServiceFields
+                              .reduce((sum, _, idx) => {
+                                const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
+                                const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
+                                return sum + qty * price;
+                              }, 0)
+                              .toLocaleString('vi-VN')}
+                            ₫
+                          </td>
+                          <td colSpan={2} />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1"
+                  className={cn(
+                    'inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-700 hover:underline dark:text-primary',
+                    extraServiceFields.length > 0 && 'mt-3',
+                  )}
                   onClick={() =>
                     appendExtraService({ name: '', quantity: 1, unitPrice: 0, note: '' })
                   }
                 >
-                  <Plus className="h-3.5 w-3.5" /> Thêm dịch vụ
-                </Button>
-              </div>
-              {extraServiceFields.length > 0 && (
-                <div className="rounded-xl border overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted/50 border-b text-xs text-muted-foreground">
-                        <th className="px-3 py-2 text-left font-medium">Tên</th>
-                        <th className="px-3 py-2 text-left font-medium w-24">Số lượng</th>
-                        <th className="px-3 py-2 text-left font-medium w-32">Đơn giá (₫)</th>
-                        <th className="px-3 py-2 text-left font-medium w-32">Thành tiền</th>
-                        <th className="px-3 py-2 text-left font-medium">Ghi chú</th>
-                        <th className="px-2 py-2 w-8" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {extraServiceFields.map((field, idx) => {
-                        const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
-                        const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
-                        const amount = qty * price;
-                        return (
-                          <tr key={field.id}>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                {...register(`extraServices.${idx}.name`)}
-                                placeholder="Tên dịch vụ"
-                                className="h-8 text-sm"
-                              />
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                {...register(`extraServices.${idx}.quantity`, {
-                                  valueAsNumber: true,
-                                })}
-                                type="number"
-                                min={1}
-                                className="h-8 text-sm"
-                              />
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                {...register(`extraServices.${idx}.unitPrice`, {
-                                  valueAsNumber: true,
-                                })}
-                                type="number"
-                                min={0}
-                                className="h-8 text-sm"
-                              />
-                            </td>
-                            <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
-                              {amount.toLocaleString('vi-VN')}₫
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                {...register(`extraServices.${idx}.note`)}
-                                placeholder="Ghi chú"
-                                className="h-8 text-sm"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <button
-                                type="button"
-                                onClick={() => removeExtraService(idx)}
-                                className="text-muted-foreground hover:text-destructive transition-colors"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-muted/30 border-t">
-                        <td
-                          colSpan={3}
-                          className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right"
-                        >
-                          Tổng cộng:
-                        </td>
-                        <td className="px-3 py-2 text-sm font-semibold whitespace-nowrap">
-                          {extraServiceFields
-                            .reduce((sum, _, idx) => {
-                              const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
-                              const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
-                              return sum + qty * price;
-                            }, 0)
-                            .toLocaleString('vi-VN')}
-                          ₫
-                        </td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+                  <Plus className="h-4 w-4" /> Thêm dịch vụ
+                </button>
+              </section>
+
+              <FormField label="Ghi chú" htmlFor="notes">
+                <Textarea id="notes" rows={3} {...register('notes')} />
+              </FormField>
             </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Huỷ
-            </Button>
-            <Button type="submit" variant="gradient" disabled={isSubmitting}>
-              Lưu
-            </Button>
-          </div>
-        </form>
-      </Modal>
+
+            <div className="flex shrink-0 justify-end gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                Huỷ
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                <Check /> Lưu lịch chụp
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!confirmId}
@@ -1347,111 +1494,40 @@ const SchedulesPage = () => {
       />
 
       {/* Detail modal */}
-      <Modal
-        open={!!detail}
-        onOpenChange={(o) => !o && setDetail(null)}
-        title="Chi tiết lịch chụp"
-        size="lg"
-      >
-        {detail &&
-          (() => {
-            const customer = detail.customer;
-            const pkg = detail.package;
-            const leadName =
-              detail.leadPhotographer?.name ?? detail.leadPhotographer?.username ?? null;
-            const bookedByName = detail.bookedBy?.name ?? detail.bookedBy?.username ?? null;
-            const supportList = detail.supportPhotographers
-              .map((u) => u.name ?? u.username)
-              .filter(Boolean) as string[];
-
-            const heroHue = getHue(customer?.className ?? detail._id);
-
-            const InfoItem = ({
-              icon,
-              label,
-              value,
-              full,
-              tone = 'primary',
-            }: {
-              icon: React.ReactNode;
-              label: string;
-              value: React.ReactNode;
-              full?: boolean;
-              tone?: 'primary' | 'rose' | 'emerald' | 'violet' | 'amber' | 'sky';
-            }) => {
-              const tones: Record<string, string> = {
-                primary: 'bg-primary/10 text-primary',
-                rose: 'bg-rose-500/10 text-rose-500',
-                emerald: 'bg-emerald-500/10 text-emerald-500',
-                violet: 'bg-violet-500/10 text-violet-500',
-                amber: 'bg-amber-500/10 text-amber-500',
-                sky: 'bg-sky-500/10 text-sky-500',
-              };
-              return (
-                <div
-                  className={cn(
-                    'group flex items-start gap-3 rounded-xl border bg-card px-3.5 py-3 transition-all hover:shadow-md hover:border-primary/40',
-                    full && 'sm:col-span-2',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg transition-transform group-hover:scale-110',
-                      tones[tone],
-                    )}
-                  >
-                    {icon}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[10px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">
-                      {label}
-                    </div>
-                    <div className="text-sm mt-1 break-words leading-relaxed">
-                      {value || <span className="text-muted-foreground italic">Chưa có</span>}
-                    </div>
-                  </div>
-                </div>
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[640px]">
+          {detail &&
+            (() => {
+              const customer = detail.customer;
+              const pkg = detail.package;
+              const leadName =
+                detail.leadPhotographer?.name ?? detail.leadPhotographer?.username ?? null;
+              const bookedByName = detail.bookedBy?.name ?? detail.bookedBy?.username ?? null;
+              const supportList = detail.supportPhotographers
+                .map((u) => u.name ?? u.username)
+                .filter(Boolean) as string[];
+              const servicesTotal = (detail.extraServices ?? []).reduce(
+                (sum, es) => sum + es.amount,
+                0,
               );
-            };
 
-            return (
-              <div className="space-y-5 -mx-2">
-                <div
-                  className="relative overflow-hidden rounded-2xl px-5 py-5"
-                  style={{
-                    background: `linear-gradient(135deg, hsl(${heroHue}, 70%, 50%) 0%, hsl(${(heroHue + 40) % 360}, 75%, 45%) 100%)`,
-                  }}
-                >
-                  <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-                  <div className="absolute -bottom-12 -left-8 w-32 h-32 rounded-full bg-black/10 blur-2xl" />
-
-                  <div className="relative flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 text-white">
-                      <div className="inline-flex items-center gap-2 mb-2">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'border-transparent backdrop-blur-sm bg-white/90',
-                            statusColor[detail.status],
-                          )}
-                        >
-                          {statusLabel[detail.status]}
-                        </Badge>
-                      </div>
-                      <h3 className="text-2xl font-bold tracking-tight truncate drop-shadow-sm">
-                        {customer?.className ?? '—'}
-                      </h3>
-                      {customer?.school && (
-                        <p className="text-sm text-white/85 mt-1 truncate">{customer.school}</p>
-                      )}
-                      <div className="mt-3 flex items-center gap-4 flex-wrap text-sm text-white/95">
+              return (
+                <>
+                  <div className="shrink-0 border-b bg-gradient-to-b from-amber-50 to-card px-5 pb-5 pr-12 pt-5 dark:from-amber-500/10 sm:px-6">
+                    <StatusBadge status={detail.status} />
+                    <DialogTitle className="mt-2.5 text-2xl sm:text-[26px]">
+                      {customer?.className ?? '—'}
+                      {customer?.school && <span> · {customer.school}</span>}
+                    </DialogTitle>
+                    <DialogDescription asChild>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/80">
                         <span className="inline-flex items-center gap-1.5">
-                          <Calendar className="h-4 w-4" />
-                          <span className="font-medium">{formatDate(detail.shootDate)}</span>
+                          <Calendar className="h-4 w-4 text-primary-700 dark:text-primary" />
+                          <span className="font-medium">{formatDateWithDow(detail.shootDate)}</span>
                         </span>
                         {(detail.startTime || detail.endTime) && (
-                          <span className="inline-flex items-center gap-1.5">
-                            <Clock className="h-4 w-4" />
+                          <span className="inline-flex items-center gap-1.5 tabular">
+                            <Clock className="h-4 w-4 text-primary-700 dark:text-primary" />
                             <span className="font-medium">
                               {detail.startTime ?? ''}
                               {detail.endTime ? ` – ${detail.endTime}` : ''}
@@ -1459,395 +1535,377 @@ const SchedulesPage = () => {
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="relative flex gap-2 shrink-0">
-                      <button
-                        onClick={() => handleDownloadContract(detail)}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white border border-white/20 transition-colors"
-                      >
-                        Hợp đồng
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDetail(null);
-                          openEdit(detail);
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-semibold bg-white text-gray-900 hover:bg-white/90 shadow-sm transition-colors"
-                      >
-                        Sửa
-                      </button>
-                    </div>
+                    </DialogDescription>
                   </div>
-                </div>
 
-                <div className="px-2 space-y-5">
-                  <section>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <span className="h-px flex-1 bg-border" />
-                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-                        Thông tin buổi chụp
-                      </span>
-                      <span className="h-px flex-1 bg-border" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <InfoItem
-                        icon={<MapPin className="h-4 w-4" />}
-                        label="Địa điểm"
-                        value={detail.location}
-                        tone="rose"
-                      />
-                      <InfoItem
-                        icon={<span className="text-[11px] font-bold">₫</span>}
-                        label="Gói chụp"
-                        tone="emerald"
-                        value={
-                          pkg ? (
-                            <div className="flex flex-col">
-                              <span className="font-semibold">{pkg.name}</span>
+                  <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-6">
+                    <section>
+                      <SectionLabel className="mb-3">Thông tin buổi chụp</SectionLabel>
+                      <div className="space-y-3">
+                        <InfoRow
+                          icon={<MapPin />}
+                          tone="bg-rose-500/10 text-rose-600 dark:text-rose-300"
+                          label="Địa điểm"
+                        >
+                          {detail.location}
+                        </InfoRow>
+                        <InfoRow
+                          icon={<Gift />}
+                          tone="bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                          label="Gói chụp"
+                        >
+                          {pkg ? (
+                            <>
+                              {pkg.name}
                               {typeof pkg.pricePerMember === 'number' && (
-                                <span className="text-xs text-muted-foreground">
-                                  {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
+                                <span className="font-normal text-muted-foreground">
+                                  {' '}
+                                  · {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
                                 </span>
                               )}
-                            </div>
-                          ) : null
-                        }
-                      />
-                      <InfoItem
-                        icon={<FolderOpen className="h-4 w-4" />}
-                        label="Folder ảnh"
-                        tone="amber"
-                        full
-                        value={
-                          detail.driveFolderUrl ? (
+                            </>
+                          ) : null}
+                        </InfoRow>
+                        <InfoRow
+                          icon={<FolderOpen />}
+                          tone="bg-sky-500/10 text-sky-600 dark:text-sky-300"
+                          label="Folder ảnh"
+                        >
+                          {detail.driveFolderUrl ? (
                             <a
                               href={detail.driveFolderUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-medium text-primary underline underline-offset-2 hover:opacity-80 break-all"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
                             >
-                              Mở folder trên Google Drive
+                              Mở folder trên Google Drive <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           ) : (
-                            <span className="text-muted-foreground italic">Đang tạo folder…</span>
-                          )
-                        }
-                      />
-                    </div>
-                  </section>
-
-                  <section>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <span className="h-px flex-1 bg-border" />
-                      <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-                        Đội ngũ phụ trách
-                      </span>
-                      <span className="h-px flex-1 bg-border" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <InfoItem
-                        icon={<Briefcase className="h-4 w-4" />}
-                        label="Sale"
-                        tone="sky"
-                        value={
-                          bookedByName ? (
-                            <span className="inline-flex items-center gap-2">
-                              <UserAvatar name={bookedByName} size={28} />
-                              <span className="font-medium">{bookedByName}</span>
+                            <span className="font-normal italic text-muted-foreground">
+                              Đang tạo folder…
                             </span>
-                          ) : null
-                        }
-                      />
-                      <InfoItem
-                        icon={<Briefcase className="h-4 w-4" />}
-                        label="Leader"
-                        tone="primary"
-                        value={
-                          leadName ? (
-                            <span className="inline-flex items-center gap-2">
-                              <UserAvatar name={leadName} size={28} />
-                              <span className="font-medium">{leadName}</span>
-                            </span>
-                          ) : null
-                        }
-                      />
-                      <InfoItem
-                        icon={<UsersIcon className="h-4 w-4" />}
-                        label={`Support${supportList.length ? ` · ${supportList.length} người` : ''}`}
-                        tone="violet"
-                        full
-                        value={
-                          supportList.length > 0 ? (
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-0.5">
-                              {supportList.map((n, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 pl-0.5 pr-2.5 py-0.5"
-                                >
-                                  <UserAvatar name={n} size={22} />
-                                  <span className="text-xs font-medium">{n}</span>
-                                </span>
-                              ))}
-                            </div>
-                          ) : null
-                        }
-                      />
-                    </div>
-                  </section>
+                          )}
+                        </InfoRow>
+                      </div>
+                    </section>
 
-                  {detail.notes && (
                     <section>
-                      <div className="rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/5 px-4 py-3.5 flex items-start gap-3">
-                        <span className="shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-300">
-                          <StickyNote className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[10px] uppercase tracking-[0.08em] font-semibold text-amber-700 dark:text-amber-300">
-                            Ghi chú
+                      <SectionLabel className="mb-3">Đội ngũ phụ trách</SectionLabel>
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        {[
+                          { role: 'Sale', name: bookedByName },
+                          { role: 'Leader', name: leadName },
+                        ].map(({ role, name }) => (
+                          <div
+                            key={role}
+                            className="flex items-center gap-3 rounded-[12px] border px-3.5 py-3"
+                          >
+                            {name ? (
+                              <UserAvatar name={name} size={36} className="text-sm ring-0" />
+                            ) : (
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                —
+                              </span>
+                            )}
+                            <div className="min-w-0">
+                              <div className="text-xs text-muted-foreground">{role}</div>
+                              <div className="truncate text-sm font-semibold text-foreground">
+                                {name ?? (
+                                  <span className="font-normal italic text-muted-foreground">
+                                    Chưa có
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm mt-1 whitespace-pre-line break-words leading-relaxed">
+                        ))}
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="text-[13px] text-muted-foreground">
+                          Support{supportList.length ? ` · ${supportList.length} người` : ''}
+                        </span>
+                        {supportList.length > 0 ? (
+                          supportList.map((n, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 py-0.5 pl-0.5 pr-2.5 text-[13px] font-medium text-violet-700 dark:text-violet-300"
+                            >
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold">
+                                {getInitial(n)}
+                              </span>
+                              {n}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[13px] italic text-muted-foreground">Chưa có</span>
+                        )}
+                      </div>
+                    </section>
+
+                    {detail.notes && (
+                      <section>
+                        <SectionLabel className="mb-3">Ghi chú</SectionLabel>
+                        <div className="flex items-start gap-2.5 rounded-[10px] bg-amber-50 px-3.5 py-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                          <StickyNote className="mt-0.5 h-4 w-4 shrink-0" />
+                          <div className="min-w-0 whitespace-pre-line break-words leading-relaxed">
                             {detail.notes}
                           </div>
                         </div>
-                      </div>
-                    </section>
-                  )}
+                      </section>
+                    )}
 
-                  {detail.extraServices && detail.extraServices.length > 0 && (
-                    <section>
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <span className="h-px flex-1 bg-border" />
-                        <span className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
-                          Dịch vụ sử dụng thêm
-                        </span>
-                        <span className="h-px flex-1 bg-border" />
-                      </div>
-                      <div className="rounded-xl border overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-muted/50 border-b text-xs text-muted-foreground">
-                              <th className="px-3 py-2 text-left font-medium">Tên</th>
-                              <th className="px-3 py-2 text-right font-medium">Số lượng</th>
-                              <th className="px-3 py-2 text-right font-medium">Đơn giá</th>
-                              <th className="px-3 py-2 text-right font-medium">Thành tiền</th>
-                              <th className="px-3 py-2 text-left font-medium">Ghi chú</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            {detail.extraServices.map((es, idx) => (
-                              <tr key={idx}>
-                                <td className="px-3 py-2 font-medium">{es.name}</td>
-                                <td className="px-3 py-2 text-right text-muted-foreground">
-                                  {es.quantity}
-                                </td>
-                                <td className="px-3 py-2 text-right text-muted-foreground whitespace-nowrap">
-                                  {es.unitPrice.toLocaleString('vi-VN')}₫
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
-                                  {es.amount.toLocaleString('vi-VN')}₫
-                                </td>
-                                <td className="px-3 py-2 text-muted-foreground">
-                                  {es.note ?? '—'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot>
-                            <tr className="bg-muted/30 border-t">
-                              <td
-                                colSpan={3}
-                                className="px-3 py-2 text-xs font-semibold text-muted-foreground text-right"
-                              >
-                                Tổng cộng:
-                              </td>
-                              <td className="px-3 py-2 text-sm font-semibold text-right whitespace-nowrap">
-                                {detail.extraServices
-                                  .reduce((sum, es) => sum + es.amount, 0)
-                                  .toLocaleString('vi-VN')}
-                                ₫
-                              </td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </section>
-                  )}
-                </div>
+                    {detail.extraServices && detail.extraServices.length > 0 && (
+                      <section>
+                        <SectionLabel className="mb-3">Dịch vụ sử dụng thêm</SectionLabel>
+                        <div className="space-y-2">
+                          {detail.extraServices.map((es, idx) => (
+                            <div key={idx} className="flex items-baseline gap-3 text-sm">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-foreground">{es.name}</div>
+                                {es.note && (
+                                  <div className="text-xs text-muted-foreground">{es.note}</div>
+                                )}
+                              </div>
+                              <span className="whitespace-nowrap text-xs text-muted-foreground tabular">
+                                {es.quantity} × {es.unitPrice.toLocaleString('vi-VN')}
+                              </span>
+                              <span className="w-28 whitespace-nowrap text-right font-semibold text-foreground tabular">
+                                {es.amount.toLocaleString('vi-VN')} ₫
+                              </span>
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between border-t pt-2.5">
+                            <span className="text-sm font-semibold text-foreground">Tổng cộng</span>
+                            <span className="font-display text-lg font-bold text-primary-700 tabular dark:text-primary">
+                              {servicesTotal.toLocaleString('vi-VN')} ₫
+                            </span>
+                          </div>
+                        </div>
+                      </section>
+                    )}
+                  </div>
 
-                <div className="flex justify-end px-2 pt-3 border-t">
-                  <Button
-                    variant="link"
-                    className="text-destructive"
-                    onClick={() => {
-                      const id = detail._id;
-                      setDetail(null);
-                      handleDelete(id);
-                    }}
-                  >
-                    Xoá lịch chụp
-                  </Button>
-                </div>
+                  <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
+                    <Button
+                      variant="ghost"
+                      className="px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
+                      onClick={() => {
+                        const id = detail._id;
+                        setDetail(null);
+                        handleDelete(id);
+                      }}
+                    >
+                      <Trash2 /> Xoá lịch chụp
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => handleDownloadContract(detail)}>
+                        <FileText /> Hợp đồng
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setDetail(null);
+                          openEdit(detail);
+                        }}
+                      >
+                        <Pencil /> Sửa lịch
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Contract modal */}
+      <Dialog open={!!contractSchedule} onOpenChange={(o) => !o && setContractSchedule(null)}>
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[720px]">
+          <div className="flex shrink-0 items-center gap-3 border-b px-5 py-4 pr-12 sm:px-6">
+            <IconTile className="h-10 w-10 rounded-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+              <FileText />
+            </IconTile>
+            <div className="min-w-0 text-left">
+              <DialogTitle>Xác nhận thông tin hợp đồng</DialogTitle>
+              <DialogDescription className="mt-0.5 truncate text-[13px]">
+                {contractSchedule?.customer?.className}
+                {contractSchedule?.customer?.school ? ` — ${contractSchedule.customer.school}` : ''}
+              </DialogDescription>
+            </div>
+          </div>
+
+          {contractSchedule && (
+            <form
+              onSubmit={handleContractSubmitForm(handleContractSubmit)}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-6">
+                <section>
+                  <SectionLabel className="mb-3">Thông tin buổi chụp</SectionLabel>
+                  <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
+                    <FormField label="Ngày chụp" required>
+                      <Controller
+                        name="shootDate"
+                        control={contractControl}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Chọn ngày chụp"
+                            className={formFieldCls}
+                          />
+                        )}
+                      />
+                    </FormField>
+                    <FormField label="Địa điểm">
+                      <Input placeholder="Địa điểm chụp" {...registerContract('location')} />
+                    </FormField>
+                    <FormField label="Giờ bắt đầu">
+                      <Controller
+                        name="startTime"
+                        control={contractControl}
+                        render={({ field }) => (
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Chọn giờ bắt đầu"
+                            className={formFieldCls}
+                          />
+                        )}
+                      />
+                    </FormField>
+                    <FormField label="Giờ kết thúc">
+                      <Controller
+                        name="endTime"
+                        control={contractControl}
+                        render={({ field }) => (
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Chọn giờ kết thúc"
+                            className={formFieldCls}
+                          />
+                        )}
+                      />
+                    </FormField>
+                  </div>
+                </section>
+
+                <section>
+                  <SectionLabel className="mb-3">Liên hệ</SectionLabel>
+                  <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
+                    <FormField label="Người liên hệ" required>
+                      <Input placeholder="Họ tên" {...registerContract('contactName')} />
+                    </FormField>
+                    <FormField label="Số điện thoại">
+                      <Input placeholder="SĐT" {...registerContract('contactPhone')} />
+                    </FormField>
+                    <FormField label="Địa chỉ" className="sm:col-span-2">
+                      <Input
+                        placeholder="Địa chỉ liên hệ"
+                        {...registerContract('contactAddress')}
+                      />
+                    </FormField>
+                  </div>
+                </section>
+
+                <section>
+                  <SectionLabel className="mb-3">Sĩ số</SectionLabel>
+                  <div className="grid grid-cols-3 gap-3">
+                    <FormField label="Tổng học sinh">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="tabular"
+                        {...registerContract('total', { valueAsNumber: true })}
+                      />
+                    </FormField>
+                    <FormField label="Nam">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="tabular"
+                        {...registerContract('totalMale', { valueAsNumber: true })}
+                      />
+                    </FormField>
+                    <FormField label="Nữ">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="tabular"
+                        {...registerContract('totalFemale', { valueAsNumber: true })}
+                      />
+                    </FormField>
+                  </div>
+                </section>
+
+                <FormField label="Ghi chú">
+                  <Textarea
+                    rows={3}
+                    placeholder="Ghi chú hợp đồng..."
+                    {...registerContract('notes')}
+                  />
+                </FormField>
+
+                {contractDocUrl && (
+                  <div>
+                    <SectionLabel className="mb-2">Hợp đồng</SectionLabel>
+                    <div className="flex items-center gap-3 overflow-hidden rounded-[12px] border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5 text-sm">
+                      <IconTile className="h-8 w-8 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+                        <FileText />
+                      </IconTile>
+                      <a
+                        href={contractDocUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={contractDocUrl}
+                        className="min-w-0 flex-1 truncate font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {(() => {
+                          const idx = contractDocUrl.indexOf('/open');
+                          return idx !== -1
+                            ? contractDocUrl.slice(0, idx + 5) + '...'
+                            : contractDocUrl;
+                        })()}
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(contractDocUrl);
+                          toast.success('Đã copy link hợp đồng!');
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            );
-          })()}
-      </Modal>
 
-      <Modal
-        open={!!contractSchedule}
-        onOpenChange={(o) => !o && setContractSchedule(null)}
-        title="Xác nhận thông tin hợp đồng"
-        size="lg"
-      >
-        {contractSchedule && (
-          <form onSubmit={handleContractSubmitForm(handleContractSubmit)} className="space-y-5">
-            <div className="text-sm font-medium text-muted-foreground mb-1">
-              {contractSchedule.customer?.className}
-              {contractSchedule.customer?.school ? ` — ${contractSchedule.customer.school}` : ''}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Ngày chụp" required>
-                <Controller
-                  name="shootDate"
-                  control={contractControl}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <DatePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Chọn ngày chụp"
-                    />
-                  )}
-                />
-              </FormField>
-              <FormField label="Địa điểm">
-                <Input placeholder="Địa điểm chụp" {...registerContract('location')} />
-              </FormField>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Giờ bắt đầu">
-                <Controller
-                  name="startTime"
-                  control={contractControl}
-                  render={({ field }) => (
-                    <TimePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Chọn giờ bắt đầu"
-                    />
-                  )}
-                />
-              </FormField>
-              <FormField label="Giờ kết thúc">
-                <Controller
-                  name="endTime"
-                  control={contractControl}
-                  render={({ field }) => (
-                    <TimePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Chọn giờ kết thúc"
-                    />
-                  )}
-                />
-              </FormField>
-            </div>
-
-            <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Người liên hệ" required>
-                <Input placeholder="Họ tên" {...registerContract('contactName')} />
-              </FormField>
-              <FormField label="Số điện thoại">
-                <Input placeholder="SĐT" {...registerContract('contactPhone')} />
-              </FormField>
-            </div>
-
-            <FormField label="Địa chỉ">
-              <Input placeholder="Địa chỉ liên hệ" {...registerContract('contactAddress')} />
-            </FormField>
-
-            <div className="grid grid-cols-3 gap-4">
-              <FormField label="Tổng học sinh">
-                <Input
-                  type="number"
-                  min={0}
-                  {...registerContract('total', { valueAsNumber: true })}
-                />
-              </FormField>
-              <FormField label="Nam">
-                <Input
-                  type="number"
-                  min={0}
-                  {...registerContract('totalMale', { valueAsNumber: true })}
-                />
-              </FormField>
-              <FormField label="Nữ">
-                <Input
-                  type="number"
-                  min={0}
-                  {...registerContract('totalFemale', { valueAsNumber: true })}
-                />
-              </FormField>
-            </div>
-
-            <FormField label="Ghi chú">
-              <Textarea rows={3} placeholder="Ghi chú hợp đồng..." {...registerContract('notes')} />
-            </FormField>
-
-            {contractDocUrl && (
-              <div className="space-y-1.5">
-                <p className="text-sm font-medium">Hợp đồng</p>
-                <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm overflow-hidden">
-                  <a
-                    href={contractDocUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={contractDocUrl}
-                    className="flex-1 min-w-0 truncate text-primary underline underline-offset-2"
-                  >
-                    {(() => {
-                      const idx = contractDocUrl.indexOf('/open');
-                      return idx !== -1 ? contractDocUrl.slice(0, idx + 5) + '...' : contractDocUrl;
-                    })()}
-                  </a>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(contractDocUrl);
-                      toast.success('Đã copy link hợp đồng!');
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </div>
+              <div className="flex shrink-0 justify-end gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setContractSchedule(null);
+                    setContractDocUrl(null);
+                  }}
+                >
+                  Đóng
+                </Button>
+                {/* {!contractDocUrl && ( */}
+                <Button type="submit" disabled={isContractSubmitting}>
+                  <FileText /> {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
+                </Button>
+                {/* )} */}
               </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setContractSchedule(null);
-                  setContractDocUrl(null);
-                }}
-              >
-                Đóng
-              </Button>
-              {/* {!contractDocUrl && ( */}
-              <Button type="submit" disabled={isContractSubmitting}>
-                {isContractSubmitting ? 'Đang tạo...' : 'Tạo hợp đồng'}
-              </Button>
-              {/* )} */}
-            </div>
-          </form>
-        )}
-      </Modal>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

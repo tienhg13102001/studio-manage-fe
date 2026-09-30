@@ -39,9 +39,9 @@ const CategoriesPage = () => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  const openCreate = () => {
+  const openCreate = (type: Category['type'] = 'income') => {
     setEditing(null);
-    reset({ type: 'income' });
+    reset({ type });
     setModalOpen(true);
   };
 
@@ -85,25 +85,25 @@ const CategoriesPage = () => {
   const groups = [
     {
       key: 'income',
+      type: 'income' as const,
       label: 'Khoản thu',
       list: income,
       icon: <ArrowDown className="h-4 w-4" />,
       classes: {
-        bg: 'bg-emerald-500/10',
+        bg: 'bg-emerald-500/15',
         text: 'text-emerald-600 dark:text-emerald-400',
-        ring: 'ring-emerald-500/20',
         dot: 'bg-emerald-500',
       },
     },
     {
       key: 'expense',
+      type: 'expense' as const,
       label: 'Khoản chi',
       list: expense,
       icon: <ArrowUp className="h-4 w-4" />,
       classes: {
-        bg: 'bg-rose-500/10',
+        bg: 'bg-rose-500/15',
         text: 'text-rose-600 dark:text-rose-400',
-        ring: 'ring-rose-500/20',
         dot: 'bg-rose-500',
       },
     },
@@ -116,33 +116,43 @@ const CategoriesPage = () => {
         title="Danh mục thu / chi"
         description="Quản lý các danh mục khoản thu và khoản chi."
         action={
-          <Button variant="gradient" onClick={openCreate}>
+          <Button variant="gradient" onClick={() => openCreate()}>
             <Plus />
             Thêm danh mục
           </Button>
         }
       />
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {groups.map(({ key, label, list, icon, classes }) => (
-          <div key={key} className="rounded-xl border bg-card overflow-hidden">
+      <div className="grid md:grid-cols-2 gap-5 items-start">
+        {groups.map(({ key, type, label, list, icon, classes }) => (
+          <div key={key} className="rounded-[14px] border bg-card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <div className="flex items-center gap-3">
                 <span
                   className={cn(
-                    'inline-flex h-9 w-9 items-center justify-center rounded-lg ring-1',
+                    'inline-flex h-9 w-9 items-center justify-center rounded-[9px]',
                     classes.bg,
                     classes.text,
-                    classes.ring,
                   )}
                 >
                   {icon}
                 </span>
                 <div>
-                  <h3 className="text-sm font-semibold">{label}</h3>
+                  <h3 className="font-display text-[15px] font-bold leading-tight">{label}</h3>
                   <p className="text-xs text-muted-foreground">{list.length} danh mục</p>
                 </div>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
+                onClick={() => openCreate(type)}
+                title={`Thêm ${label.toLowerCase()}`}
+                aria-label={`Thêm ${label.toLowerCase()}`}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
 
             <ul className="divide-y">
@@ -155,19 +165,20 @@ const CategoriesPage = () => {
                     <span className={cn('h-2 w-2 rounded-full flex-shrink-0', classes.dot)} />
                     <span className="text-sm font-medium truncate">{c.name}</span>
                     {c.isDefault && (
-                      <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
                         Mặc định
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
+                      className="h-[30px] w-[30px] text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
                       onClick={() => openEdit(c)}
                       title="Sửa"
+                      aria-label="Sửa"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -176,9 +187,10 @@ const CategoriesPage = () => {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
                         onClick={() => setConfirmId(c._id)}
                         title="Xoá"
+                        aria-label="Xoá"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

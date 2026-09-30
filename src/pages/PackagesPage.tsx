@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package2, Plus, Scissors, Shirt, Timer, Users } from 'lucide-react';
+import { Clock, Pencil, Plus, Timer, Trash2, Users, Wand2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { packageService } from '../services/packageService';
@@ -12,7 +12,6 @@ import {
   Button,
   Checkbox,
   ConfirmDialog,
-  DataTable,
   FormField,
   Input,
   Label,
@@ -27,7 +26,7 @@ import {
   TableSkeleton,
   Textarea,
 } from '@/components/ui';
-import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 const editingScopeLabel: Record<string, string> = {
   full: 'Toàn bộ',
@@ -132,101 +131,6 @@ const PackagesPage = () => {
     setConfirmId(null);
   };
 
-  const columns: Column<Package>[] = [
-    {
-      key: 'name',
-      header: 'Tên gói',
-      render: (pkg) => (
-        <span className="font-medium inline-flex items-center gap-2">
-          {pkg.name}
-          {pkg.isPopular && (
-            <Badge variant="warning" className="text-[10px] uppercase tracking-wider">
-              Phổ biến
-            </Badge>
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'price',
-      header: 'Giá/thành viên',
-      render: (pkg) => `${pkg.pricePerMember.toLocaleString('vi-VN')}₫`,
-    },
-    {
-      key: 'duration',
-      header: 'Thời gian',
-      render: (pkg) => (
-        <span className="text-muted-foreground">
-          {pkg.duration ? durationLabel[pkg.duration] : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'crew',
-      header: 'Ekip (hs/thợ)',
-      render: (pkg) => (
-        <span className="text-muted-foreground">
-          {pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'costumes',
-      header: 'Trang phục',
-      render: (pkg) => (
-        <span className="text-muted-foreground">
-          {pkg.costumes && pkg.costumes.length > 0
-            ? pkg.costumes.map((c) => c.name).join(', ')
-            : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'editingScope',
-      header: 'Chỉnh sửa',
-      render: (pkg) => (
-        <span className="text-muted-foreground">
-          {pkg.editingScope ? editingScopeLabel[pkg.editingScope] : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'deliveryDays',
-      header: 'Trả file tối đa (ngày)',
-      render: (pkg) => (
-        <span className="text-muted-foreground">
-          {pkg.deliveryDays != null ? `tối đa ${pkg.deliveryDays} ngày` : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: '',
-      align: 'right',
-      className: 'whitespace-nowrap',
-      render: (pkg) => (
-        <span className="space-x-2">
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-primary"
-            onClick={() => openEdit(pkg)}
-          >
-            Sửa
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-destructive"
-            onClick={() => setConfirmId(pkg._id)}
-          >
-            Xoá
-          </Button>
-        </span>
-      ),
-    },
-  ];
-
   return (
     <div>
       <PageHeader
@@ -243,92 +147,125 @@ const PackagesPage = () => {
 
       {loading ? (
         <TableSkeleton cols={8} />
+      ) : packages.length === 0 ? (
+        <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+          Chưa có gói chụp nào
+        </div>
       ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:block">
-            <DataTable<Package>
-              data={packages}
-              keyExtractor={(pkg) => pkg._id}
-              emptyTitle="Chưa có gói chụp nào"
-              columns={columns}
-            />
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
-            {packages.map((pkg) => (
-              <div key={pkg._id} className="rounded-xl border bg-card p-4">
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate">{pkg.name}</div>
-                    <div className="text-primary text-sm mt-0.5">
-                      {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
-                    </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {packages.map((pkg) => {
+            const attrs = [
+              {
+                icon: Clock,
+                label: 'Thời gian',
+                value: pkg.duration ? durationLabel[pkg.duration] : null,
+              },
+              {
+                icon: Users,
+                label: 'Ekip',
+                value: pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : null,
+              },
+              {
+                icon: Wand2,
+                label: 'Chỉnh sửa',
+                value: pkg.editingScope ? editingScopeLabel[pkg.editingScope] : null,
+              },
+              {
+                icon: Timer,
+                label: 'Trả file tối đa',
+                value: pkg.deliveryDays != null ? `${pkg.deliveryDays} ngày` : null,
+              },
+            ].filter((a) => a.value);
+            return (
+              <div
+                key={pkg._id}
+                className={cn(
+                  'flex flex-col rounded-[14px] border bg-card p-5',
+                  pkg.isPopular && 'border-primary shadow-[0_6px_20px_rgba(245,158,11,0.15)]',
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h3 className="font-display text-[16px] font-bold">{pkg.name}</h3>
+                    {pkg.isPopular && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                        Phổ biến
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-3 shrink-0">
+                  <div className="flex shrink-0 items-center gap-1">
                     <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
                       onClick={() => openEdit(pkg)}
+                      title="Sửa"
+                      aria-label="Sửa"
                     >
-                      Sửa
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs text-destructive"
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
                       onClick={() => setConfirmId(pkg._id)}
+                      title="Xoá"
+                      aria-label="Xoá"
                     >
-                      Xoá
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  {pkg.duration && (
-                    <div className="inline-flex items-center gap-1.5">
-                      <Timer className="h-4 w-4 text-sky-500" />
-                      <span>{durationLabel[pkg.duration]}</span>
-                    </div>
-                  )}
-                  {pkg.studentsPerCrew != null && (
-                    <div className="inline-flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-indigo-500" />
-                      <span>{pkg.studentsPerCrew} học sinh / thợ</span>
-                    </div>
-                  )}
-                  {pkg.costumes && pkg.costumes.length > 0 && (
-                    <div className="inline-flex items-center gap-1.5">
-                      <Shirt className="h-4 w-4 text-fuchsia-500" />
-                      <span>{pkg.costumes.map((c) => c.name).join(', ')}</span>
-                    </div>
-                  )}
-                  {pkg.editingScope && (
-                    <div className="inline-flex items-center gap-1.5">
-                      <Scissors className="h-4 w-4 text-amber-500" />
-                      <span>{editingScopeLabel[pkg.editingScope]}</span>
-                    </div>
-                  )}
-                  {pkg.deliveryDays != null && (
-                    <div className="inline-flex items-center gap-1.5">
-                      <Package2 className="h-4 w-4 text-orange-500" />
-                      <span>Trả file tối đa: {pkg.deliveryDays} ngày</span>
-                    </div>
-                  )}
-                  {pkg.description && (
-                    <div className="text-muted-foreground italic">{pkg.description}</div>
-                  )}
+
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="font-display text-[32px] font-bold leading-none tracking-tight tabular">
+                    {pkg.pricePerMember.toLocaleString('vi-VN')}₫
+                  </span>
+                  <span className="text-sm text-muted-foreground">/ thành viên</span>
                 </div>
+
+                {pkg.description && (
+                  <p className="mt-4 text-sm text-muted-foreground">{pkg.description}</p>
+                )}
+
+                {attrs.length > 0 && (
+                  <div className="mt-4 space-y-2.5 border-t pt-4">
+                    {attrs.map(({ icon: Icon, label, value }) => (
+                      <div key={label} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="inline-flex items-center gap-2.5 text-muted-foreground">
+                          <Icon className="h-4 w-4" />
+                          {label}
+                        </span>
+                        <span className="font-semibold">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {pkg.costumes && pkg.costumes.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      Trang phục
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {pkg.costumes.map((c) => (
+                        <Badge
+                          key={c._id}
+                          variant="neutral"
+                          className="rounded-md px-2.5 font-medium"
+                        >
+                          {c.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-            {packages.length === 0 && (
-              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
-                Chưa có gói chụp nào
-              </div>
-            )}
-          </div>
-        </>
+            );
+          })}
+        </div>
       )}
 
       <Modal

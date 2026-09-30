@@ -5,13 +5,19 @@ import ExcelJS from 'exceljs';
 import { formatDate } from '../utils/format';
 import {
   AlertTriangle,
+  Box,
   Calendar,
   ClipboardCheck,
-  Copy,
-  FileUp,
+  Download,
+  Gift,
   GraduationCap,
+  Link2,
+  Pencil,
+  Plus,
   Ruler,
   School,
+  Trash2,
+  Upload,
   Weight,
 } from 'lucide-react';
 import { customerService } from '../services/customerService';
@@ -508,13 +514,42 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         kicker="Customers"
         title="Thông tin học sinh"
         description="Quản lý số đo và thông tin trang phục của từng học sinh."
+        action={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => importFileRef.current?.click()}
+              disabled={disabledAll}
+            >
+              <Upload />
+              Nhập từ Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={disabledAll || students.length === 0}
+            >
+              <Download />
+              Xuất Excel
+            </Button>
+          </>
+        }
+      />
+      <input
+        ref={importFileRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={handleImportFileChange}
       />
 
       {/* Class selector */}
-      <div className="rounded-xl border bg-card p-4 mb-4 flex flex-wrap items-center gap-3">
-        <Label className="shrink-0">Chọn lớp:</Label>
-        <div className="flex-1 min-w-[200px]">
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[14px] border bg-card p-3.5">
+        <Label className="sr-only">Chọn lớp</Label>
+        <div className="relative w-full min-w-[220px] sm:w-[320px]">
+          <School className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary-700 dark:text-primary" />
           <Combobox
+            className="pl-9"
             options={customers.map((c) => ({
               value: c._id,
               label: `${c.className}${c.school ? ` — ${c.school}` : ''}`,
@@ -524,76 +559,58 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             placeholder="-- Chọn lớp --"
           />
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleCopy}
-          disabled={disabledAll}
-          title={publicUrl}
-        >
-          {copied ? (
-            <ClipboardCheck className="text-emerald-500" />
-          ) : (
-            <Copy className="text-primary" />
-          )}
-          {copied ? 'Đã copy link nhập liệu!' : 'Copy link nhập liệu'}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleCopyInfo}
-          disabled={disabledAll || students.length === 0}
-        >
-          {copiedInfo ? (
-            <ClipboardCheck className="text-emerald-500" />
-          ) : (
-            <Copy className="text-primary" />
-          )}
-          {copiedInfo ? 'Đã copy thông tin gửi đồ!' : 'Copy thông tin gửi đồ'}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleExportExcel}
-          disabled={disabledAll || students.length === 0}
-        >
-          <Calendar className="text-green-500" />
-          Xuất Excel
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => importFileRef.current?.click()}
-          disabled={disabledAll}
-        >
-          <FileUp className="text-indigo-500" />
-          Nhập từ Excel
-        </Button>
-        <input
-          ref={importFileRef}
-          type="file"
-          accept=".xlsx,.xls"
-          className="hidden"
-          onChange={handleImportFileChange}
-        />
+        {selectedCustomer && schedules && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              Ngày chụp {formatDate(schedules.shootDate)}
+            </span>
+            {schedules.package && (
+              <span className="inline-flex items-center gap-1.5">
+                <Gift className="h-4 w-4" />
+                {schedules.package.name}
+              </span>
+            )}
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-1 sm:ml-auto">
+          <Button variant="ghost" onClick={handleCopy} disabled={disabledAll} title={publicUrl}>
+            {copied ? (
+              <ClipboardCheck className="text-emerald-500" />
+            ) : (
+              <Link2 className="text-muted-foreground" />
+            )}
+            {copied ? 'Đã copy link nhập liệu!' : 'Copy link nhập liệu'}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleCopyInfo}
+            disabled={disabledAll || students.length === 0}
+          >
+            {copiedInfo ? (
+              <ClipboardCheck className="text-emerald-500" />
+            ) : (
+              <Box className="text-muted-foreground" />
+            )}
+            {copiedInfo ? 'Đã copy thông tin gửi đồ!' : 'Copy thông tin gửi đồ'}
+          </Button>
+        </div>
       </div>
 
       {/* Empty state */}
       {!selectedCustomer && (
-        <div className="rounded-xl border bg-card py-16 text-center text-muted-foreground">
+        <div className="rounded-[14px] border bg-card py-16 text-center text-muted-foreground">
           <div className="mb-3 flex justify-center">
             <School className="h-10 w-10 text-sky-500" />
           </div>
           <p className="text-base font-medium">Xin mời chọn lớp để xem danh sách học sinh</p>
-          <p className="text-sm mt-1">
-            Sau đó bạn có thể copy link để học sinh tự nhập thông tin
-          </p>
+          <p className="text-sm mt-1">Sau đó bạn có thể copy link để học sinh tự nhập thông tin</p>
         </div>
       )}
 
       {/* No-schedule warning */}
       {selectedCustomer && noSchedule && (
-        <div className="rounded-xl p-4 mb-4 border border-yellow-400/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-sm inline-flex items-center gap-2">
+        <div className="rounded-[14px] p-4 mb-4 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 text-sm flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
@@ -605,51 +622,89 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Student list */}
       {selectedCustomer && (
         <>
-          <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div className="text-emerald-500 font-semibold">
-                Tổng cộng có {selectedCustomer?.total} học sinh đăng ký
+          <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[14px] border bg-card p-5">
+              <p className="text-xs text-muted-foreground">Đã đăng ký</p>
+              <p className="mt-1 font-display text-2xl font-bold text-foreground tabular">
+                {selectedCustomer.total} học sinh
+              </p>
+            </div>
+            <div className="rounded-[14px] border bg-card p-5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Đã điền thông tin</span>
+                {selectedCustomer.total > 0 && (
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular">
+                    {Math.min(100, Math.round((students.length / selectedCustomer.total) * 100))}%
+                  </span>
+                )}
               </div>
-              <div>
-                <span className="text-foreground font-medium">{students.length}</span> học sinh đã
-                điền thông tin{' '}
-                <span>
-                  (<span className="text-blue-500 font-medium">Nam: {totalMale}</span>
-                  {' / '}
-                  <span className="text-pink-500 font-medium">Nữ: {totalFemale}</span>)
-                </span>
+              <p className="mt-1 font-display text-2xl font-bold text-foreground tabular">
+                {students.length} / {selectedCustomer.total}
+              </p>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{
+                    width: `${selectedCustomer.total > 0 ? Math.min(100, (students.length / selectedCustomer.total) * 100) : 0}%`,
+                  }}
+                />
               </div>
-              {duplicateNorms.size > 0 && (
-                <div className="text-yellow-600 dark:text-yellow-400 font-medium inline-flex items-center gap-1">
-                  <AlertTriangle className="h-4 w-4" />
+              <p className="mt-2 text-xs text-muted-foreground">
+                <span className="text-blue-600 dark:text-blue-400">Nam {totalMale}</span>
+                {' · '}
+                <span className="text-pink-600 dark:text-pink-400">Nữ {totalFemale}</span>
+              </p>
+            </div>
+            {duplicateNorms.size > 0 && (
+              <div className="rounded-[14px] bg-amber-50 p-5 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-semibold">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Trùng tên
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showDupOnly}
+                    aria-label={showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng'}
+                    onClick={() => setShowDupOnly((v) => !v)}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <span>{showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng'}</span>
+                    <span
+                      className={cn(
+                        'relative inline-flex h-4 w-7 rounded-full transition-colors',
+                        showDupOnly ? 'bg-amber-500' : 'bg-amber-900/20 dark:bg-amber-200/20',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all',
+                          showDupOnly ? 'left-3.5' : 'left-0.5',
+                        )}
+                      />
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-1 font-display text-2xl font-bold tabular">
                   {[...duplicateNorms].reduce(
                     (acc, norm) =>
                       acc + students.filter((s) => normalizeName(s.name) === norm).length,
                     0,
                   )}{' '}
-                  trùng tên
-                </div>
-              )}
-            </div>
-            <div className="flex sm:flex-row flex-col-reverse items-center gap-2">
-              {duplicateNorms.size > 0 && (
-                <Button
-                  variant={showDupOnly ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setShowDupOnly((v) => !v)}
-                  className={cn(
-                    showDupOnly &&
-                      'bg-yellow-500/15 border-yellow-400/50 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/20',
-                  )}
-                >
-                  <AlertTriangle />
-                  {showDupOnly ? 'Hiện tất cả' : 'Chỉ hiện trùng'}
-                </Button>
-              )}
-              <Button variant="gradient" onClick={openCreate} disabled={noSchedule}>
-                Thêm học sinh
-              </Button>
-            </div>
+                  học sinh
+                </p>
+                <p className="mt-1 text-xs opacity-80">Kiểm tra lại trước khi gửi đồ</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-display text-lg font-bold text-foreground">Danh sách học sinh</h3>
+            <Button variant="gradient" onClick={openCreate} disabled={noSchedule}>
+              <Plus />
+              Thêm học sinh
+            </Button>
           </div>
 
           {loadingStudents ? (
@@ -663,22 +718,22 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'index',
                   header: '#',
+                  className: 'text-muted-foreground tabular',
                   render: (_s, i) => i + 1,
                 },
                 {
                   key: 'name',
                   header: 'Họ tên',
-                  className: 'font-medium',
+                  className: 'font-semibold',
                   render: (s) => {
                     const isDup = duplicateNorms.has(normalizeName(s.name));
                     return (
                       <>
                         {s.name}
                         {isDup && (
-                          <span className="ml-1.5 text-yellow-600 text-xs inline-flex items-center gap-1">
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            <span>trùng tên</span>
-                          </span>
+                          <Badge variant="warning" className="ml-2 px-2 py-0 font-medium">
+                            trùng tên
+                          </Badge>
                         )}
                       </>
                     );
@@ -687,19 +742,25 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'gender',
                   header: 'Giới tính',
-                  render: (s) => GENDER_LABEL[s.gender],
+                  render: (s) => (
+                    <Badge variant={s.gender === 'male' ? 'info' : 'pink'}>
+                      {GENDER_LABEL[s.gender]}
+                    </Badge>
+                  ),
                 },
                 {
                   key: 'height',
-                  header: 'Chiều cao (cm)',
+                  header: 'Chiều cao',
                   align: 'right',
-                  render: (s) => s.height ?? '—',
+                  className: 'tabular',
+                  render: (s) => (s.height != null ? `${s.height} cm` : '—'),
                 },
                 {
                   key: 'weight',
-                  header: 'Cân nặng (kg)',
+                  header: 'Cân nặng',
                   align: 'right',
-                  render: (s) => s.weight ?? '—',
+                  className: 'tabular',
+                  render: (s) => (s.weight != null ? `${s.weight} kg` : '—'),
                 },
                 {
                   key: 'costumes',
@@ -708,7 +769,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     s.costumes?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {s.costumes.map((c) => (
-                          <Badge key={c._id} variant="outline" className="font-normal">
+                          <Badge key={c._id} variant="neutral" className="px-2 py-0 font-medium">
                             {c.name}
                           </Badge>
                         ))}
@@ -720,22 +781,36 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'notes',
                   header: 'Ghi chú',
-                  className: 'text-xs',
-                  render: (s) => s.notes,
+                  render: (s) => <span className="text-muted-foreground">{s.notes || '—'}</span>,
                 },
                 {
                   key: 'actions',
                   header: '',
                   align: 'right',
+                  className: 'whitespace-nowrap',
                   render: (s) => (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs text-destructive"
-                      onClick={() => setConfirmId(s._id)}
-                    >
-                      Xoá
-                    </Button>
+                    <span className="inline-flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-[30px] w-[30px] text-muted-foreground"
+                        title="Sửa"
+                        aria-label="Sửa"
+                        onClick={() => openEdit(s)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
+                        title="Xoá"
+                        aria-label="Xoá"
+                        onClick={() => setConfirmId(s._id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </span>
                   ),
                 },
               ];
@@ -750,7 +825,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       onRowClick={(r) => openEdit(r)}
                       rowClassName={(s) =>
                         duplicateNorms.has(normalizeName(s.name))
-                          ? 'bg-yellow-500/10 shadow-[inset_2px_0_0_rgba(245,158,11,0.95)]'
+                          ? 'bg-amber-50 hover:bg-amber-50 dark:bg-amber-500/10 dark:hover:bg-amber-500/10'
                           : ''
                       }
                       emptyTitle={
@@ -763,11 +838,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     />
                     {showDupOnly && displayedStudents.length === 0 && (
                       <div className="text-center mt-2">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => setShowDupOnly(false)}
-                        >
+                        <Button variant="link" size="sm" onClick={() => setShowDupOnly(false)}>
                           Hiện tất cả
                         </Button>
                       </div>
@@ -784,8 +855,8 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           key={s._id}
                           onClick={() => openEdit(s)}
                           className={cn(
-                            'rounded-xl border bg-card p-4 cursor-pointer',
-                            isDup && 'border-yellow-400/50 bg-yellow-500/10',
+                            'rounded-[14px] border bg-card p-4 cursor-pointer',
+                            isDup && 'border-amber-300/60 bg-amber-50 dark:bg-amber-500/10',
                           )}
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
@@ -793,22 +864,13 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs text-muted-foreground">{i + 1}.</span>
                                 <span className="font-semibold truncate">{s.name}</span>
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    'border-transparent',
-                                    isMale
-                                      ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                                      : 'bg-pink-500/15 text-pink-600 dark:text-pink-400',
-                                  )}
-                                >
+                                <Badge variant={isMale ? 'info' : 'pink'}>
                                   {GENDER_LABEL[s.gender]}
                                 </Badge>
                                 {isDup && (
-                                  <span className="text-yellow-600 dark:text-yellow-400 text-xs inline-flex items-center gap-1">
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                    <span>trùng tên</span>
-                                  </span>
+                                  <Badge variant="warning" className="px-2 py-0 font-medium">
+                                    trùng tên
+                                  </Badge>
                                 )}
                               </div>
                             </div>
@@ -832,7 +894,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           {s.costumes?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {s.costumes.map((c) => (
-                                <Badge key={c._id} variant="outline" className="font-normal">
+                                <Badge
+                                  key={c._id}
+                                  variant="neutral"
+                                  className="px-2 py-0 font-medium"
+                                >
                                   {c.name}
                                 </Badge>
                               ))}
@@ -842,31 +908,35 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                             <p className="text-xs text-muted-foreground mt-2 italic">{s.notes}</p>
                           )}
                           <div
-                            className="flex justify-end gap-3 mt-3 pt-3 border-t"
+                            className="flex justify-end gap-1 mt-3 pt-3 border-t"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Button
-                              variant="link"
-                              size="sm"
-                              className="h-auto p-0 text-xs"
+                              variant="ghost"
+                              size="icon"
+                              className="h-[30px] w-[30px] text-muted-foreground"
+                              title="Sửa"
+                              aria-label="Sửa"
                               onClick={() => openEdit(s)}
                             >
-                              Sửa
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="link"
-                              size="sm"
-                              className="h-auto p-0 text-xs text-destructive"
+                              variant="ghost"
+                              size="icon"
+                              className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
+                              title="Xoá"
+                              aria-label="Xoá"
                               onClick={() => setConfirmId(s._id)}
                             >
-                              Xoá
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       );
                     })}
                     {displayedStudents.length === 0 && (
-                      <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+                      <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
                         {showDupOnly ? (
                           <span>
                             Không còn học sinh trùng tên —{' '}
@@ -923,12 +993,12 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               </span>
             )}
             {importRows.some((r) => r.warning) && (
-              <span className="text-yellow-600 dark:text-yellow-400 ml-1">
+              <span className="text-amber-700 dark:text-amber-300 ml-1">
                 {importRows.filter((r) => r.warning).length} dòng có thể bị trùng tên.
               </span>
             )}
           </p>
-          <div className="max-h-72 overflow-y-auto border rounded-lg">
+          <div className="max-h-72 overflow-y-auto border rounded-[12px]">
             <DataTable<ImportRow>
               variant="plain"
               textSize="xs"
@@ -940,7 +1010,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 r.error
                   ? 'bg-destructive/10 text-destructive'
                   : r.warning
-                    ? 'bg-yellow-500/10'
+                    ? 'bg-amber-50 dark:bg-amber-500/10'
                     : 'hover:bg-muted/40'
               }
               columns={[
@@ -959,7 +1029,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 {
                   key: 'gender',
                   header: 'Giới tính',
-                  render: (r) => GENDER_LABEL[r.gender] ?? r.gender,
+                  render: (r) => (
+                    <Badge variant={r.gender === 'male' ? 'info' : 'pink'} className="px-2 py-0">
+                      {GENDER_LABEL[r.gender] ?? r.gender}
+                    </Badge>
+                  ),
                 },
                 {
                   key: 'height',
@@ -982,7 +1056,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       {r.notes ?? ''}
                       {r.error && <span className="text-destructive ml-1">({r.error})</span>}
                       {r.warning && (
-                        <span className="text-yellow-600 dark:text-yellow-400 ml-1 inline-flex items-center gap-1">
+                        <span className="text-amber-700 dark:text-amber-300 ml-1 inline-flex items-center gap-1">
                           <AlertTriangle className="h-3.5 w-3.5" />
                           <span>{r.warning}</span>
                         </span>
@@ -999,7 +1073,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 <span>Đang import…</span>
                 <span>{importProgress}%</span>
               </div>
-              <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-primary h-1.5 rounded-full transition-all"
                   style={{ width: `${importProgress}%` }}

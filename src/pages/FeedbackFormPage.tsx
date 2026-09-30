@@ -1,28 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
-  CheckCircle2,
-  Film,
-  Image as ImageIcon,
+  Camera,
+  Check,
+  Heart,
+  Images,
   Lightbulb,
-  MessageCircle,
   Phone,
-  School,
+  Send,
+  ShieldCheck,
+  Star,
+  type LucideIcon,
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import Logo from '../components/atoms/Logo';
-import {
-  Button,
-  Card,
-  CardContent,
-  Combobox,
-  Input,
-  PageLoader,
-  StarRating,
-  Textarea,
-} from '@/components/ui';
+import { Button, Combobox, Input, PageLoader, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
@@ -45,6 +39,89 @@ interface FormValues {
 }
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
+const RATING_LABELS = ['', 'Tệ', 'Chưa tốt', 'Ổn', 'Tốt', 'Tuyệt vời'];
+
+const BrandBar = () => (
+  <div className="flex items-center gap-2.5 px-5 pb-3 pt-5">
+    <Logo size={32} />
+    <span className="font-display text-[15px] font-bold">Yume Studio</span>
+  </div>
+);
+
+const PageShell = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-[#FBFAF7] dark:bg-background">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+      <BrandBar />
+      {children}
+    </div>
+  </div>
+);
+
+const SectionCard = ({
+  icon: Icon,
+  tone,
+  title,
+  hint,
+  required,
+  children,
+}: {
+  icon: LucideIcon;
+  tone: string;
+  title: string;
+  hint: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) => (
+  <section className="rounded-2xl border bg-card p-4">
+    <div className="mb-3.5 flex items-start gap-3">
+      <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]', tone)}>
+        <Icon className="h-[18px] w-[18px]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="font-display text-[15px] font-bold">
+          {title}
+          {required && <span className="ml-1 text-rose-500">*</span>}
+        </h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+const RatingTiles = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
+  <div className="flex items-center gap-2">
+    <div className="flex gap-2">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          type="button"
+          key={n}
+          aria-label={`${n} sao`}
+          onClick={() => onChange(n)}
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            n <= value ? 'bg-primary-100 dark:bg-primary/15' : 'bg-muted',
+          )}
+        >
+          <Star
+            className={cn(
+              'h-5 w-5',
+              n <= value ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground/40',
+            )}
+          />
+        </button>
+      ))}
+    </div>
+    {value > 0 && (
+      <span className="ml-auto text-sm font-semibold text-primary-700 dark:text-primary">
+        {RATING_LABELS[value]}
+      </span>
+    )}
+  </div>
+);
+
+const textareaCls = 'resize-none rounded-xl bg-muted/60 px-3.5 py-3 text-sm';
 
 const FeedbackFormPage = () => {
   const { customer: paramCustomerId } = useParams<{ customer: string }>();
@@ -162,7 +239,7 @@ const FeedbackFormPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-[#FBFAF7] dark:bg-background">
         <PageLoader />
       </div>
     );
@@ -170,43 +247,41 @@ const FeedbackFormPage = () => {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-sm w-full text-center">
-          <CardContent className="py-10">
-            <div className="mb-4 flex justify-center">
-              <AlertCircle className="h-12 w-12 text-amber-500" />
-            </div>
-            <p className="font-semibold text-lg">Không tìm thấy thông tin</p>
-            <p className="mt-1 text-sm text-muted-foreground">Link có thể không còn hợp lệ</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PageShell>
+        <div className="flex flex-1 flex-col items-center justify-center px-5 pb-20 text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
+            <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+          </div>
+          <p className="font-display text-xl font-bold">Không tìm thấy thông tin</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">Link có thể không còn hợp lệ</p>
+        </div>
+      </PageShell>
     );
   }
 
   if (submitStatus === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-md w-full text-center rounded-3xl">
-          <CardContent className="p-10">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg">
-              <Logo size={80} />
+      <PageShell>
+        <div className="flex flex-1 flex-col items-center justify-center px-5 pb-20 text-center">
+          <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-full bg-emerald-500/15">
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-600 text-white">
+              <Check className="h-7 w-7" strokeWidth={2.5} />
             </div>
-            <h2 className="font-bold mb-2 text-2xl">Cảm ơn bạn rất nhiều!</h2>
-            <p className="leading-relaxed mb-8 text-muted-foreground">
-              Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt
-              hơn trong tương lai.
-            </p>
-            <Button
-              variant="gradient"
-              className="w-full py-3"
-              onClick={() => setSubmitStatus('idle')}
-            >
-              Gửi phản hồi khác
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <h2 className="font-display text-2xl font-bold">Cảm ơn bạn rất nhiều!</h2>
+          <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+            Phản hồi của bạn đã được ghi nhận. Chúng tôi sẽ dùng ý kiến này để phục vụ bạn tốt hơn
+            trong tương lai.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-6 h-12 w-full rounded-xl font-semibold"
+            onClick={() => setSubmitStatus('idle')}
+          >
+            Gửi phản hồi khác
+          </Button>
+        </div>
+      </PageShell>
     );
   }
 
@@ -220,233 +295,164 @@ const FeedbackFormPage = () => {
   const progress = Math.round((completionCount / totalSteps) * 100);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 backdrop-blur bg-background/80 border-b">
-        <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-cyan-500 flex items-center justify-center shadow-sm">
-            <Logo size={36} />
+    <PageShell>
+      <div className="px-5 pb-4 pt-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary-700 dark:text-primary">
+          Đánh giá trải nghiệm của bạn
+        </p>
+        <h1 className="mt-1.5 font-display text-2xl font-bold leading-tight">
+          {fixedClass
+            ? [fixedClass.className, fixedClass.school].filter(Boolean).join(' · ')
+            : 'Gửi phản hồi'}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Ý kiến của bạn giúp studio phục vụ tốt hơn
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 space-y-3.5 px-4 pb-44">
+        {fixedClass ? (
+          <input type="hidden" {...register('customer')} />
+        ) : (
+          <section className="rounded-2xl border bg-card p-4">
+            <label className="mb-2 block font-display text-[15px] font-bold">
+              Lớp của bạn <span className="text-rose-500">*</span>
+            </label>
+            <Combobox
+              options={classes.map((c) => ({
+                value: c._id,
+                label: c.school ? `${c.className} — ${c.school}` : c.className,
+              }))}
+              value={selectedCustomerId}
+              onChange={(v) => setValue('customer', v, { shouldValidate: true })}
+              placeholder="Chọn lớp…"
+            />
+            {errors.customer && (
+              <p className="mt-2 text-xs text-rose-500">{errors.customer.message}</p>
+            )}
+          </section>
+        )}
+
+        <SectionCard
+          icon={Camera}
+          tone="bg-blue-500/15 text-blue-600 dark:text-blue-400"
+          title="Ekip chụp ảnh"
+          hint="Thái độ, sự chuyên nghiệp và kỹ năng"
+          required
+        >
+          <input type="hidden" {...register('crewRating', { required: true, min: 1 })} />
+          <RatingTiles
+            value={crewRating}
+            onChange={(v) => setValue('crewRating', v, { shouldValidate: true })}
+          />
+          <Textarea
+            rows={2}
+            placeholder="Chia sẻ thêm về ekip…"
+            className={cn('mt-3.5', textareaCls, errors.crewDescription && 'border-destructive')}
+            {...register('crewDescription', {
+              required: true,
+              validate: (v) => v.trim().length > 0,
+            })}
+          />
+          {errors.crewDescription && (
+            <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về ekip</p>
+          )}
+        </SectionCard>
+
+        <SectionCard
+          icon={Images}
+          tone="bg-violet-500/15 text-violet-600 dark:text-violet-400"
+          title="Album ảnh"
+          hint="Chất lượng, bố cục và màu sắc"
+          required
+        >
+          <input type="hidden" {...register('albumRating', { required: true, min: 1 })} />
+          <RatingTiles
+            value={albumRating}
+            onChange={(v) => setValue('albumRating', v, { shouldValidate: true })}
+          />
+          <Textarea
+            rows={2}
+            placeholder="Chia sẻ thêm về album…"
+            className={cn('mt-3.5', textareaCls, errors.albumDescription && 'border-destructive')}
+            {...register('albumDescription', {
+              required: true,
+              validate: (v) => v.trim().length > 0,
+            })}
+          />
+          {errors.albumDescription && (
+            <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về album</p>
+          )}
+        </SectionCard>
+
+        <SectionCard
+          icon={Heart}
+          tone="bg-teal-500/15 text-teal-600 dark:text-teal-400"
+          title="Cảm nhận chung"
+          hint="Trải nghiệm tổng thể của bạn"
+        >
+          <Textarea
+            rows={3}
+            className={textareaCls}
+            placeholder="Hãy chia sẻ cảm nhận của bạn…"
+            {...register('content')}
+          />
+        </SectionCard>
+
+        <SectionCard
+          icon={Lightbulb}
+          tone="bg-amber-500/15 text-amber-600 dark:text-amber-400"
+          title="Đề xuất cải thiện"
+          hint="Studio có thể làm gì tốt hơn?"
+        >
+          <Textarea
+            rows={3}
+            className={textareaCls}
+            placeholder="Góp ý để studio phục vụ bạn tốt hơn…"
+            {...register('suggestion')}
+          />
+        </SectionCard>
+
+        <SectionCard
+          icon={Phone}
+          tone="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          title="Số điện thoại · tuỳ chọn"
+          hint="Để chúng tôi có thể liên hệ lại nếu cần"
+        >
+          <Input
+            type="tel"
+            placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
+            className="h-[46px] rounded-xl bg-muted/60 px-3.5 text-sm"
+            {...register('phone')}
+          />
+          <p className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Phản hồi hoàn toàn ẩn danh trừ khi bạn để lại SĐT
+          </p>
+        </SectionCard>
+
+        {submitStatus === 'error' && (
+          <div className="inline-flex w-full items-center gap-1.5 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span>Có lỗi xảy ra, vui lòng thử lại.</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold leading-tight truncate">Yume Studio</p>
-            <p className="leading-tight text-xs text-muted-foreground">
-              Đánh giá trải nghiệm của bạn
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 rounded-full overflow-hidden bg-muted">
+        )}
+      </form>
+
+      {/* Sticky submit bar */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 backdrop-blur">
+        <div className="mx-auto w-full max-w-md px-4 pb-4 pt-3">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 to-cyan-500 transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="tabular-nums text-xs text-muted-foreground">{progress}%</span>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-xl mx-auto px-5 py-8">
-        <div className="mb-8">
-          <h1 className="font-bold leading-tight text-2xl sm:text-3xl">
-            {fixedClass ? fixedClass.className : 'Gửi phản hồi'}
-          </h1>
-          {fixedClass?.school ? (
-            <p className="mt-1 text-muted-foreground inline-flex items-center gap-1.5">
-              <School className="h-4 w-4 text-sky-500" />
-              <span>{fixedClass.school}</span>
-            </p>
-          ) : (
-            <p className="mt-1 text-muted-foreground">
-              Ý kiến của bạn giúp studio phục vụ tốt hơn
-            </p>
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {fixedClass ? (
-            <input type="hidden" {...register('customer')} />
-          ) : (
-            <Card className="rounded-2xl">
-              <CardContent className="p-5">
-                <label className="block font-semibold mb-2">
-                  Lớp của bạn <span className="text-rose-500">*</span>
-                </label>
-                <Combobox
-                  options={classes.map((c) => ({
-                    value: c._id,
-                    label: c.school ? `${c.className} — ${c.school}` : c.className,
-                  }))}
-                  value={selectedCustomerId}
-                  onChange={(v) => setValue('customer', v, { shouldValidate: true })}
-                  placeholder="Chọn lớp…"
-                />
-                {errors.customer && (
-                  <p className="text-rose-500 mt-2 text-xs">{errors.customer.message}</p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Crew rating */}
-          <Card className="rounded-2xl">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/15">
-                  <Film className="h-5 w-5 text-blue-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold">
-                    Ekip chụp ảnh <span className="text-rose-500">*</span>
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Thái độ, sự chuyên nghiệp và kỹ năng
-                  </p>
-                </div>
-              </div>
-              <input type="hidden" {...register('crewRating', { required: true, min: 1 })} />
-              <StarRating
-                value={crewRating}
-                onChange={(v) => setValue('crewRating', v, { shouldValidate: true })}
-              />
-              <Textarea
-                rows={2}
-                placeholder="Chia sẻ thêm về ekip…"
-                className={cn('mt-4 resize-none', errors.crewDescription && 'border-destructive')}
-                {...register('crewDescription', {
-                  required: true,
-                  validate: (v) => v.trim().length > 0,
-                })}
-              />
-              {errors.crewDescription && (
-                <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về ekip</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Album rating */}
-          <Card className="rounded-2xl">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-violet-500/15">
-                  <ImageIcon className="h-5 w-5 text-violet-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold">
-                    Album ảnh <span className="text-rose-500">*</span>
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Chất lượng, bố cục và màu sắc
-                  </p>
-                </div>
-              </div>
-              <input type="hidden" {...register('albumRating', { required: true, min: 1 })} />
-              <StarRating
-                value={albumRating}
-                onChange={(v) => setValue('albumRating', v, { shouldValidate: true })}
-              />
-              <Textarea
-                rows={2}
-                placeholder="Chia sẻ thêm về album…"
-                className={cn('mt-4 resize-none', errors.albumDescription && 'border-destructive')}
-                {...register('albumDescription', {
-                  required: true,
-                  validate: (v) => v.trim().length > 0,
-                })}
-              />
-              {errors.albumDescription && (
-                <p className="mt-1 text-xs text-destructive">Vui lòng chia sẻ thêm về album</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* General feedback */}
-          <Card className="rounded-2xl">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-teal-500/15">
-                  <MessageCircle className="h-5 w-5 text-teal-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold">Cảm nhận chung</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Trải nghiệm tổng thể của bạn
-                  </p>
-                </div>
-              </div>
-              <Textarea
-                rows={3}
-                className="resize-none"
-                placeholder="Hãy chia sẻ cảm nhận của bạn…"
-                {...register('content')}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Suggestion */}
-          <Card className="rounded-2xl">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/15">
-                  <Lightbulb className="h-5 w-5 text-amber-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold">Đề xuất cải thiện</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Studio có thể làm gì tốt hơn?
-                  </p>
-                </div>
-              </div>
-              <Textarea
-                rows={3}
-                className="resize-none"
-                placeholder="Góp ý để studio phục vụ bạn tốt hơn…"
-                {...register('suggestion')}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Phone */}
-          <Card className="rounded-2xl">
-            <CardContent className="p-5">
-              <label className="flex items-center gap-2 font-semibold mb-2">
-                <Phone className="h-4 w-4 text-emerald-500" />
-                <span>Số điện thoại</span>
-                <span className="font-normal text-xs text-muted-foreground">· tuỳ chọn</span>
-              </label>
-              <Input
-                type="tel"
-                placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
-                {...register('phone')}
-              />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Phản hồi hoàn toàn ẩn danh trừ khi bạn để lại SĐT
-              </p>
-            </CardContent>
-          </Card>
-
-          {submitStatus === 'error' && (
-            <div className="rounded-2xl p-4 text-sm text-destructive bg-destructive/10 border border-destructive/30 inline-flex items-center gap-1.5">
-              <AlertCircle className="h-4 w-4" />
-              <span>Có lỗi xảy ra, vui lòng thử lại.</span>
-            </div>
-          )}
-
-          <div className="h-20" />
-        </form>
-      </div>
-
-      {/* Sticky submit bar */}
-      <div className="fixed bottom-0 left-0 right-0 backdrop-blur z-20 bg-background/80 border-t">
-        <div className="max-w-xl mx-auto px-5 py-3 flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">
-              {completionCount === totalSteps ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Sẵn sàng gửi</span>
-                </span>
-              ) : (
-                `Hoàn thành ${completionCount}/${totalSteps} mục bắt buộc`
-              )}
+            <p className="text-xs font-semibold">
+              {completionCount === totalSteps
+                ? 'Sẵn sàng gửi'
+                : `Hoàn thành ${completionCount}/${totalSteps} mục bắt buộc`}
             </p>
           </div>
           <Button
@@ -454,13 +460,14 @@ const FeedbackFormPage = () => {
             variant="gradient"
             disabled={!canSubmit}
             onClick={handleSubmit(onSubmit)}
-            className="px-6 py-3"
+            className="h-[50px] w-full rounded-xl text-[15px] font-semibold"
           >
+            <Send className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Đang gửi…' : 'Gửi phản hồi'}
           </Button>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

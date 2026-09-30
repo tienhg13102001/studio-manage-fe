@@ -1,39 +1,42 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Sun, Moon, Monitor, UserCircle } from 'lucide-react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { ChevronDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, type ThemeMode } from '../../context/ThemeContext';
 import { ROLE_LABELS } from '../../types';
 import { navItems, adminItems, type NavItem } from '../../config/navItems';
 import { Logo } from '../atoms';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchSeasons, setSelectedSeason } from '../../store/slices/seasonsSlice';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const ACTIVE_CLS =
+  'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a0f02] font-semibold shadow-[0_4px_14px_rgba(245,158,11,0.33)]';
+const IDLE_CLS =
+  'text-[#5b6275] hover:bg-[#f1f2f6] hover:text-[#141826] dark:text-[#9aa3b8] dark:hover:bg-white/[0.06] dark:hover:text-white';
+
+const themeOptions: Array<{ mode: ThemeMode; label: string; Icon: typeof Sun }> = [
+  { mode: 'light', label: 'Sáng', Icon: Sun },
+  { mode: 'dark', label: 'Tối', Icon: Moon },
+  { mode: 'system', label: 'Hệ thống', Icon: Monitor },
+];
+
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { user, logout } = useAuth();
   const { themeMode, resolvedTheme, setThemeMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useAppDispatch();
-  const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    dispatch(fetchSeasons());
-  }, [dispatch]);
 
   const getInitialOpen = () => {
     const open: Record<string, boolean> = {};
     [...navItems, ...adminItems].forEach((item) => {
-      if (item.children?.some((child) => location.pathname.startsWith(item.to + child.to))) {
+      if (item.children?.some((child) => location.pathname.startsWith(item.to + child.to)))
         open[item.to] = true;
-      }
     });
     return open;
   };
@@ -46,7 +49,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         setThemeMenuOpen(false);
       }
     };
-
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
@@ -56,28 +58,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     navigate('/login');
   };
 
-  const handleNavClick = () => {
-    onClose();
-  };
-
   const toggleGroup = (to: string) => {
     setOpenGroups((prev) => ({ ...prev, [to]: !prev[to] }));
   };
 
-  const themeOptions: Array<{ mode: ThemeMode; label: string; icon: JSX.Element }> = [
-    { mode: 'light', label: 'Sáng', icon: <Sun className="w-3.5 h-3.5" /> },
-    { mode: 'dark', label: 'Tối', icon: <Moon className="w-3.5 h-3.5" /> },
-    { mode: 'system', label: 'Hệ thống', icon: <Monitor className="w-3.5 h-3.5" /> },
-  ];
-
-  const currentThemeIcon =
-    themeMode === 'system' ? (
-      <Monitor className="w-4 h-4" />
-    ) : resolvedTheme === 'dark' ? (
-      <Moon className="w-4 h-4" />
-    ) : (
-      <Sun className="w-4 h-4" />
-    );
+  const ThemeIcon = themeMode === 'system' ? Monitor : resolvedTheme === 'dark' ? Moon : Sun;
 
   const isAllowed = (item: NavItem) =>
     !item.allowedRoles || user?.roles?.some((r) => item.allowedRoles!.includes(r));
@@ -88,37 +73,30 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     if (item.children) {
       const visibleChildren = item.children.filter((c) => !c.hidden && isAllowed(c));
       if (visibleChildren.length === 0) return null;
-      const isOpen = openGroups[item.to];
-
+      const groupOpen = openGroups[item.to];
+      const groupActive = location.pathname.startsWith(item.to);
       const ParentIcon = item.icon;
+
       return (
         <div key={item.to}>
           <button
             onClick={() => toggleGroup(item.to)}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
-            style={{ color: 'var(--nav-text)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = 'var(--nav-hover-bg)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--nav-hover-text)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = '';
-              (e.currentTarget as HTMLElement).style.color = 'var(--nav-text)';
-            }}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] text-[13.5px] font-medium transition-colors',
+              groupActive ? 'text-[#141826] dark:text-white' : IDLE_CLS,
+            )}
           >
-            <span className="flex items-center gap-3">
-              {ParentIcon && <ParentIcon className="w-4 h-4" />}
-              {item.label}
-            </span>
-            <ChevronRight
-              className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+            {ParentIcon && <ParentIcon className="w-4 h-4" />}
+            <span className="flex-1 text-left">{item.label}</span>
+            <ChevronDown
+              className={cn(
+                'w-3.5 h-3.5 text-[#9aa1b3] dark:text-[#5e6680] transition-transform',
+                !groupOpen && '-rotate-90',
+              )}
             />
           </button>
-          {isOpen && (
-            <div
-              className="mt-1 ml-4 space-y-1 border-l pl-3"
-              style={{ borderColor: 'var(--nav-child-border)' }}
-            >
+          {groupOpen && (
+            <div className="mt-0.5 space-y-0.5">
               {visibleChildren.map((child) => {
                 const fullPath = item.to + child.to;
                 const ChildIcon = child.icon;
@@ -127,23 +105,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     key={fullPath}
                     to={fullPath}
                     end
-                    onClick={handleNavClick}
+                    onClick={onClose}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
-                        isActive ? 'text-white' : ''
-                      }`
-                    }
-                    style={({ isActive }) =>
-                      isActive
-                        ? {
-                            background: 'linear-gradient(135deg,#f59e0b,#b45309)',
-                            boxShadow: '0 0 12px rgba(245,158,11,0.42)',
-                            color: '#fff',
-                          }
-                        : { color: 'var(--nav-text)' }
+                      cn(
+                        'flex items-center gap-2.5 py-[7px] pl-[34px] pr-2.5 rounded-[9px] text-[13.5px] font-medium transition-colors',
+                        isActive ? ACTIVE_CLS : IDLE_CLS,
+                      )
                     }
                   >
-                    {ChildIcon && <ChildIcon className="w-4 h-4" />}
+                    {ChildIcon && <ChildIcon className="w-[15px] h-[15px]" />}
                     {child.label}
                   </NavLink>
                 );
@@ -160,20 +130,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         key={item.to}
         to={item.to}
         end={item.to === '/'}
-        onClick={handleNavClick}
+        onClick={onClose}
         className={({ isActive }) =>
-          `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-            isActive ? 'text-white' : ''
-          }`
-        }
-        style={({ isActive }) =>
-          isActive
-            ? {
-                background: 'linear-gradient(135deg,#f59e0b,#b45309)',
-                boxShadow: '0 0 12px rgba(245,158,11,0.42)',
-                color: '#fff',
-              }
-            : { color: 'var(--nav-text)' }
+          cn(
+            'flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] text-[13.5px] font-medium transition-colors',
+            isActive ? ACTIVE_CLS : IDLE_CLS,
+          )
         }
       >
         {ItemIcon && <ItemIcon className="w-4 h-4" />}
@@ -182,9 +144,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     );
   };
 
+  const showAdmin = user?.roles?.some((r) =>
+    adminItems.some((item) => item.allowedRoles?.includes(r)),
+  );
+
   return (
     <>
-      {/* Backdrop for mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
@@ -194,176 +159,97 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       )}
 
       <aside
-        className={`w-60 flex flex-col h-[100dvh] fixed left-0 top-0 z-40 transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-        style={{
-          background: 'var(--sidebar-bg)',
-          borderRight: '1px solid var(--sidebar-border)',
-          boxShadow: 'var(--sidebar-shadow)',
-        }}
+        className={cn(
+          'w-64 flex flex-col h-[100dvh] fixed left-0 top-0 z-40 px-3.5 py-5 gap-[18px] transition-transform duration-300',
+          'bg-white border-r border-[#e8eaf0] dark:bg-transparent dark:bg-gradient-to-b dark:from-[#11112a] dark:to-[#0a0a14] dark:border-white/[0.04]',
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        )}
       >
-        {/* Logo area */}
-        <div
-          className="px-5 py-4"
-          style={{ borderBottom: '1px solid var(--sidebar-header-border)' }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl overflow-hidden flex-shrink-0">
-              <Logo size={32} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold leading-tight text-gradient">Yume Studio</h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
-                Quản lý chụp ảnh
-              </p>
-            </div>
-            <div className="relative" ref={themeMenuRef}>
-              <button
-                onClick={() => setThemeMenuOpen((prev) => !prev)}
-                title="Chế độ giao diện"
-                className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
-                style={{
-                  background:
-                    resolvedTheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(245,158,11,0.12)',
-                  color: resolvedTheme === 'dark' ? '#cbd5e1' : '#d97706',
-                  border: `1px solid ${resolvedTheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(245,158,11,0.2)'}`,
-                }}
-              >
-                {currentThemeIcon}
-              </button>
-
-              {themeMenuOpen && (
-                <div
-                  className="absolute right-0 top-10 z-50 rounded-xl p-1 min-w-[8.5rem]"
-                  style={{
-                    background: 'var(--card-bg)',
-                    border: '1px solid var(--card-border)',
-                    boxShadow: 'var(--card-shadow)',
-                    backdropFilter: 'blur(12px)',
-                  }}
-                >
-                  {themeOptions.map((option) => {
-                    const active = option.mode === themeMode;
-                    return (
-                      <button
-                        key={option.mode}
-                        onClick={() => {
-                          setThemeMode(option.mode);
-                          setThemeMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                        style={
-                          active
-                            ? {
-                                background: 'linear-gradient(135deg, #f59e0b, #b45309)',
-                                color: '#ffffff',
-                              }
-                            : {
-                                background: 'transparent',
-                                color: 'var(--text-primary)',
-                              }
-                        }
-                      >
-                        {option.icon}
-                        <span>{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-1.5">
+          <div className="rounded-[10px] overflow-hidden flex-shrink-0">
+            <Logo size={34} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-display text-base font-bold leading-tight text-[#141826] dark:text-white">
+              Yume Studio
+            </h1>
+            <p className="text-[11px] text-[#8a91a5] dark:text-[#5e6680]">Quản lý chụp ảnh</p>
+          </div>
+          <div className="relative" ref={themeMenuRef}>
+            <button
+              onClick={() => setThemeMenuOpen((prev) => !prev)}
+              title="Chế độ giao diện"
+              className="w-[30px] h-[30px] rounded-lg flex items-center justify-center bg-[#f1f2f6] text-[#5b6275] hover:text-[#141826] dark:bg-white/[0.06] dark:text-[#9aa3b8] dark:hover:text-white transition-colors"
+            >
+              <ThemeIcon className="w-[15px] h-[15px]" />
+            </button>
+            {themeMenuOpen && (
+              <div className="absolute right-0 top-9 z-50 rounded-xl p-1 min-w-[8.5rem] border bg-popover text-popover-foreground shadow-lg">
+                {themeOptions.map(({ mode, label, Icon }) => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setThemeMode(mode);
+                      setThemeMenuOpen(false);
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                      mode === themeMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {/* Season selector */}
-          <div className="mb-3 pb-3" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-            <p className="px-1 mb-1.5 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--nav-section-label)' }}>
-              Mùa chụp
-            </p>
-            <select
-              value={selectedSeasonId}
-              onChange={(e) => dispatch(setSelectedSeason(e.target.value))}
-              className="w-full text-sm px-2.5 py-1.5 rounded-lg outline-none cursor-pointer"
-              style={{
-                background: 'var(--input-bg, var(--card-bg))',
-                border: '1px solid var(--input-border, var(--card-border))',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="">Tất cả mùa</option>
-              {seasons.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        <nav className="flex-1 overflow-y-auto space-y-0.5 -mx-1 px-1">
+          <p className="px-2.5 pb-1.5 text-[10.5px] font-bold tracking-[0.12em] text-[#9aa1b3] dark:text-[#5e6680]">
+            TỔNG QUAN
+          </p>
           {navItems.map(renderNavItem)}
 
-          {user?.roles?.some((r) => adminItems.some((item) => item.allowedRoles?.includes(r))) && (
+          {showAdmin && (
             <>
-              <div
-                className="pt-4 pb-1 px-3 text-xs font-bold uppercase tracking-widest"
-                style={{ color: 'var(--nav-section-label)' }}
-              >
-                Admin
-              </div>
+              <p className="px-2.5 pt-5 pb-1.5 text-[10.5px] font-bold tracking-[0.12em] text-[#9aa1b3] dark:text-[#5e6680]">
+                ADMIN
+              </p>
               {adminItems.map(renderNavItem)}
             </>
           )}
         </nav>
 
-        <div className="px-4 py-4" style={{ borderTop: '1px solid var(--user-border)' }}>
+        {/* User block */}
+        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#f7f8fa] border border-[#e8eaf0] dark:bg-white/[0.03] dark:border-[#1e2034]">
           <NavLink
             to="/profile"
-            onClick={handleNavClick}
-            className="flex items-center gap-3 mb-3 rounded-xl px-1 py-1 -mx-1 transition-colors group"
+            onClick={onClose}
+            className="flex items-center gap-2.5 min-w-0 flex-1 group"
+            title="Hồ sơ cá nhân"
           >
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-              style={{
-                background: 'linear-gradient(135deg,#f59e0b,#06b6d4)',
-                boxShadow: '0 0 12px rgba(245,158,11,0.42)',
-              }}
-            >
+            <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-bold text-sm flex-shrink-0 text-white bg-gradient-to-br from-[#f59e0b] to-[#06b6d4]">
               {(user?.name || user?.username || '?')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p
-                className="text-sm font-semibold truncate"
-                style={{ color: 'var(--user-name-color)' }}
-              >
+              <p className="text-[13px] font-semibold truncate text-[#141826] group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-200">
                 {user?.name || user?.username}
               </p>
-              <div className="flex flex-wrap gap-1 mt-0.5">
-                {user?.roles?.map((r) => (
-                  <span
-                    key={r}
-                    className="text-xs px-1.5 py-0.5 rounded-md"
-                    style={{ background: 'var(--user-role-bg)', color: 'var(--user-role-text)' }}
-                  >
-                    {ROLE_LABELS[r]}
-                  </span>
-                ))}
-              </div>
+              <p className="text-[11px] truncate text-primary-700 dark:text-primary">
+                {user?.roles?.map((r) => ROLE_LABELS[r]).join(', ')}
+              </p>
             </div>
-            <UserCircle className="w-4 h-4 flex-shrink-0 opacity-40 group-hover:opacity-70 transition-opacity" style={{ color: 'var(--text-faint)' }} />
           </NavLink>
           <button
             onClick={handleLogout}
-            className="w-full text-left text-xs transition-colors"
-            style={{ color: 'var(--user-logout-color)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = '#d97706';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = 'var(--user-logout-color)';
-            }}
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+            className="p-1.5 rounded-lg text-[#8a91a5] hover:text-primary-700 hover:bg-[#f1f2f6] dark:text-[#5e6680] dark:hover:text-primary dark:hover:bg-white/[0.06] transition-colors"
           >
-            Đăng xuất →
+            <LogOut className="w-[15px] h-[15px]" />
           </button>
         </div>
       </aside>

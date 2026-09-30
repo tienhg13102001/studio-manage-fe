@@ -1,28 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus } from 'lucide-react';
+import {
+  Gem,
+  GraduationCap,
+  Layers,
+  Pencil,
+  Plus,
+  Shirt,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
+import { costumeService } from '../services/costumeService';
 import { costumeTypeService } from '../services/costumeTypeService';
-import type { CostumeType } from '../types';
+import type { CostumeResponse, CostumeType } from '../types';
 import {
   Button,
   ConfirmDialog,
-  DataTable,
   FormField,
   Input,
   Modal,
   PageHeader,
   Textarea,
 } from '@/components/ui';
-import type { Column } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface CostumeTypeFormValues {
   name: string;
   description?: string;
 }
 
+const TILE_STYLES: { icon: LucideIcon; classes: string }[] = [
+  { icon: GraduationCap, classes: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  { icon: Layers, classes: 'bg-pink-500/15 text-pink-700 dark:text-pink-300' },
+  { icon: Shirt, classes: 'bg-blue-500/15 text-blue-700 dark:text-blue-300' },
+  { icon: Sparkles, classes: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
+  { icon: Gem, classes: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+];
+
 const CostumeTypesPage = () => {
   const [types, setTypes] = useState<CostumeType[]>([]);
+  const [costumes, setCostumes] = useState<CostumeResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CostumeType | null>(null);
@@ -39,6 +58,10 @@ const CostumeTypesPage = () => {
     try {
       const data = await costumeTypeService.getAll();
       setTypes(data);
+      costumeService
+        .getAll()
+        .then(setCostumes)
+        .catch(() => setCostumes(null));
     } finally {
       setLoading(false);
     }
@@ -88,44 +111,14 @@ const CostumeTypesPage = () => {
     setConfirmId(null);
   };
 
-  const columns: Column<CostumeType>[] = [
-    {
-      key: 'name',
-      header: 'Tên loại',
-      render: (t) => <span className="font-medium">{t.name}</span>,
-    },
-    {
-      key: 'description',
-      header: 'Mô tả',
-      render: (t) => <span className="text-muted-foreground">{t.description ?? '—'}</span>,
-    },
-    {
-      key: 'actions',
-      header: '',
-      align: 'right',
-      className: 'whitespace-nowrap',
-      render: (t) => (
-        <span className="space-x-2">
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-primary"
-            onClick={() => openEdit(t)}
-          >
-            Sửa
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-destructive"
-            onClick={() => setConfirmId(t._id)}
-          >
-            Xoá
-          </Button>
-        </span>
-      ),
-    },
-  ];
+  const costumeCounts = useMemo(() => {
+    if (!costumes) return null;
+    const counts = new Map<string, number>();
+    costumes.forEach((c) => {
+      if (c.type?._id) counts.set(c.type._id, (counts.get(c.type._id) ?? 0) + 1);
+    });
+    return counts;
+  }, [costumes]);
 
   return (
     <div>
@@ -141,56 +134,67 @@ const CostumeTypesPage = () => {
         }
       />
 
-      <div className="hidden md:block">
-        <DataTable<CostumeType>
-          loading={loading}
-          data={types}
-          keyExtractor={(t) => t._id}
-          emptyTitle="Chưa có loại trang phục nào"
-          columns={columns}
-          onRowClick={openEdit}
-        />
-      </div>
-
-      {/* Mobile cards */}
-      <div className="md:hidden space-y-3">
-        {loading ? (
-          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
-            Đang tải…
-          </div>
-        ) : types.length === 0 ? (
-          <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
-            Chưa có loại trang phục nào
-          </div>
-        ) : (
-          types.map((t) => (
-            <div key={t._id} className="rounded-xl border bg-card p-4">
-              <div className="font-semibold">{t.name}</div>
-              {t.description && (
-                <p className="text-sm text-muted-foreground italic mt-1">{t.description}</p>
-              )}
-              <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs"
-                  onClick={() => openEdit(t)}
-                >
-                  Sửa
-                </Button>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs text-destructive"
-                  onClick={() => setConfirmId(t._id)}
-                >
-                  Xoá
-                </Button>
+      {loading ? (
+        <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+          Đang tải…
+        </div>
+      ) : types.length === 0 ? (
+        <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+          Chưa có loại trang phục nào
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {types.map((t, idx) => {
+            const { icon: Icon, classes } = TILE_STYLES[idx % TILE_STYLES.length];
+            const count = costumeCounts?.get(t._id) ?? 0;
+            return (
+              <div key={t._id} className="flex flex-col rounded-[14px] border bg-card p-5">
+                <div className="flex items-start justify-between">
+                  <span
+                    className={cn(
+                      'inline-flex h-10 w-10 items-center justify-center rounded-[10px]',
+                      classes,
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
+                      onClick={() => openEdit(t)}
+                      title="Sửa"
+                      aria-label="Sửa"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+                      onClick={() => setConfirmId(t._id)}
+                      title="Xoá"
+                      aria-label="Xoá"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <h3 className="mt-4 font-display text-[16px] font-bold">{t.name}</h3>
+                <p className="mt-1 flex-1 text-sm text-muted-foreground">{t.description || '—'}</p>
+                {costumeCounts && (
+                  <div className="mt-4 border-t pt-3 text-xs text-muted-foreground">
+                    {count} trang phục
+                  </div>
+                )}
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <ConfirmDialog
         open={!!confirmId}

@@ -25,7 +25,7 @@ export function SegmentedControl<T extends SegmentedValue>({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-lg border bg-card p-0.5 shadow-sm',
+        'inline-flex items-center gap-0.5 rounded-[10px] bg-muted p-[3px]',
         className,
       )}
     >
@@ -37,9 +37,9 @@ export function SegmentedControl<T extends SegmentedValue>({
             type="button"
             onClick={() => onChange(item.value)}
             className={cn(
-              'min-w-[5.25rem] rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all duration-200 inline-flex items-center justify-center gap-1.5',
+              'min-w-[5rem] rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 inline-flex items-center justify-center gap-1.5',
               isActive
-                ? 'text-white shadow-[0_8px_18px_rgba(245,158,11,0.28)] [background:linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)/.8)_100%)]'
+                ? 'bg-card text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                 : 'bg-transparent text-muted-foreground hover:text-foreground',
             )}
           >

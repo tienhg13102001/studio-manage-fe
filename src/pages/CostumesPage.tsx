@@ -1,6 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus } from 'lucide-react';
+import {
+  Gem,
+  GraduationCap,
+  Pencil,
+  Plus,
+  Shirt,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { costumeService } from '../services/costumeService';
 import { costumeTypeService } from '../services/costumeTypeService';
@@ -14,6 +23,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  SegmentedControl,
   Select,
   SelectContent,
   SelectItem,
@@ -39,6 +49,66 @@ const GENDER_LABEL: Record<Costume['gender'], string> = {
 
 const NO_TYPE = '__none__';
 
+type GenderFilter = 'all' | Costume['gender'];
+
+const GENDER_BADGE: Record<Costume['gender'], 'info' | 'pink' | 'violet'> = {
+  male: 'info',
+  female: 'pink',
+  unisex: 'violet',
+};
+
+const THUMB_STYLES: { icon: LucideIcon; classes: string }[] = [
+  { icon: GraduationCap, classes: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  { icon: Shirt, classes: 'bg-blue-500/15 text-blue-700 dark:text-blue-300' },
+  { icon: Sparkles, classes: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
+  { icon: Gem, classes: 'bg-pink-500/15 text-pink-700 dark:text-pink-300' },
+];
+
+const hashString = (str: string) =>
+  [...str].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
+
+const CostumeThumb = ({ costume }: { costume: CostumeResponse }) => {
+  const { icon: Icon, classes } =
+    THUMB_STYLES[hashString(costume.type?._id ?? costume.name) % THUMB_STYLES.length];
+  return (
+    <span
+      className={cn(
+        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]',
+        classes,
+      )}
+    >
+      <Icon className="h-4 w-4" />
+    </span>
+  );
+};
+
+const RowActions = ({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) => (
+  <span className="inline-flex items-center justify-end gap-1">
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
+      onClick={onEdit}
+      title="Sửa"
+      aria-label="Sửa"
+    >
+      <Pencil className="h-3.5 w-3.5" />
+    </Button>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+      onClick={onDelete}
+      title="Xoá"
+      aria-label="Xoá"
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  </span>
+);
+
 const getTypeId = (type: CostumeType | undefined): string => type?._id ?? '';
 const getTypeName = (type: CostumeType | undefined): string => type?.name ?? '—';
 
@@ -49,6 +119,8 @@ const CostumesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<CostumeResponse | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('all');
 
   const {
     register,
@@ -117,23 +189,64 @@ const CostumesPage = () => {
     setConfirmId(null);
   };
 
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    costumes.forEach((c) => {
+      const id = getTypeId(c.type);
+      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    });
+    return counts;
+  }, [costumes]);
+
+  const filtered = useMemo(
+    () =>
+      costumes.filter(
+        (c) =>
+          (typeFilter === 'all' || getTypeId(c.type) === typeFilter) &&
+          (genderFilter === 'all' || c.gender === genderFilter),
+      ),
+    [costumes, typeFilter, genderFilter],
+  );
+
+  useEffect(() => {
+    if (typeFilter !== 'all' && !typeCounts.has(typeFilter)) setTypeFilter('all');
+  }, [typeFilter, typeCounts]);
+
+  const emptyText =
+    costumes.length > 0 ? 'Không có trang phục phù hợp bộ lọc' : 'Chưa có trang phục nào';
+
+  const chips = [
+    { id: 'all', label: 'Tất cả', count: costumes.length },
+    ...costumeTypes
+      .filter((t) => typeCounts.has(t._id))
+      .map((t) => ({ id: t._id, label: t.name, count: typeCounts.get(t._id) ?? 0 })),
+  ];
+
   const columns: Column<CostumeResponse>[] = [
     {
       key: 'name',
       header: 'Tên trang phục',
-      render: (c) => <span className="font-medium">{c.name}</span>,
+      render: (c) => (
+        <span className="inline-flex items-center gap-3 font-semibold">
+          <CostumeThumb costume={c} />
+          {c.name}
+        </span>
+      ),
     },
     {
       key: 'gender',
       header: 'Giới tính',
-      render: (c) => (
-        <span className="text-muted-foreground">{GENDER_LABEL[c.gender] ?? '—'}</span>
-      ),
+      render: (c) =>
+        c.gender ? (
+          <Badge variant={GENDER_BADGE[c.gender]}>{GENDER_LABEL[c.gender]}</Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       key: 'type',
       header: 'Loại',
-      render: (c) => <span className="text-muted-foreground">{getTypeName(c.type)}</span>,
+      render: (c) => <span>{getTypeName(c.type)}</span>,
     },
     {
       key: 'description',
@@ -145,26 +258,7 @@ const CostumesPage = () => {
       header: '',
       align: 'right',
       className: 'whitespace-nowrap',
-      render: (c) => (
-        <span className="space-x-2">
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-primary"
-            onClick={() => openEdit(c)}
-          >
-            Sửa
-          </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="h-auto p-0 text-xs text-destructive"
-            onClick={() => setConfirmId(c._id)}
-          >
-            Xoá
-          </Button>
-        </span>
-      ),
+      render: (c) => <RowActions onEdit={() => openEdit(c)} onDelete={() => setConfirmId(c._id)} />,
     },
   ];
 
@@ -182,12 +276,42 @@ const CostumesPage = () => {
         }
       />
 
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {chips.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => setTypeFilter(chip.id)}
+              className={cn(
+                'rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                typeFilter === chip.id
+                  ? 'border-foreground bg-foreground text-background'
+                  : 'bg-card text-foreground hover:bg-muted',
+              )}
+            >
+              {chip.label} · {chip.count}
+            </button>
+          ))}
+        </div>
+        <SegmentedControl<GenderFilter>
+          value={genderFilter}
+          onChange={setGenderFilter}
+          items={[
+            { value: 'all', label: 'Tất cả' },
+            { value: 'male', label: 'Nam' },
+            { value: 'female', label: 'Nữ' },
+            { value: 'unisex', label: 'Nam / Nữ' },
+          ]}
+        />
+      </div>
+
       <div className="hidden md:block">
         <DataTable<CostumeResponse>
           loading={loading}
-          data={costumes}
+          data={filtered}
           keyExtractor={(c) => c._id}
-          emptyTitle="Chưa có trang phục nào"
+          emptyTitle={emptyText}
           columns={columns}
         />
       </div>
@@ -198,55 +322,31 @@ const CostumesPage = () => {
           <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
             Đang tải…
           </div>
-        ) : costumes.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
-            Chưa có trang phục nào
+            {emptyText}
           </div>
         ) : (
-          costumes.map((c) => {
-            const genderStyle =
-              c.gender === 'male'
-                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                : c.gender === 'female'
-                  ? 'bg-pink-500/15 text-pink-600 dark:text-pink-400'
-                  : 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
-            return (
-              <div key={c._id} className="rounded-xl border bg-card p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold truncate">{c.name}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      <Badge variant="outline" className={cn('border-transparent', genderStyle)}>
-                        {GENDER_LABEL[c.gender] ?? '—'}
-                      </Badge>
-                      {c.type && <Badge variant="outline">{getTypeName(c.type)}</Badge>}
-                    </div>
+          filtered.map((c) => (
+            <div key={c._id} className="rounded-[14px] border bg-card p-4">
+              <div className="flex items-start gap-3">
+                <CostumeThumb costume={c} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold truncate">{c.name}</div>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {c.gender && (
+                      <Badge variant={GENDER_BADGE[c.gender]}>{GENDER_LABEL[c.gender]}</Badge>
+                    )}
+                    {c.type && <Badge variant="neutral">{getTypeName(c.type)}</Badge>}
                   </div>
                 </div>
-                {c.description && (
-                  <p className="text-sm text-muted-foreground italic">{c.description}</p>
-                )}
-                <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
-                    onClick={() => openEdit(c)}
-                  >
-                    Sửa
-                  </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-destructive"
-                    onClick={() => setConfirmId(c._id)}
-                  >
-                    Xoá
-                  </Button>
-                </div>
+                <RowActions onEdit={() => openEdit(c)} onDelete={() => setConfirmId(c._id)} />
               </div>
-            );
-          })
+              {c.description && (
+                <p className="mt-2 text-sm text-muted-foreground">{c.description}</p>
+              )}
+            </div>
+          ))
         )}
       </div>
 

@@ -1,12 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { Send, Link2, Link2Off, KeyRound, User as UserIcon, ExternalLink } from 'lucide-react';
+import {
+  AtSign,
+  Check,
+  CheckCircle2,
+  ExternalLink,
+  KeyRound,
+  Link2,
+  Link2Off,
+  Lock,
+  Send,
+  User as UserIcon,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/authService';
 import { telegramService, type TelegramStatus } from '../services/telegramService';
 import { ROLE_LABELS } from '../types';
-import { Button, FormField, Input, PageHeader, Spinner } from '@/components/ui';
+import { Badge, Button, FormField, Input, Spinner } from '@/components/ui';
+import { cn } from '@/lib/utils';
+
+const IconInput = ({
+  icon: Icon,
+  className,
+  ...props
+}: React.ComponentProps<typeof Input> & { icon: React.ComponentType<{ className?: string }> }) => (
+  <div className="relative">
+    <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <Input className={cn('pl-9', className)} {...props} />
+  </div>
+);
 
 // ── Profile form ─────────────────────────────────────────────────────────────
 
@@ -37,31 +60,22 @@ function ProfileSection() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <FormField label="Tên đăng nhập" htmlFor="username">
-        <Input id="username" value={user?.username ?? ''} disabled />
+        <IconInput icon={AtSign} id="username" value={user?.username ?? ''} disabled />
       </FormField>
       <FormField label="Họ tên hiển thị" htmlFor="name">
-        <Input id="name" placeholder="Nhập tên hiển thị" {...register('name')} />
+        <IconInput
+          icon={UserIcon}
+          id="name"
+          placeholder="Nhập tên hiển thị"
+          {...register('name')}
+        />
       </FormField>
-      <div>
-        <p className="text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-          Vai trò
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {user?.roles?.map((r) => (
-            <span
-              key={r}
-              className="text-xs px-2.5 py-1 rounded-lg font-medium"
-              style={{ background: 'var(--user-role-bg)', color: 'var(--user-role-text)' }}
-            >
-              {ROLE_LABELS[r]}
-            </span>
-          ))}
-        </div>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
+          Lưu thay đổi
+        </Button>
       </div>
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
-        Lưu thay đổi
-      </Button>
     </form>
   );
 }
@@ -101,18 +115,20 @@ function PasswordSection() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <FormField label="Mật khẩu hiện tại" htmlFor="currentPassword">
-        <Input
+        <IconInput
+          icon={Lock}
           id="currentPassword"
           type="password"
           autoComplete="current-password"
           {...register('currentPassword', { required: 'Vui lòng nhập mật khẩu hiện tại' })}
         />
         {errors.currentPassword && (
-          <p className="text-xs text-red-500 mt-1">{errors.currentPassword.message}</p>
+          <p className="text-xs text-destructive mt-1">{errors.currentPassword.message}</p>
         )}
       </FormField>
       <FormField label="Mật khẩu mới" htmlFor="newPassword">
-        <Input
+        <IconInput
+          icon={Lock}
           id="newPassword"
           type="password"
           autoComplete="new-password"
@@ -122,11 +138,12 @@ function PasswordSection() {
           })}
         />
         {errors.newPassword && (
-          <p className="text-xs text-red-500 mt-1">{errors.newPassword.message}</p>
+          <p className="text-xs text-destructive mt-1">{errors.newPassword.message}</p>
         )}
       </FormField>
       <FormField label="Xác nhận mật khẩu mới" htmlFor="confirmPassword">
-        <Input
+        <IconInput
+          icon={Lock}
           id="confirmPassword"
           type="password"
           autoComplete="new-password"
@@ -136,13 +153,19 @@ function PasswordSection() {
           })}
         />
         {errors.confirmPassword && (
-          <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>
+          <p className="text-xs text-destructive mt-1">{errors.confirmPassword.message}</p>
         )}
       </FormField>
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
-        Đổi mật khẩu
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" variant="outline" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Spinner className="mr-2 h-4 w-4" />
+          ) : (
+            <KeyRound className="mr-2 h-4 w-4" />
+          )}
+          Đổi mật khẩu
+        </Button>
+      </div>
     </form>
   );
 }
@@ -176,7 +199,9 @@ function TelegramSection() {
       const res = await telegramService.generateLinkToken();
       // Open Telegram deeplink in new tab
       window.open(res.url, '_blank', 'noopener,noreferrer');
-      toast.info('Mở Telegram và bấm "Start" để hoàn tất liên kết. Token có hiệu lực trong 15 phút.');
+      toast.info(
+        'Mở Telegram và bấm "Start" để hoàn tất liên kết. Token có hiệu lực trong 15 phút.',
+      );
       // Poll for link completion every 3s for up to 60s
       let attempts = 0;
       const poll = setInterval(async () => {
@@ -215,7 +240,7 @@ function TelegramSection() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-faint)' }}>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Spinner className="h-4 w-4" /> Đang tải...
       </div>
     );
@@ -223,57 +248,55 @@ function TelegramSection() {
 
   return (
     <div className="space-y-4">
-      {/* Status badge */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium"
-          style={
-            status?.linked
-              ? {
-                  background: 'rgba(34,197,94,0.12)',
-                  color: '#16a34a',
-                  border: '1px solid rgba(34,197,94,0.25)',
-                }
-              : {
-                  background: 'rgba(148,163,184,0.12)',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--card-border)',
-                }
-          }
-        >
-          <Send className="w-4 h-4" />
-          {status?.linked
-            ? status.telegramUsername
-              ? `Đã liên kết: @${status.telegramUsername}`
-              : 'Đã liên kết Telegram'
-            : 'Chưa liên kết'}
+      {status?.linked ? (
+        <div className="flex items-start gap-3 rounded-xl bg-emerald-500/15 px-4 py-3 text-emerald-800 dark:text-emerald-200">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-semibold">
+              {status.telegramUsername
+                ? `Đã liên kết: @${status.telegramUsername}`
+                : 'Đã liên kết Telegram'}
+            </p>
+            <p className="mt-0.5">
+              Bạn sẽ nhận thông báo Telegram khi có lịch chụp mới hoặc cập nhật trạng thái.
+            </p>
+          </div>
         </div>
-      </div>
-
-      <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
-        {status?.linked
-          ? 'Bạn sẽ nhận thông báo Telegram khi có lịch chụp mới hoặc cập nhật trạng thái.'
-          : 'Liên kết tài khoản Telegram để nhận thông báo lịch chụp và giao dịch trực tiếp trên điện thoại.'}
-      </p>
+      ) : (
+        <div className="rounded-xl border bg-muted/50 px-4 py-3 text-sm">
+          <p className="flex items-center gap-2 font-semibold text-foreground">
+            <Send className="h-4 w-4" />
+            Chưa liên kết
+          </p>
+          <p className="mt-0.5 text-muted-foreground">
+            Liên kết tài khoản Telegram để nhận thông báo lịch chụp và giao dịch trực tiếp trên điện
+            thoại.
+          </p>
+        </div>
+      )}
 
       {status?.linked ? (
-        <Button variant="outline" onClick={handleUnlink} disabled={unlinking}>
-          {unlinking ? (
-            <Spinner className="mr-2 h-4 w-4" />
-          ) : (
-            <Link2Off className="mr-2 w-4 h-4" />
-          )}
-          Huỷ liên kết
-        </Button>
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={handleUnlink} disabled={unlinking}>
+            {unlinking ? (
+              <Spinner className="mr-2 h-4 w-4" />
+            ) : (
+              <Link2Off className="mr-2 w-4 h-4" />
+            )}
+            Huỷ liên kết
+          </Button>
+        </div>
       ) : (
-        <Button onClick={handleLink} disabled={linking}>
-          {linking ? (
-            <Spinner className="mr-2 h-4 w-4" />
-          ) : (
-            <ExternalLink className="mr-2 w-4 h-4" />
-          )}
-          Liên kết Telegram
-        </Button>
+        <div className="flex justify-end">
+          <Button onClick={handleLink} disabled={linking}>
+            {linking ? (
+              <Spinner className="mr-2 h-4 w-4" />
+            ) : (
+              <ExternalLink className="mr-2 w-4 h-4" />
+            )}
+            Liên kết Telegram
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -284,26 +307,24 @@ function TelegramSection() {
 function SectionCard({
   icon: Icon,
   title,
+  subtitle,
   children,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
+  subtitle: string;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="rounded-2xl p-6"
-      style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        boxShadow: 'var(--card-shadow)',
-      }}
-    >
-      <div className="flex items-center gap-2 mb-5">
-        <Icon className="w-4 h-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {title}
-        </h2>
+    <div className="rounded-[14px] border bg-card p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="font-display text-[15px] font-bold leading-tight">{title}</h2>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
       </div>
       {children}
     </div>
@@ -314,24 +335,52 @@ function SectionCard({
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const initial = (user?.name || user?.username || '?').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Hồ sơ cá nhân"
-        kicker={`${user?.username}`}
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
-        <SectionCard icon={UserIcon} title="Thông tin cá nhân">
-          <ProfileSection />
-        </SectionCard>
+    <div className="space-y-5">
+      <div className="flex items-center gap-4 rounded-[14px] border bg-gradient-to-r from-amber-50 via-card to-sky-50 p-5 dark:from-amber-500/10 dark:via-card dark:to-sky-500/10 sm:gap-5 sm:p-6">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-amber-400 via-emerald-400 to-sky-500 font-display text-3xl font-bold text-white shadow-sm sm:h-[72px] sm:w-[72px]">
+          {initial}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold text-primary-700 dark:text-primary">
+            @{user?.username}
+          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-[28px]">
+            Hồ sơ cá nhân
+          </h1>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {user?.roles?.map((r) => (
+              <Badge key={r} variant="violet">
+                {ROLE_LABELS[r]}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
 
-        <SectionCard icon={KeyRound} title="Đổi mật khẩu">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
+          <SectionCard
+            icon={UserIcon}
+            title="Thông tin cá nhân"
+            subtitle="Tên hiển thị trong hệ thống và thông báo"
+          >
+            <ProfileSection />
+          </SectionCard>
+
+          <SectionCard
+            icon={Link2}
+            title="Liên kết Telegram"
+            subtitle="Nhận thông báo lịch chụp và giao dịch"
+          >
+            <TelegramSection />
+          </SectionCard>
+        </div>
+
+        <SectionCard icon={KeyRound} title="Đổi mật khẩu" subtitle="Tối thiểu 6 ký tự">
           <PasswordSection />
-        </SectionCard>
-
-        <SectionCard icon={Link2} title="Liên kết Telegram">
-          <TelegramSection />
         </SectionCard>
       </div>
     </div>

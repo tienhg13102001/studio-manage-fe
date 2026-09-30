@@ -59,7 +59,7 @@ export const Pagination = ({
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t px-3 py-2',
+        'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t px-5 py-3',
         className,
       )}
     >

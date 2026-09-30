@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Phone, School } from 'lucide-react';
+import { Pencil, Phone, Plus, School, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
@@ -124,13 +124,15 @@ const CustomersPage = () => {
         description="Danh sách lớp học, trường và thông tin liên hệ."
         action={
           <Button variant="gradient" onClick={openCreate}>
-            + Thêm lớp
+            <Plus />
+            Thêm lớp
           </Button>
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchInput
+          className="flex-1 sm:max-w-md"
           placeholder="Tìm kiếm lớp, trường…"
           value={search}
           onChange={setSearch}
@@ -141,6 +143,7 @@ const CustomersPage = () => {
             setPage(1);
           }}
         />
+        <span className="ml-auto text-sm text-muted-foreground tabular">{total} lớp</span>
       </div>
 
       {loading ? (
@@ -168,30 +171,32 @@ const CustomersPage = () => {
               columns={[
                 {
                   key: 'className',
-                  header: 'Tên lớp',
+                  header: 'Lớp',
                   render: (c) => (
-                    <Link
-                      to={`/customers/${c._id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {c.className}
-                    </Link>
+                    <div className="min-w-0">
+                      <Link
+                        to={`/customers/${c._id}`}
+                        className="block font-semibold text-foreground hover:text-primary-700 dark:hover:text-primary"
+                      >
+                        {c.className}
+                      </Link>
+                      {c.school && (
+                        <span className="block text-xs text-muted-foreground">{c.school}</span>
+                      )}
+                    </div>
                   ),
                 },
                 {
-                  key: 'school',
-                  header: 'Trường',
-                  render: (c) => <span>{c.school}</span>,
-                },
-                {
-                  key: 'contactName',
+                  key: 'contact',
                   header: 'Liên hệ',
-                  render: (c) => <span>{c.contactName}</span>,
-                },
-                {
-                  key: 'contactPhone',
-                  header: 'SĐT',
-                  render: (c) => <span>{c.contactPhone}</span>,
+                  render: (c) => (
+                    <div>
+                      <span className="block font-semibold text-foreground">{c.contactName}</span>
+                      <span className="block text-xs text-muted-foreground tabular">
+                        {c.contactPhone}
+                      </span>
+                    </div>
+                  ),
                 },
                 {
                   key: 'contactAddress',
@@ -201,18 +206,33 @@ const CustomersPage = () => {
                 {
                   key: 'total',
                   header: 'Sĩ số',
-                  align: 'right',
-                  render: (c) => <span>{c.total}</span>,
-                },
-                {
-                  key: 'gender',
-                  header: 'Nam / Nữ',
-                  align: 'right',
-                  render: (c) => (
-                    <span>
-                      {c.totalMale ?? 0} / {c.totalFemale ?? 0}
-                    </span>
-                  ),
+                  render: (c) => {
+                    const male = c.totalMale ?? 0;
+                    const female = c.totalFemale ?? 0;
+                    const sum = male + female;
+                    return (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground tabular">{c.total}</span>
+                          {sum > 0 && (
+                            <span className="flex h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                              <span
+                                className="bg-blue-400"
+                                style={{ width: `${(male / sum) * 100}%` }}
+                              />
+                              <span
+                                className="bg-pink-400"
+                                style={{ width: `${(female / sum) * 100}%` }}
+                              />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular">
+                          ♂ {male} · ♀ {female}
+                        </span>
+                      </div>
+                    );
+                  },
                 },
                 {
                   key: 'notes',
@@ -222,7 +242,7 @@ const CustomersPage = () => {
                       className="block max-w-[240px] truncate text-muted-foreground"
                       title={c.notes || ''}
                     >
-                      {c.notes || '-'}
+                      {c.notes || '—'}
                     </span>
                   ),
                 },
@@ -232,22 +252,26 @@ const CustomersPage = () => {
                   align: 'right',
                   className: 'whitespace-nowrap',
                   render: (c) => (
-                    <span className="space-x-2">
+                    <span className="inline-flex items-center gap-1">
                       <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs"
+                        variant="ghost"
+                        size="icon"
+                        className="h-[30px] w-[30px] text-muted-foreground"
+                        title="Sửa"
+                        aria-label="Sửa"
                         onClick={() => openEdit(c)}
                       >
-                        Sửa
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs text-destructive"
+                        variant="ghost"
+                        size="icon"
+                        className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
+                        title="Xoá"
+                        aria-label="Xoá"
                         onClick={() => setConfirmId(c._id)}
                       >
-                        Xoá
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </span>
                   ),
@@ -259,12 +283,12 @@ const CustomersPage = () => {
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {customers.map((c) => (
-              <div key={c._id} className="rounded-xl border bg-card p-4">
+              <div key={c._id} className="rounded-[14px] border bg-card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
                     <Link
                       to={`/customers/${c._id}`}
-                      className="font-semibold text-primary hover:underline text-base block truncate"
+                      className="font-display font-bold text-foreground hover:text-primary-700 dark:hover:text-primary text-base block truncate"
                     >
                       {c.className}
                     </Link>
@@ -278,7 +302,7 @@ const CustomersPage = () => {
                   {c.total != null && (
                     <Badge
                       variant="outline"
-                      className="border-transparent bg-primary/15 text-primary"
+                      className="border-transparent bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary"
                     >
                       {c.total} hs
                       {(c.totalMale != null || c.totalFemale != null) && (
@@ -308,28 +332,32 @@ const CustomersPage = () => {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
+                <div className="flex justify-end gap-1 mt-3 pt-3 border-t">
                   <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
+                    variant="ghost"
+                    size="icon"
+                    className="h-[30px] w-[30px] text-muted-foreground"
+                    title="Sửa"
+                    aria-label="Sửa"
                     onClick={() => openEdit(c)}
                   >
-                    Sửa
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-destructive"
+                    variant="ghost"
+                    size="icon"
+                    className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
+                    title="Xoá"
+                    aria-label="Xoá"
                     onClick={() => setConfirmId(c._id)}
                   >
-                    Xoá
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ))}
             {customers.length === 0 && (
-              <div className="rounded-xl border bg-card py-10 text-center text-muted-foreground">
+              <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
                 Chưa có dữ liệu
               </div>
             )}
@@ -359,7 +387,10 @@ const CustomersPage = () => {
               error={errors.className?.message}
               className="col-span-2 sm:col-span-1"
             >
-              <Input id="className" {...register('className', { required: 'Vui lòng nhập tên lớp' })} />
+              <Input
+                id="className"
+                {...register('className', { required: 'Vui lòng nhập tên lớp' })}
+              />
             </FormField>
             <FormField
               label="Trường"
@@ -383,7 +414,12 @@ const CustomersPage = () => {
                 {...register('total', { valueAsNumber: true, required: 'Vui lòng nhập sĩ số' })}
               />
             </FormField>
-            <FormField label="Số nam" required htmlFor="totalMale" error={errors.totalMale?.message}>
+            <FormField
+              label="Số nam"
+              required
+              htmlFor="totalMale"
+              error={errors.totalMale?.message}
+            >
               <Input
                 id="totalMale"
                 type="number"
@@ -456,7 +492,10 @@ const CustomersPage = () => {
                 name="season"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || null)}>
+                  <Select
+                    value={field.value ?? ''}
+                    onValueChange={(v) => field.onChange(v || null)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="-- Chọn mùa --" />
                     </SelectTrigger>
