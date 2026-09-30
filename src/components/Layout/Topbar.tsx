@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ChevronRight, Menu, Sun } from 'lucide-react';
+import { BookOpen, ChevronRight, Menu, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { navItems, adminItems } from '../../config/navItems';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -8,6 +8,8 @@ import { Logo } from '../atoms';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 
 const ALL_SEASONS = '__all__';
+/** Trang hướng dẫn tĩnh trong frontend/public/huong-dan */
+const CUSTOMER_GUIDE_URL = '/huong-dan/quy-trinh-cham-soc-lop.html';
 
 /** Resolve ["Group", "Page"] labels for the current path from the nav config. */
 const useBreadcrumb = (): string[] => {
@@ -36,6 +38,7 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
   const dispatch = useAppDispatch();
   const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
   const crumbs = useBreadcrumb();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     dispatch(fetchSeasons());
@@ -82,6 +85,19 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
       </nav>
 
       <div className="flex-1" />
+
+      {pathname.startsWith('/customers') && (
+        <a
+          href={CUSTOMER_GUIDE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Hướng dẫn quy trình chăm sóc lớp (mở tab mới)"
+          className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-[10px] border border-border bg-card px-3 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BookOpen className="h-[15px] w-[15px] text-primary-700 dark:text-primary" />
+          <span className="hidden sm:inline">Hướng dẫn</span>
+        </a>
+      )}
 
       <Select
         value={selectedSeasonId || ALL_SEASONS}

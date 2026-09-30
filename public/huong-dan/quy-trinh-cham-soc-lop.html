@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hướng dẫn quy trình chăm sóc lớp</title>
+<script>
+  // Theo chế độ Sáng/Tối đang chọn trong app (cùng origin → đọc được localStorage)
+  try {
+    var m = localStorage.getItem('themeMode');
+    if (m === 'light' || m === 'dark') document.documentElement.setAttribute('data-theme', m);
+  } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: một cột ~780px; đường ray 8 trạng thái, từng bước (thao tác + hệ thống tự làm), phân quyền, nhật ký mẫu, mẹo. */
+:root {
+  --bg: #f5f6f9;
+  --paper: #ffffff;
+  --ink: #141826;
+  --ink-2: #4f566b;
+  --ink-3: #8a91a5;
+  --line: #e6e8ee;
+  --brand: #d97706;
+  --brand-soft: #fef3c7;
+  --brand-ink: #92400e;
+  --ok: #047857;
+  --ok-soft: #d1fae5;
+  --todo: #b45309;
+  --todo-soft: #fff4e0;
+  --s0: #6b7280; --s0-soft: #eef0f3;
+  --s1: #2563eb; --s1-soft: #e0eaff;
+  --s2: #7c3aed; --s2-soft: #ede7ff;
+  --s3: #d97706; --s3-soft: #fef0d0;
+  --s4: #0891b2; --s4-soft: #dcf4fa;
+  --s5: #db2777; --s5-soft: #fde6f1;
+  --s6: #0d9488; --s6-soft: #d7f5f0;
+  --s7: #059669; --s7-soft: #d6f5e6;
+  --font-display: "Space Grotesk", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0c14; --paper: #14151f; --ink: #eceef4; --ink-2: #a9afc1; --ink-3: #737a90; --line: #262838;
+    --brand: #fbbf24; --brand-soft: #f59e0b22; --brand-ink: #fcd34d;
+    --ok: #6ee7b7; --ok-soft: #10b98124; --todo: #fcd34d; --todo-soft: #f59e0b1f;
+    --s0: #a3a9bc; --s0-soft: #ffffff10; --s1: #93b4fd; --s1-soft: #3b82f626; --s2: #c4b5fd; --s2-soft: #8b5cf626;
+    --s3: #fcd34d; --s3-soft: #f59e0b26; --s4: #67e8f9; --s4-soft: #06b6d426; --s5: #f9a8d4; --s5-soft: #ec489926;
+    --s6: #5eead4; --s6-soft: #14b8a626; --s7: #6ee7b7; --s7-soft: #10b98126;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0c14; --paper: #14151f; --ink: #eceef4; --ink-2: #a9afc1; --ink-3: #737a90; --line: #262838;
+  --brand: #fbbf24; --brand-soft: #f59e0b22; --brand-ink: #fcd34d;
+  --ok: #6ee7b7; --ok-soft: #10b98124; --todo: #fcd34d; --todo-soft: #f59e0b1f;
+  --s0: #a3a9bc; --s0-soft: #ffffff10; --s1: #93b4fd; --s1-soft: #3b82f626; --s2: #c4b5fd; --s2-soft: #8b5cf626;
+  --s3: #fcd34d; --s3-soft: #f59e0b26; --s4: #67e8f9; --s4-soft: #06b6d426; --s5: #f9a8d4; --s5-soft: #ec489926;
+  --s6: #5eead4; --s6-soft: #14b8a626; --s7: #6ee7b7; --s7-soft: #10b98126;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.65;
+  padding-inline: 16px; padding-block: 40px 72px;
+}
+.doc { max-width: 780px; margin-inline: auto; display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 38px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--ink-2); }
+.eyebrow {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-ink);
+}
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em; background: var(--s0-soft); padding: 1px 6px; border-radius: 6px; }
+section { display: grid; gap: 16px; }
+.lede { font-size: 16.5px; color: var(--ink-2); max-width: 64ch; }
+
+/* Header */
+header.top { display: grid; gap: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--ink-3); }
+.meta b { color: var(--ink-2); font-weight: 600; }
+
+/* Status rail */
+.rail-wrap { overflow-x: auto; margin-inline: -4px; padding: 4px; }
+.rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.phase { display: grid; gap: 8px; align-content: start; }
+.phase-name { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); padding-left: 2px; }
+.chip {
+  display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 10px;
+  background: var(--c-soft); color: var(--c); font-weight: 600; font-size: 13.5px; line-height: 1.3;
+  text-decoration: none;
+}
+.chip:hover { outline: 2px solid var(--c); outline-offset: -2px; }
+.chip:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.chip .n {
+  flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--c); color: var(--paper); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) { .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.st0 { --c: var(--s0); --c-soft: var(--s0-soft); }
+.st1 { --c: var(--s1); --c-soft: var(--s1-soft); }
+.st2 { --c: var(--s2); --c-soft: var(--s2-soft); }
+.st3 { --c: var(--s3); --c-soft: var(--s3-soft); }
+.st4 { --c: var(--s4); --c-soft: var(--s4-soft); }
+.st5 { --c: var(--s5); --c-soft: var(--s5-soft); }
+.st6 { --c: var(--s6); --c-soft: var(--s6-soft); }
+.st7 { --c: var(--s7); --c-soft: var(--s7-soft); }
+
+.rule-note {
+  display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius);
+  background: var(--paper); border: 1px solid var(--line); font-size: 14px; color: var(--ink-2);
+}
+.rule-note strong { color: var(--ink); }
+
+/* Steps */
+.steps { display: grid; gap: 0; }
+.step {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 0 16px; position: relative;
+  scroll-margin-top: 16px;
+}
+.step::before {
+  content: ""; position: absolute; left: 17px; top: 36px; bottom: 0; width: 2px; background: var(--line);
+}
+.step:last-child::before { display: none; }
+.dot {
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--c-soft); color: var(--c); font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  box-shadow: 0 0 0 4px var(--bg); position: relative; z-index: 1;
+  font-variant-numeric: tabular-nums;
+}
+.step-body { display: grid; gap: 12px; padding-bottom: 34px; min-width: 0; }
+.step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding-top: 5px; }
+.step-head h3 { color: var(--ink); }
+.who { font-size: 12.5px; color: var(--ink-3); }
+.who b { color: var(--ink-2); font-weight: 600; }
+.card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+  display: grid; gap: 0; overflow: hidden;
+}
+.row { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 12px; padding: 11px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row dt { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); padding-top: 2px; }
+.row dd { margin: 0; color: var(--ink); min-width: 0; }
+.row dd ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+
+.auto { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--brand-ink); }
+.auto::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+.tag {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px;
+  vertical-align: 1px; margin-left: 4px;
+}
+.tag.has { background: var(--ok-soft); color: var(--ok); }
+.tag.new { background: var(--todo-soft); color: var(--todo); }
+.tag.prop { background: var(--s2-soft); color: var(--s2); }
+
+.side-exit {
+  display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--radius); border: 1px dashed var(--line);
+  font-size: 14px; color: var(--ink-2);
+}
+.side-exit b { color: var(--ink); }
+
+/* Log example */
+.log { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 0; }
+.log-cap { padding: 10px 16px 4px; font-size: 12.5px; color: var(--ink-3); }
+.entry { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; padding: 10px 16px; }
+.entry + .entry { border-top: 1px solid var(--line); }
+.when { font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; padding-top: 3px; }
+.what { display: grid; gap: 4px; min-width: 0; }
+.what .line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13.5px; }
+.pill { font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; background: var(--c-soft); color: var(--c); }
+.arrow { color: var(--ink-3); }
+.by { color: var(--ink-3); font-size: 12.5px; }
+.what p { font-size: 14px; color: var(--ink-2); }
+@media (max-width: 520px) { .entry { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-top: 1px solid var(--line); }
+thead th { border-top: 0; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); background: var(--s0-soft); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td .muted { font-size: 13px; }
+
+/* Questions */
+.qs { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: q; }
+.qs li {
+  counter-increment: q; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; font-size: 14.5px;
+}
+.qs li::before {
+  content: counter(q); width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
+  background: var(--brand-soft); color: var(--brand-ink); font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums;
+}
+.qs li span { color: var(--ink-2); }
+.qs li b { color: var(--ink); font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; color: var(--ink-2); align-items: center; }
+footer { font-size: 13px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+
+.ui {
+  display: inline-block; padding: 0 7px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--paper); color: var(--ink); font-size: 0.9em; font-weight: 600; white-space: nowrap;
+}
+td:first-child { white-space: nowrap; }
+table { min-width: 520px; }
+</style>
+</head>
+<body>
+<main class="doc">
+  <header class="top">
+    <span class="eyebrow">Yume Studio · Hướng dẫn sử dụng</span>
+    <h1>Quy trình chăm sóc lớp</h1>
+    <p class="lede">Mỗi lớp đi qua 8 trạng thái, từ lúc nhập thông tin tới khi giao xong ảnh in. Mỗi lần đổi trạng thái đều phải ghi chú, để ai mở lớp ra cũng biết lớp đang tới đâu.</p>
+    <div class="meta">
+      <span><b>Dành cho:</b> Sale, Cộng tác viên sale, Thợ chụp, Admin</span>
+      <span><b>Ở đâu:</b> Khách hàng → Danh sách lớp học → bấm vào một lớp</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-overview">
+    <h2 id="h-overview">8 trạng thái của một lớp</h2>
+    <div class="rail-wrap">
+      <div class="rail">
+        <div class="phase">
+          <span class="phase-name">Tìm kiếm</span>
+          <a class="chip st0" href="#s1"><span class="n">1</span>Chưa làm việc</a>
+          <a class="chip st1" href="#s2"><span class="n">2</span>Bắt đầu liên hệ</a>
+          <a class="chip st2" href="#s3"><span class="n">3</span>Đã liên hệ</a>
+        </div>
+        <div class="phase">
+          <span class="phase-name">Chốt lớp</span>
+          <a class="chip st3" href="#s4"><span class="n">4</span>Đã cọc</a>
+          <a class="chip st4" href="#s5"><span class="n">5</span>Chưa chụp</a>
+        </div>
+        <div class="phase">
+          <span class="phase-name">Chụp &amp; trả ảnh</span>
+          <a class="chip st5" href="#s6"><span class="n">6</span>Đã chụp</a>
+          <a class="chip st6" href="#s7"><span class="n">7</span>Chưa trả ảnh in</a>
+        </div>
+        <div class="phase">
+          <span class="phase-name">Kết thúc</span>
+          <a class="chip st7" href="#s8"><span class="n">8</span>Hoàn thành</a>
+        </div>
+      </div>
+    </div>
+    <div class="rule-note">
+      <span>
+        <strong>Quy tắc chung.</strong> Trạng thái đi tới từng bước một, không nhảy cóc. Mỗi lần chuyển phải nhập
+        <strong>ghi chú</strong>, hệ thống tự lưu <strong>ai chuyển, lúc nào</strong> vào phần <strong>Nhật ký</strong> của lớp.
+        Chuyển nhầm thì nhờ <strong>Admin</strong> sửa, vì chỉ Admin mới lùi hoặc nhảy trạng thái được.
+      </span>
+    </div>
+    <div class="legend">
+      <span><span class="auto">Hệ thống tự làm</span></span>
+      <span><span class="ui">Nút trên app</span> tên nút cần bấm</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-steps">
+    <h2 id="h-steps">Làm gì ở từng bước</h2>
+    <div class="steps">
+
+      <article class="step st0" id="s1">
+        <div class="dot">1</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Chưa làm việc</h3><span class="who">Người làm: <b>Sale, CTV sale, Admin</b></span></div>
+          <p class="muted">Lớp mới vào danh sách, chưa ai liên hệ. Sale nào rảnh thì nhận lớp ở đây.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd>Trang Khách hàng → <span class="ui">Thêm lớp</span>. Nhập tên lớp, trường, sĩ số, người liên hệ, số điện thoại, địa chỉ và <b>Nguồn khách</b> (người quen, Facebook, CTV, khách cũ…).</dd></div>
+            <div class="row"><dt>Hệ thống</dt><dd><span class="auto">Lớp mới luôn bắt đầu ở “Chưa làm việc”, chưa có sale phụ trách</span></dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st1" id="s2">
+        <div class="dot">2</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Bắt đầu liên hệ</h3><span class="who">Người làm: <b>Sale nhận lớp</b></span></div>
+          <p class="muted">Sale nhận lớp về mình và bắt đầu tiếp cận.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd>Mở lớp → <span class="ui">Nhận lớp &amp; chuyển sang: Bắt đầu liên hệ</span>. Ghi chú liên hệ qua kênh nào (gọi, Zalo, Messenger, gặp trực tiếp), đã nhắn gì, hẹn gì.</dd></div>
+            <div class="row"><dt>Hệ thống</dt><dd><span class="auto">Người bấm trở thành sale phụ trách lớp</span>. Sale khác không nhận trùng được lớp này.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st2" id="s3">
+        <div class="dot">3</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Đã liên hệ</h3><span class="who">Người làm: <b>Sale phụ trách</b></span></div>
+          <p class="muted">Đã nói chuyện được với đại diện lớp: đang tư vấn, báo giá, thương lượng.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd><span class="ui">Chuyển sang: Đã liên hệ</span>. Sau mỗi lần trao đổi, bấm <span class="ui">Thêm ghi chú</span> để cập nhật:
+              <ul>
+                <li>Gói quan tâm, giá đã báo, trang phục mong muốn</li>
+                <li>Ngày chụp dự kiến, địa điểm</li>
+                <li>Vướng mắc hiện tại, lần hẹn liên hệ tiếp theo</li>
+              </ul></dd></div>
+          </dl>
+          <div class="side-exit">
+            <span><b>Lớp không chốt?</b></span>
+            <span>Bấm <span class="ui">Không chốt</span> và nhập lý do (chọn studio khác, chê giá, lớp không chụp…). Dùng được ở bước 1–3. Lớp vẫn được giữ lại để xem thống kê và liên hệ lại mùa sau.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="step st3" id="s4">
+        <div class="dot">4</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Đã cọc</h3><span class="who">Người làm: <b>Sale phụ trách</b></span></div>
+          <p class="muted">Lớp đã chốt và chuyển tiền cọc. Bước này hệ thống làm nhiều việc tự động nhất.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd><span class="ui">Chuyển sang: Đã cọc</span>, nhập:
+              <ul>
+                <li>Số tiền cọc và ngày cọc</li>
+                <li>Nếu lớp chưa có lịch chụp: giữ tích <span class="ui">Tạo lịch chụp luôn</span> và nhập gói chụp, ngày chụp, giờ, địa điểm, thợ chính</li>
+              </ul></dd></div>
+            <div class="row"><dt>Hệ thống</dt><dd><ul>
+              <li><span class="auto">Ghi khoản thu “Thu tiền cọc hợp đồng” vào Tài chính</span></li>
+              <li><span class="auto">Tạo lịch chụp, tạo folder ảnh của lớp trên Google Drive, ghi dòng vào Google Sheet</span></li>
+              <li><span class="auto">Báo Telegram cho Admin (lớp chốt cọc) và cho thợ chụp được xếp lịch</span></li>
+            </ul></dd></div>
+            <div class="row"><dt>Tiếp theo</dt><dd>Lấy thông tin người đại diện lớp (họ tên, số điện thoại, địa chỉ), kiểm tra lại rồi bấm <span class="ui">Tạo hợp đồng</span> ngay trên trang lớp.</dd></div>
+            <div class="row"><dt>Hệ thống</dt><dd><span class="auto">Tạo hợp đồng xong, lớp tự chuyển sang “Chưa chụp”</span>. Lớp đã có hợp đồng từ trước thì chuyển thẳng luôn.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st4" id="s5">
+        <div class="dot">5</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Chưa chụp</h3><span class="who">Tự chuyển khi có hợp đồng</span></div>
+          <p class="muted">Đã có hợp đồng, chờ tới ngày chụp.</p>
+          <dl class="card">
+            <div class="row"><dt>Việc cần làm</dt><dd><ul>
+              <li>Gửi link form cho học sinh tự điền size: trang <b>Thông tin học sinh</b> → chọn lớp → copy link form. Danh sách lớp ở trang này chỉ gồm các lớp từ “Đã cọc” trở đi.</li>
+              <li>Ghi chú thay đổi lịch, trang phục đã chốt, yêu cầu đặc biệt của lớp.</li>
+            </ul></dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st5" id="s6">
+        <div class="dot">6</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Đã chụp</h3><span class="who">Người làm: <b>Thợ chụp của lớp</b> hoặc <b>Sale phụ trách</b></span></div>
+          <p class="muted">Buổi chụp xong, ảnh đang được chọn và chỉnh sửa.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd><span class="ui">Chuyển sang: Đã chụp</span>. Ghi chú những gì phát sinh ở buổi chụp, dịch vụ thêm, ảnh đã đưa lên folder Drive chưa.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st6" id="s7">
+        <div class="dot">7</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Chưa trả ảnh in</h3><span class="who">Người làm: <b>Sale phụ trách</b></span></div>
+          <p class="muted">Lớp đã nhận ảnh file số, đang chờ in và giao ảnh in.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd><span class="ui">Chuyển sang: Chưa trả ảnh in</span>. Ghi chú ngày gửi ảnh, link đã gửi, số ảnh in, nơi in, ngày hẹn giao.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="step st7" id="s8">
+        <div class="dot">8</div>
+        <div class="step-body">
+          <div class="step-head"><h3>Hoàn thành</h3><span class="who">Người làm: <b>Sale phụ trách</b></span></div>
+          <p class="muted">Đã giao đủ ảnh in, lớp đóng hồ sơ.</p>
+          <dl class="card">
+            <div class="row"><dt>Thao tác</dt><dd><span class="ui">Chuyển sang: Hoàn thành</span>. Ghi chú ngày giao, người nhận, phần tiền còn lại đã thu đủ chưa.</dd></div>
+            <div class="row"><dt>Tiếp theo</dt><dd>Trên trang lớp hiện <b>Link form feedback của lớp</b>: bấm copy rồi gửi cho đại diện lớp để lớp đánh giá.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="h-roles">
+    <h2 id="h-roles">Ai được làm gì</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vai trò</th><th>Được làm</th></tr></thead>
+        <tbody>
+          <tr><td>Sale, CTV sale</td><td>Nhận lớp chưa có ai phụ trách (bước 1–3). Chuyển lớp mình phụ trách sang bước kế tiếp, đánh dấu Không chốt, thêm ghi chú.</td></tr>
+          <tr><td>Thợ chụp</td><td>Chuyển lớp mình được xếp chụp từ “Chưa chụp” sang “Đã chụp”.</td></tr>
+          <tr><td>Admin</td><td>Mọi thao tác trên. Thêm ô <span class="ui">Đặt trạng thái (admin)</span> để lùi, nhảy bước hay mở lại lớp Không chốt. Đổi sale phụ trách của lớp.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-log">
+    <h2 id="h-log">Nhật ký của một lớp</h2>
+    <p class="muted">Cột Nhật ký bên phải trang lớp gom mọi lần đổi trạng thái và ghi chú, mới nhất ở trên.</p>
+    <div class="log">
+      <div class="log-cap">Ví dụ minh hoạ, không phải dữ liệu thật. Lớp 12A1, THPT Chu Văn An:</div>
+      <div class="entry">
+        <span class="when">13/10 16:30</span>
+        <div class="what">
+          <div class="line"><span class="pill st2">Đã liên hệ</span><span class="arrow">→</span><span class="pill st3">Đã cọc</span><span class="by">· Sale Minh Anh</span></div>
+          <p>Nhận cọc qua chuyển khoản. Ngày chụp 23/11.</p>
+        </div>
+      </div>
+      <div class="entry">
+        <span class="when">09/10 10:05</span>
+        <div class="what">
+          <div class="line"><span class="pill st2">Đã liên hệ</span><span class="by">· Sale Minh Anh · ghi chú</span></div>
+          <p>Lớp đang so giá với studio khác. Đã giảm 5% nếu cọc trước 15/10.</p>
+        </div>
+      </div>
+      <div class="entry">
+        <span class="when">04/10 20:40</span>
+        <div class="what">
+          <div class="line"><span class="pill st1">Bắt đầu liên hệ</span><span class="arrow">→</span><span class="pill st2">Đã liên hệ</span><span class="by">· Sale Minh Anh</span></div>
+          <p>Gọi 15 phút. Lớp 38 bạn, quan tâm gói Vip 1, muốn chụp cuối tháng 11.</p>
+        </div>
+      </div>
+      <div class="entry">
+        <span class="when">02/10 09:15</span>
+        <div class="what">
+          <div class="line"><span class="pill st0">Chưa làm việc</span><span class="arrow">→</span><span class="pill st1">Bắt đầu liên hệ</span><span class="by">· Sale Minh Anh</span></div>
+          <p>Nhắn Zalo lớp trưởng, giới thiệu studio và gửi album mẫu.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tips">
+    <h2 id="h-tips">Mẹo và câu hỏi thường gặp</h2>
+    <ol class="qs">
+      <li><span><b>Xem nhanh lớp của mình.</b> Trang Khách hàng: bấm <span class="ui">Lớp của tôi</span>. Bấm vào một chip trạng thái ở đầu trang để lọc, bấm lần nữa để bỏ lọc.</span></li>
+      <li><span><b>Báo “Trạng thái lớp vừa thay đổi, tải lại trang”?</b> Có người khác vừa đổi lớp này cùng lúc với bạn. Trang tự tải lại, bạn xem Nhật ký rồi làm lại nếu cần.</span></li>
+      <li><span><b>Báo “Chưa có lịch chụp nên chưa tạo folder Drive”?</b> Lớp đã cọc nhưng chưa có lịch chụp. Tạo lịch chụp cho lớp ở trang Lịch chụp, folder Drive sẽ được tạo khi đó.</span></li>
+      <li><span><b>Chuyển nhầm trạng thái?</b> Nhắn Admin chuyển lại. Lần sửa cũng được ghi vào Nhật ký.</span></li>
+      <li><span><b>Không thấy nút chuyển trạng thái?</b> Lớp đang do sale khác phụ trách, hoặc bước tiếp theo không thuộc vai trò của bạn. Xem “Ai được làm gì” ở trên.</span></li>
+    </ol>
+  </section>
+
+  <footer>Yume Studio · Hướng dẫn quy trình chăm sóc lớp</footer>
+</main>
+</body>
+</html>
