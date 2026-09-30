@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Phone, Plus, School, Trash2 } from 'lucide-react';
+import { Pencil, Phone, Plus, School, Trash2, UserCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { customerService } from '../services/customerService';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
-import type { Customer } from '../types';
+import { fetchSales } from '../store/slices/usersSlice';
+import { useAuth } from '../context/AuthContext';
+import type { Customer, CustomerStatus, CustomerStatusCounts } from '../types';
+import {
+  CUSTOMER_STATUSES,
+  CUSTOMER_STATUS_LABELS,
+  CUSTOMER_STATUS_VARIANT,
+  getCustomerStatus,
+  getUserRefId,
+  getUserRefName,
+} from '../types';
+import { cn } from '@/lib/utils';
 import {
   Badge,
   Button,
@@ -29,11 +40,35 @@ import type { Column } from '@/components/ui';
 
 type FormValues = Omit<Customer, '_id' | 'createdAt'>;
 
+const ALL = '__all__';
+const NONE = '__none__';
+
+/** Pipeline fields are changed only through the status endpoint — never sent by the form. */
+const PIPELINE_FIELDS = [
+  'status',
+  'assignedSale',
+  'lostReason',
+  'statusChangedAt',
+  'deposit',
+] as const;
+
+const StatusBadge = ({ customer }: { customer: Customer }) => {
+  const status = getCustomerStatus(customer);
+  return (
+    <Badge variant={CUSTOMER_STATUS_VARIANT[status]} dot className="whitespace-nowrap">
+      {CUSTOMER_STATUS_LABELS[status]}
+    </Badge>
+  );
+};
+
 const CustomersPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { list: customers, total, loading } = useAppSelector((s) => s.customers);
   const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
+  const sales = useAppSelector((s) => s.users.sales);
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles.some((r) => r === 0 || r === 1);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -41,6 +76,9 @@ const CustomersPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<CustomerStatus | ''>('');
+  const [mine, setMine] = useState(false);
+  const [counts, setCounts] = useState<CustomerStatusCounts | null>(null);
   const {
     register,
     handleSubmit,
@@ -53,12 +91,39 @@ const CustomersPage = () => {
     const params: Record<string, string | number> = { page: p, limit: l };
     if (s) params.search = s;
     if (selectedSeasonId) params.season = selectedSeasonId;
+    if (statusFilter) params.status = statusFilter;
+    if (mine) params.assignedSale = 'me';
     return params;
+  };
+
+  const loadCounts = () => {
+    const params: Record<string, string> = {};
+    if (selectedSeasonId) params.season = selectedSeasonId;
+    if (mine) params.assignedSale = 'me';
+    customerService
+      .getStatusCounts(params)
+      .then(setCounts)
+      .catch(() => setCounts(null));
   };
 
   useEffect(() => {
     dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
-  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine]);
+
+  useEffect(() => {
+    if (isAdmin) dispatch(fetchSales());
+  }, [dispatch, isAdmin]);
+
+  useEffect(() => {
+    loadCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSeasonId, mine]);
+
+  const changeStatusFilter = (st: CustomerStatus | '') => {
+    setPage(1);
+    setStatusFilter(st);
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -72,6 +137,7 @@ const CustomersPage = () => {
       totalMale: 0,
       totalFemale: 0,
       notes: '',
+      source: '',
       season: selectedSeasonId || undefined,
     });
     setModalOpen(true);
@@ -79,11 +145,15 @@ const CustomersPage = () => {
 
   const openEdit = (c: Customer) => {
     setEditing(c);
-    reset(c);
+    reset({ ...c, assignedSale: getUserRefId(c.assignedSale) });
     setModalOpen(true);
   };
 
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
+    const data: Partial<Customer> = { ...values };
+    PIPELINE_FIELDS.forEach((k) => delete data[k]);
+    // Only admins may (re)assign the sale in charge through the form.
+    if (isAdmin) data.assignedSale = getUserRefId(values.assignedSale);
     try {
       if (editing) {
         await customerService.update(editing._id, data);
@@ -94,6 +164,7 @@ const CustomersPage = () => {
       }
       setModalOpen(false);
       dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+      loadCounts();
     } catch {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -105,6 +176,7 @@ const CustomersPage = () => {
       await customerService.remove(confirmId);
       toast.success('Đã xoá lớp.');
       dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+      loadCounts();
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
@@ -117,7 +189,7 @@ const CustomersPage = () => {
   };
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Customers"
         title="Khách hàng (Lớp)"
@@ -129,6 +201,34 @@ const CustomersPage = () => {
           </Button>
         }
       />
+
+      {/* Pipeline status strip */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {CUSTOMER_STATUSES.map((st) => {
+          const active = statusFilter === st;
+          return (
+            <button
+              key={st}
+              type="button"
+              onClick={() => changeStatusFilter(active ? '' : st)}
+              aria-pressed={active}
+              className={cn(
+                'rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                active
+                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                  : statusFilter
+                    ? 'opacity-60 hover:opacity-100'
+                    : 'hover:opacity-80',
+              )}
+            >
+              <Badge variant={CUSTOMER_STATUS_VARIANT[st]} dot className="py-1 text-[12.5px]">
+                {CUSTOMER_STATUS_LABELS[st]}
+                <span className="font-bold tabular">{counts ? (counts[st] ?? 0) : '–'}</span>
+              </Badge>
+            </button>
+          );
+        })}
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchInput
@@ -143,6 +243,38 @@ const CustomersPage = () => {
             setPage(1);
           }}
         />
+        <Select
+          value={statusFilter || ALL}
+          onValueChange={(v) => changeStatusFilter(v === ALL ? '' : (v as CustomerStatus))}
+        >
+          <SelectTrigger className="h-[38px] w-[190px] rounded-[10px] border-border bg-card shadow-none">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+            {CUSTOMER_STATUSES.map((st) => (
+              <SelectItem key={st} value={st}>
+                {CUSTOMER_STATUS_LABELS[st]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="outline"
+          aria-pressed={mine}
+          onClick={() => {
+            setPage(1);
+            setMine((m) => !m);
+          }}
+          className={cn(
+            mine &&
+              'border-primary/60 bg-primary/10 text-primary-700 hover:bg-primary/15 dark:text-primary',
+          )}
+        >
+          <UserCheck />
+          Lớp của tôi
+        </Button>
         <span className="ml-auto text-sm text-muted-foreground tabular">{total} lớp</span>
       </div>
 
@@ -151,8 +283,10 @@ const CustomersPage = () => {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
             <DataTable<Customer>
+              fill
+              className="flex-1"
               data={customers}
               keyExtractor={(c) => c._id}
               emptyTitle="Chưa có dữ liệu"
@@ -185,6 +319,23 @@ const CustomersPage = () => {
                       )}
                     </div>
                   ),
+                },
+                {
+                  key: 'status',
+                  header: 'Trạng thái',
+                  render: (c) => <StatusBadge customer={c} />,
+                },
+                {
+                  key: 'assignedSale',
+                  header: 'Sale phụ trách',
+                  render: (c) => {
+                    const name = getUserRefName(c.assignedSale);
+                    return name ? (
+                      <span className="whitespace-nowrap text-foreground">{name}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    );
+                  },
                 },
                 {
                   key: 'contact',
@@ -298,6 +449,14 @@ const CustomersPage = () => {
                         <span className="truncate">{c.school}</span>
                       </div>
                     )}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <StatusBadge customer={c} />
+                      {getUserRefName(c.assignedSale) && (
+                        <span className="text-xs text-muted-foreground">
+                          Sale: {getUserRefName(c.assignedSale)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {c.total != null && (
                     <Badge
@@ -487,6 +646,39 @@ const CustomersPage = () => {
                 {...register('contactAddress', { required: 'Vui lòng nhập địa chỉ' })}
               />
             </FormField>
+            <FormField label="Nguồn khách" htmlFor="source" className="col-span-2">
+              <Input
+                id="source"
+                placeholder="VD: Facebook, giới thiệu, khách cũ…"
+                {...register('source')}
+              />
+            </FormField>
+            {isAdmin && (
+              <FormField label="Sale phụ trách" className="col-span-2 sm:col-span-1">
+                <Controller
+                  name="assignedSale"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={getUserRefId(field.value) ?? NONE}
+                      onValueChange={(v) => field.onChange(v === NONE ? null : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chưa có" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>Chưa có</SelectItem>
+                        {sales.map((u) => (
+                          <SelectItem key={u._id} value={u._id}>
+                            {u.name || u.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </FormField>
+            )}
             <FormField label="Mùa chụp" htmlFor="season" className="col-span-2 sm:col-span-1">
               <Controller
                 name="season"

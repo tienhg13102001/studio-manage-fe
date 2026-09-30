@@ -263,7 +263,7 @@ const CostumesPage = () => {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Settings"
         title="Trang phục"
@@ -306,8 +306,10 @@ const CostumesPage = () => {
         />
       </div>
 
-      <div className="hidden md:block">
+      <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
         <DataTable<CostumeResponse>
+          fill
+          className="flex-1"
           loading={loading}
           data={filtered}
           keyExtractor={(c) => c._id}

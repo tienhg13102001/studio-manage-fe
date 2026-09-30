@@ -435,7 +435,7 @@ const FinancePage = () => {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Finance"
         title="Quản lý Thu Chi"
@@ -614,8 +614,10 @@ const FinancePage = () => {
           <TableSkeleton cols={8} />
         ) : (
           <>
-            <div className="hidden md:block">
+            <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
               <DataTable<TransactionResponse>
+                fill
+                className="flex-1"
                 data={transactions}
                 keyExtractor={(t) => t._id}
                 emptyTitle="Chưa có dữ liệu"

@@ -24,6 +24,7 @@ import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import { useAppSelector } from '../store';
+import { CUSTOMER_STATUS_ORDER } from '../types';
 import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import {
   Badge,
@@ -46,6 +47,10 @@ import {
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
 import { cn } from '@/lib/utils';
+
+const BOOKED_STATUSES = CUSTOMER_STATUS_ORDER.slice(
+  CUSTOMER_STATUS_ORDER.indexOf('deposited'),
+).join(',');
 
 type StudentForm = Omit<Student, '_id' | 'createdAt' | 'customer'>;
 
@@ -129,7 +134,8 @@ const CustomerSizePage = () => {
   }, [formGender, modalOpen, scheduleCostumes, setValue]);
 
   useEffect(() => {
-    const params: Record<string, string | number> = { limit: 200 };
+    // Chỉ lớp đã chốt (từ "Đã cọc" trở đi) mới cần nhập thông tin học sinh
+    const params: Record<string, string | number> = { limit: 200, status: BOOKED_STATUSES };
     if (selectedSeasonId) params.season = selectedSeasonId;
     customerService.getAll(params).then((r) => setCustomers(r.data));
     setSelectedCustomer(null);
@@ -509,7 +515,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
   };
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Customers"
         title="Thông tin học sinh"
@@ -817,8 +823,10 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               return (
                 <>
                   {/* Desktop table */}
-                  <div className="hidden md:block">
+                  <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
                     <DataTable<StudentResponse>
+                      fill
+                      className="flex-1"
                       data={displayedStudents}
                       keyExtractor={(s) => s._id}
                       columns={studentColumns}

@@ -256,7 +256,7 @@ const UsersPage = () => {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Users"
         title="Quản lý người dùng"
@@ -290,8 +290,10 @@ const UsersPage = () => {
         })}
       </div>
 
-      <div className="hidden md:block">
+      <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
         <DataTable<User>
+          fill
+          className="flex-1"
           data={users}
           keyExtractor={(u) => u._id}
           columns={columns}

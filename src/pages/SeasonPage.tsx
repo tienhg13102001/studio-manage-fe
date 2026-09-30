@@ -297,7 +297,7 @@ const SeasonPage = () => {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
         kicker="Settings"
         title="Mùa chụp"
@@ -317,8 +317,10 @@ const SeasonPage = () => {
           <SeasonTimeline seasons={seasons} now={now} />
 
           {/* Desktop table */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
             <DataTable<Season>
+              fill
+              className="flex-1"
               data={sorted}
               keyExtractor={(s) => s._id}
               rowClassName={(s) =>

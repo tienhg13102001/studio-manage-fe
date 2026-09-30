@@ -32,8 +32,124 @@ export interface Customer {
   totalFemale?: number;
   notes?: string;
   season?: string | null;
+  /** Pipeline status — missing on old data, treat as `new` (use `getCustomerStatus`). */
+  status?: CustomerStatus;
+  assignedSale?: string | CustomerSaleRef | null;
+  source?: string;
+  lostReason?: string;
+  statusChangedAt?: string;
+  deposit?: { amount: number; date: string };
   createdAt?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Customer pipeline (quy trình chăm sóc lớp)
+// ---------------------------------------------------------------------------
+
+export type CustomerStatus =
+  | 'new'
+  | 'contacting'
+  | 'contacted'
+  | 'deposited'
+  | 'scheduled'
+  | 'shot'
+  | 'awaiting_print'
+  | 'done'
+  | 'lost';
+
+/** Main flow order (excludes the `lost` side branch). */
+export const CUSTOMER_STATUS_ORDER: Exclude<CustomerStatus, 'lost'>[] = [
+  'new',
+  'contacting',
+  'contacted',
+  'deposited',
+  'scheduled',
+  'shot',
+  'awaiting_print',
+  'done',
+];
+
+/** Every status incl. `lost`, in display order. */
+export const CUSTOMER_STATUSES: CustomerStatus[] = [...CUSTOMER_STATUS_ORDER, 'lost'];
+
+export const CUSTOMER_STATUS_LABELS: Record<CustomerStatus, string> = {
+  new: 'Chưa làm việc',
+  contacting: 'Bắt đầu liên hệ',
+  contacted: 'Đã liên hệ',
+  deposited: 'Đã cọc',
+  scheduled: 'Chưa chụp',
+  shot: 'Đã chụp',
+  awaiting_print: 'Chưa trả ảnh in',
+  done: 'Hoàn thành',
+  lost: 'Không chốt',
+};
+
+export const CUSTOMER_STATUS_VARIANT: Record<
+  CustomerStatus,
+  'neutral' | 'info' | 'violet' | 'warning' | 'cyan' | 'pink' | 'teal' | 'success' | 'danger'
+> = {
+  new: 'neutral',
+  contacting: 'info',
+  contacted: 'violet',
+  deposited: 'warning',
+  scheduled: 'cyan',
+  shot: 'pink',
+  awaiting_print: 'teal',
+  done: 'success',
+  lost: 'danger',
+};
+
+/** Statuses from which the `lost` side branch is allowed. */
+export const CUSTOMER_LOSABLE_STATUSES: CustomerStatus[] = ['new', 'contacting', 'contacted'];
+
+export const getCustomerStatus = (c: Pick<Customer, 'status'> | null | undefined): CustomerStatus =>
+  c?.status ?? 'new';
+
+/** Display name of a (possibly unpopulated) user reference. */
+export const getUserRefName = (u: string | CustomerSaleRef | null | undefined): string | null =>
+  u && typeof u === 'object' ? u.name || u.username : null;
+
+/** Id of a (possibly populated) user reference. */
+export const getUserRefId = (u: string | CustomerSaleRef | null | undefined): string | null =>
+  !u ? null : typeof u === 'object' ? u._id : u;
+
+export interface CustomerSaleRef {
+  _id: string;
+  name?: string;
+  username: string;
+}
+
+export interface CustomerActivity {
+  _id: string;
+  customer: string;
+  kind: 'status' | 'note' | 'system';
+  fromStatus?: CustomerStatus;
+  toStatus?: CustomerStatus;
+  note: string;
+  createdBy?: CustomerSaleRef | string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ChangeCustomerStatusBody {
+  status: CustomerStatus;
+  note: string;
+  lostReason?: string;
+  deposit?: { amount: number; date: string };
+  /** Admin only — (re)assign the sale in charge (user id). */
+  assignedSale?: string;
+  schedule?: {
+    package: string;
+    shootDate: string;
+    startTime?: string;
+    endTime?: string;
+    location?: string;
+    leadPhotographer?: string;
+    supportPhotographers?: string[];
+  };
+}
+
+export type CustomerStatusCounts = Record<CustomerStatus, number>;
 
 export interface CostumeType {
   _id: string;

@@ -45,6 +45,8 @@ interface DataTableProps<T> {
   rowClassName?: (row: T, index: number) => string;
   rowStyle?: (row: T, index: number) => React.CSSProperties | undefined;
   stickyHeader?: boolean;
+  /** Chiếm hết chiều cao còn lại của cha (flex column): chỉ phần thân bảng cuộn, phân trang cố định ở đáy */
+  fill?: boolean;
   variant?: 'card' | 'plain';
   dense?: boolean;
   textSize?: 'xs' | 'sm';
@@ -70,6 +72,7 @@ export function DataTable<T>({
   rowClassName,
   rowStyle,
   stickyHeader = false,
+  fill = false,
   variant = 'card',
   dense = false,
   textSize = 'sm',
@@ -107,8 +110,13 @@ export function DataTable<T>({
 
   const wrapperCls =
     variant === 'card'
-      ? cn('rounded-[14px] border bg-card overflow-hidden', className)
-      : className;
+      ? cn(
+          'rounded-[14px] border bg-card overflow-hidden',
+          fill && 'flex min-h-[320px] flex-col',
+          className,
+        )
+      : cn(fill && 'flex min-h-[320px] flex-col', className);
+  const sticky = stickyHeader || fill;
 
   const renderTitle = () =>
     title ? (
@@ -155,8 +163,14 @@ export function DataTable<T>({
   const textCls = textSize === 'xs' ? 'text-xs' : 'text-sm';
 
   const table = (
-    <Table className={textCls}>
-      <TableHeader className={cn('bg-muted/60', stickyHeader && 'sticky top-0 z-10')}>
+    <Table className={textCls} containerClassName={fill ? 'overflow-visible' : undefined}>
+      <TableHeader
+        className={cn(
+          sticky
+            ? 'sticky top-0 z-10 bg-muted shadow-[inset_0_-1px_0_hsl(var(--border))]'
+            : 'bg-muted/60',
+        )}
+      >
         <TableRow>
           {columns.map((col) => (
             <TableHead
@@ -179,10 +193,7 @@ export function DataTable<T>({
           return (
             <TableRow
               key={keyExtractor(row, absoluteIndex)}
-              className={cn(
-                rowClassName?.(row, absoluteIndex),
-                onRowClick && 'cursor-pointer',
-              )}
+              className={cn(rowClassName?.(row, absoluteIndex), onRowClick && 'cursor-pointer')}
               style={rowStyle?.(row, absoluteIndex)}
               onClick={(e) => {
                 if (!onRowClick) return;
@@ -205,6 +216,8 @@ export function DataTable<T>({
       </TableBody>
     </Table>
   );
+
+  const scrollCls = fill ? 'min-h-0 flex-1 overflow-auto' : 'overflow-x-auto';
 
   const paginationFooter = paginationOpts ? (
     <Pagination
@@ -230,13 +243,13 @@ export function DataTable<T>({
   return variant === 'card' ? (
     <div className={wrapperCls}>
       {renderTitle()}
-      <div className="overflow-x-auto">{table}</div>
+      <div className={scrollCls}>{table}</div>
       {paginationFooter}
       {footer}
     </div>
   ) : (
-    <div className={className}>
-      <div className="overflow-x-auto">{table}</div>
+    <div className={wrapperCls}>
+      <div className={scrollCls}>{table}</div>
       {paginationFooter}
       {footer}
     </div>
