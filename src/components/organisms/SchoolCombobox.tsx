@@ -173,7 +173,9 @@ const SchoolCombobox = ({
         <PopoverContent
           className="p-0"
           align="start"
-          style={{ width: 'max(var(--radix-popover-trigger-width), 240px)' }}
+          style={{
+            width: 'min(max(var(--radix-popover-trigger-width), 300px), calc(100vw - 32px))',
+          }}
         >
           <Command shouldFilter={false}>
             <CommandInput placeholder="Tìm trường…" value={query} onValueChange={setQuery} />
@@ -195,16 +197,16 @@ const SchoolCombobox = ({
                   <CommandItem key={s._id} value={s._id} onSelect={() => select(s)}>
                     <Check
                       className={cn(
-                        'mr-2 h-4 w-4',
+                        'mr-2 h-4 w-4 shrink-0',
                         value?._id === s._id ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <span className="truncate">{s.name}</span>
+                    <span className="min-w-0 flex-1 break-words">{s.name}</span>
                     {canDelete && (
                       <button
                         type="button"
                         aria-label={`Xoá trường ${s.name}`}
-                        className="-my-1 -mr-1 ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        className="-my-1 -mr-1 ml-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         // Keep the click from selecting the item / moving focus out of the list
                         onPointerDown={(e) => {
                           e.preventDefault();
