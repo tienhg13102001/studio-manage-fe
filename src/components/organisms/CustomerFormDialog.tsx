@@ -16,8 +16,8 @@ import {
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { customerService } from '../../services/customerService';
-import type { Customer } from '../../types';
-import { getUserRefId } from '../../types';
+import type { Customer, SchoolRef } from '../../types';
+import { getSchoolId, getUserRefId } from '../../types';
 import { useAppSelector } from '../../store';
 import {
   Button,
@@ -32,8 +32,12 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui';
+import SchoolCombobox from './SchoolCombobox';
 
-type FormValues = Omit<Customer, '_id' | 'createdAt'>;
+type FormValues = Omit<Customer, '_id' | 'createdAt' | 'schoolId'> & {
+  /** Full ref kept in the form so the combobox can show the name; sent as an id. */
+  schoolId: SchoolRef | null;
+};
 
 const NONE = '__none__';
 
@@ -101,11 +105,16 @@ const CustomerFormDialog = ({
   useEffect(() => {
     if (!open) return;
     if (customer) {
-      reset({ ...customer, assignedSale: getUserRefId(customer.assignedSale) });
+      reset({
+        ...customer,
+        assignedSale: getUserRefId(customer.assignedSale),
+        schoolId:
+          customer.schoolId && typeof customer.schoolId === 'object' ? customer.schoolId : null,
+      });
     } else {
       reset({
         className: '',
-        school: '',
+        schoolId: null,
         contactName: '',
         contactPhone: '',
         contactAddress: '',
@@ -120,7 +129,7 @@ const CustomerFormDialog = ({
   }, [open, customer, selectedSeasonId, reset]);
 
   const onSubmit = async (values: FormValues) => {
-    const data: Partial<Customer> = { ...values };
+    const data: Partial<Customer> = { ...values, schoolId: getSchoolId(values) };
     PIPELINE_FIELDS.forEach((k) => delete data[k]);
     // Only admins may (re)assign the sale in charge through the form.
     if (isAdmin) data.assignedSale = getUserRefId(values.assignedSale);
@@ -192,16 +201,26 @@ const CustomerFormDialog = ({
               label="Trường"
               required
               htmlFor="cf-school"
-              error={errors.school?.message}
+              error={errors.schoolId?.message}
               className={`col-span-3 md:col-span-2 ${fieldCls}`}
             >
-              <WithIcon icon={School}>
-                <Input
-                  id="cf-school"
-                  className={iconInputCls}
-                  {...register('school', { required: 'Vui lòng nhập trường' })}
-                />
-              </WithIcon>
+              <Controller
+                name="schoolId"
+                control={control}
+                rules={{ required: 'Vui lòng chọn trường' }}
+                render={({ field }) => (
+                  <WithIcon icon={School}>
+                    <SchoolCombobox
+                      id="cf-school"
+                      allowCreate
+                      value={field.value}
+                      onChange={field.onChange}
+                      invalid={!!errors.schoolId}
+                      className={triggerCls}
+                    />
+                  </WithIcon>
+                )}
+              />
             </FormField>
             <FormField
               label="Sĩ số"

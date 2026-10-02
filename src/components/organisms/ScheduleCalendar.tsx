@@ -13,7 +13,13 @@ import {
   Users as UsersIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DOW_VN, SCHEDULE_STATUS_LABEL } from '../../utils/scheduleConstants';
+import {
+  CUSTOMER_STATUSES,
+  CUSTOMER_STATUS_LABELS,
+  CUSTOMER_STATUS_VARIANT,
+  type CustomerStatus,
+} from '../../types';
+import { DOW_VN, SCHEDULE_CANCELLED_LABEL } from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
   _id: string;
@@ -21,7 +27,10 @@ export interface CalendarScheduleItem {
   startTime?: string;
   endTime?: string;
   location?: string;
-  status: string;
+  /** Class pipeline status (`customer.status`) — drives the color. */
+  status?: CustomerStatus;
+  /** Cancelled schedules are rendered muted / struck through. */
+  cancelled?: boolean;
   className: string;
   leadName?: string;
   notes?: string;
@@ -46,32 +55,78 @@ interface Props {
   sidePanel?: boolean;
 }
 
-const STATUS_STYLE: Record<string, { chip: string; bar: string; dot: string; badge: string }> = {
-  pending: {
-    chip: 'bg-amber-500/10 text-amber-800 dark:text-amber-200',
-    bar: 'bg-amber-500',
-    dot: 'bg-amber-500',
-    badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+type StatusStyle = { chip: string; bar: string; dot: string; badge: string };
+
+/** Colors per Badge variant, so calendar chips match the class status badges. */
+const VARIANT_STYLE: Record<(typeof CUSTOMER_STATUS_VARIANT)[CustomerStatus], StatusStyle> = {
+  neutral: {
+    chip: 'bg-slate-500/10 text-slate-700 dark:text-slate-200',
+    bar: 'bg-slate-400',
+    dot: 'bg-slate-400',
+    badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
   },
-  confirmed: {
+  info: {
     chip: 'bg-blue-500/10 text-blue-800 dark:text-blue-200',
     bar: 'bg-blue-500',
     dot: 'bg-blue-500',
     badge: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
   },
-  completed: {
+  violet: {
+    chip: 'bg-violet-500/10 text-violet-800 dark:text-violet-200',
+    bar: 'bg-violet-500',
+    dot: 'bg-violet-500',
+    badge: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  },
+  warning: {
+    chip: 'bg-amber-500/10 text-amber-800 dark:text-amber-200',
+    bar: 'bg-amber-500',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+  },
+  cyan: {
+    chip: 'bg-cyan-500/10 text-cyan-800 dark:text-cyan-200',
+    bar: 'bg-cyan-500',
+    dot: 'bg-cyan-500',
+    badge: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+  },
+  pink: {
+    chip: 'bg-pink-500/10 text-pink-800 dark:text-pink-200',
+    bar: 'bg-pink-500',
+    dot: 'bg-pink-500',
+    badge: 'bg-pink-500/15 text-pink-700 dark:text-pink-300',
+  },
+  teal: {
+    chip: 'bg-teal-500/10 text-teal-800 dark:text-teal-200',
+    bar: 'bg-teal-500',
+    dot: 'bg-teal-500',
+    badge: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
+  },
+  success: {
     chip: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
     bar: 'bg-emerald-500',
     dot: 'bg-emerald-500',
     badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
   },
-  cancelled: {
+  danger: {
     chip: 'bg-rose-500/10 text-rose-800 dark:text-rose-200',
     bar: 'bg-rose-500',
     dot: 'bg-rose-500',
     badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
   },
 };
+
+const CANCELLED_STYLE: StatusStyle = {
+  chip: 'bg-muted text-muted-foreground line-through',
+  bar: 'bg-muted-foreground/40',
+  dot: 'bg-muted-foreground/40',
+  badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+};
+
+const getStyle = (s: Pick<CalendarScheduleItem, 'status' | 'cancelled'>): StatusStyle =>
+  s.cancelled ? CANCELLED_STYLE : VARIANT_STYLE[CUSTOMER_STATUS_VARIANT[s.status ?? 'new']];
+
+const getLabel = (s: Pick<CalendarScheduleItem, 'status' | 'cancelled'>) =>
+  s.cancelled ? SCHEDULE_CANCELLED_LABEL : CUSTOMER_STATUS_LABELS[s.status ?? 'new'];
 
 const DOW_LONG = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
@@ -80,8 +135,8 @@ const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 const parseKey = (key: string) =>
   new Date(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10));
 
-const StatusPill = ({ status }: { status: string }) => {
-  const st = STATUS_STYLE[status] ?? STATUS_STYLE.pending;
+const StatusPill = ({ item }: { item: Pick<CalendarScheduleItem, 'status' | 'cancelled'> }) => {
+  const st = getStyle(item);
   return (
     <span
       className={cn(
@@ -90,7 +145,7 @@ const StatusPill = ({ status }: { status: string }) => {
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {SCHEDULE_STATUS_LABEL[status] ?? status}
+      {getLabel(item)}
     </span>
   );
 };
@@ -136,6 +191,15 @@ const ScheduleCalendar = ({
     return map;
   }, [items]);
 
+  /** Legend = only the statuses actually present, so every chip color is explained. */
+  const legend = useMemo(() => {
+    const present = new Set(items.filter((s) => !s.cancelled).map((s) => s.status ?? 'new'));
+    return {
+      statuses: CUSTOMER_STATUSES.filter((k) => present.has(k)),
+      cancelled: items.some((s) => s.cancelled),
+    };
+  }, [items]);
+
   const selectedItems = selectedDay ? (byDay[selectedDay] ?? []) : [];
 
   const upcoming = useMemo(() => {
@@ -179,12 +243,23 @@ const ScheduleCalendar = ({
         </span>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="hidden items-center gap-3 text-xs text-muted-foreground md:flex">
-            {Object.keys(STATUS_STYLE).map((k) => (
+            {legend.statuses.map((k) => (
               <span key={k} className="inline-flex items-center gap-1.5">
-                <span className={cn('h-2 w-2 rounded-full', STATUS_STYLE[k].dot)} />
-                {SCHEDULE_STATUS_LABEL[k]}
+                <span
+                  className={cn(
+                    'h-2 w-2 rounded-full',
+                    VARIANT_STYLE[CUSTOMER_STATUS_VARIANT[k]].dot,
+                  )}
+                />
+                {CUSTOMER_STATUS_LABELS[k]}
               </span>
             ))}
+            {legend.cancelled && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className={cn('h-2 w-2 rounded-full', CANCELLED_STYLE.dot)} />
+                {SCHEDULE_CANCELLED_LABEL}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -264,7 +339,7 @@ const ScheduleCalendar = ({
               </div>
               <div className="space-y-1">
                 {dayItems.slice(0, maxBadges).map((s) => {
-                  const st = STATUS_STYLE[s.status] ?? STATUS_STYLE.pending;
+                  const st = getStyle(s);
                   return (
                     <div
                       key={s._id}
@@ -312,7 +387,10 @@ const ScheduleCalendar = ({
     'inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-[10px] border bg-card text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5';
 
   const renderEventCard = (s: CalendarScheduleItem) => (
-    <div key={s._id} className="rounded-[14px] border bg-card p-4">
+    <div
+      key={s._id}
+      className={cn('rounded-[14px] border bg-card p-4', s.cancelled && 'opacity-60')}
+    >
       <div className="flex items-center justify-between gap-2">
         {s.startTime || s.endTime ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground tabular">
@@ -323,13 +401,16 @@ const ScheduleCalendar = ({
         ) : (
           <span />
         )}
-        <StatusPill status={s.status} />
+        <StatusPill item={s} />
       </div>
       <button
         type="button"
         disabled={!onOpen}
         onClick={() => onOpen?.(s._id)}
-        className="mt-2.5 block w-full text-left font-display text-base font-bold tracking-tight text-foreground enabled:hover:text-primary-700 dark:enabled:hover:text-primary"
+        className={cn(
+          'mt-2.5 block w-full text-left font-display text-base font-bold tracking-tight text-foreground enabled:hover:text-primary-700 dark:enabled:hover:text-primary',
+          s.cancelled && 'line-through',
+        )}
       >
         {s.className}
         {s.school ? ` · ${s.school}` : ''}
@@ -471,7 +552,7 @@ const ScheduleCalendar = ({
                         {s.className}
                         {s.school ? ` · ${s.school}` : ''}
                       </span>
-                      <StatusPill status={s.status} />
+                      <StatusPill item={s} />
                     </button>
                   );
                 })}

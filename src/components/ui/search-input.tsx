@@ -1,12 +1,12 @@
 import { useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
+  /** Called on Enter (search immediately). */
   onSearch: () => void;
   onClear?: () => void;
   placeholder?: string;
@@ -52,9 +52,6 @@ export const SearchInput = ({
           </button>
         )}
       </div>
-      <Button type="button" variant="secondary" onClick={onSearch}>
-        Tìm
-      </Button>
     </div>
   );
 };

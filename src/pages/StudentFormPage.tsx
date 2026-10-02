@@ -17,6 +17,7 @@ import Logo from '../components/atoms/Logo';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import type { PublicScheduleResponse } from '../types';
+import { getSchoolName } from '../types';
 import { Button, FormField, Input, Label, PageLoader, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -157,7 +158,7 @@ const StudentFormPage = () => {
   }
 
   if (submitStatus === 'success') {
-    const classLine = [schedule.customer.className, schedule.customer.school]
+    const classLine = [schedule.customer.className, getSchoolName(schedule.customer)]
       .filter(Boolean)
       .join(' · ');
     const rows: [string, string][] = [];
@@ -220,10 +221,10 @@ const StudentFormPage = () => {
         <h1 className="mt-1.5 font-display text-[28px] font-bold leading-tight">
           {schedule.customer.className}
         </h1>
-        {schedule.customer.school && (
+        {getSchoolName(schedule.customer) && (
           <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
             <Building2 className="h-4 w-4" />
-            <span>{schedule.customer.school}</span>
+            <span>{getSchoolName(schedule.customer)}</span>
           </p>
         )}
         <div className="mt-3 flex flex-wrap gap-2">

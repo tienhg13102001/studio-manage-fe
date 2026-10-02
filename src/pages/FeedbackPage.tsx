@@ -3,6 +3,7 @@ import { Copy, Lightbulb, Link2, Phone, Star } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { feedbackService } from '../services/feedbackService';
 import type { Customer, FeedbackItem, FeedbackResponse } from '../types';
+import { getSchoolName } from '../types';
 import { formatDateTime } from '../utils/format';
 import {
   Badge,
@@ -21,12 +22,14 @@ const LIMIT = 20;
 
 const getClassLabel = (customer: Customer | null): string | null => {
   if (!customer) return null;
-  return customer.school ? `${customer.className} — ${customer.school}` : customer.className;
+  return getSchoolName(customer)
+    ? `${customer.className} — ${getSchoolName(customer)}`
+    : customer.className;
 };
 
 const getInitials = (customer: Customer | null, phone?: string): string => {
   if (customer) {
-    const src = customer.className || customer.school || '';
+    const src = customer.className || getSchoolName(customer) || '';
     const parts = src.trim().split(/\s+/).slice(0, 2);
     const initials = parts.map((p) => p[0]?.toUpperCase() ?? '').join('');
     if (initials) return initials;

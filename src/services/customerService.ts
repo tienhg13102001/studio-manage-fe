@@ -20,9 +20,9 @@ export interface ChangeCustomerStatusResult {
 }
 
 export const customerService = {
-  getAll: (params?: Record<string, string | number>) =>
+  getAll: (params?: Record<string, string | number>, signal?: AbortSignal) =>
     api
-      .get<PaginatedApiResponse<Customer>>('/customers', { params })
+      .get<PaginatedApiResponse<Customer>>('/customers', { params, signal })
       .then((r) => ({ data: r.data.data, ...r.data.pagination }) as PaginatedResponse<Customer>),
   getOne: (id: string) =>
     api.get<ApiResponse<Customer>>(`/customers/${id}`).then((r) => r.data.data),
@@ -51,11 +51,11 @@ export const customerService = {
   /** Public (no-auth) endpoint — used by the student self-entry form */
   getPublic: (id: string) =>
     api
-      .get<ApiResponse<Pick<Customer, '_id' | 'className' | 'school'>>>(`/public/customers/${id}`)
+      .get<ApiResponse<Pick<Customer, '_id' | 'className' | 'schoolId'>>>(`/public/customers/${id}`)
       .then((r) => r.data.data),
   /** Public (no-auth) endpoint — list all classes (for portfolio / dropdowns) */
   listPublic: () =>
     api
-      .get<ApiResponse<Pick<Customer, '_id' | 'className' | 'school'>[]>>(`/public/customers`)
+      .get<ApiResponse<Pick<Customer, '_id' | 'className' | 'schoolId'>[]>>(`/public/customers`)
       .then((r) => r.data.data),
 };

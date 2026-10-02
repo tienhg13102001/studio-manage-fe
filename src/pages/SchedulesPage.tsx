@@ -29,6 +29,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
+  Ban,
   Calendar,
   CalendarPlus,
   Check,
@@ -40,6 +41,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Shirt,
   StickyNote,
@@ -60,9 +62,21 @@ import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchSchedules } from '../store/slices/schedulesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
 import type { CostumeResponse, ExtraService, ScheduleResponse } from '../types';
-import { ROLE_LABELS } from '../types';
-import { formatDate } from '../utils/format';
-import { SCHEDULE_STATUS_LABEL as statusLabel } from '../utils/scheduleConstants';
+import {
+  CUSTOMER_STATUSES,
+  CUSTOMER_STATUS_LABELS,
+  CUSTOMER_STATUS_VARIANT,
+  ROLE_LABELS,
+  getCustomerStatus,
+  getSchoolName,
+} from '../types';
+import { classLabel, formatDate } from '../utils/format';
+import {
+  SCHEDULE_CANCELLED,
+  SCHEDULE_CANCELLED_LABEL,
+  SCHEDULE_CUSTOMER_STATUSES,
+  isScheduleCancelled,
+} from '../utils/scheduleConstants';
 
 interface FilterState {
   status: string;
@@ -74,18 +88,28 @@ interface FilterState {
 const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
 const ALL = '__all__';
 
-const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'danger'> = {
-  pending: 'warning',
-  confirmed: 'info',
-  completed: 'success',
-  cancelled: 'danger',
+/** Schedule status = the class pipeline status; cancelled schedules show "Đã huỷ" instead. */
+const StatusBadge = ({
+  schedule,
+  className,
+}: {
+  schedule: ScheduleResponse;
+  className?: string;
+}) => {
+  if (isScheduleCancelled(schedule)) {
+    return (
+      <Badge variant="danger" dot className={className}>
+        {SCHEDULE_CANCELLED_LABEL}
+      </Badge>
+    );
+  }
+  const status = getCustomerStatus(schedule.customer);
+  return (
+    <Badge variant={CUSTOMER_STATUS_VARIANT[status]} dot className={className}>
+      {CUSTOMER_STATUS_LABELS[status]}
+    </Badge>
+  );
 };
-
-const StatusBadge = ({ status, className }: { status: string; className?: string }) => (
-  <Badge variant={STATUS_VARIANT[status] ?? 'neutral'} dot className={className}>
-    {statusLabel[status] ?? status}
-  </Badge>
-);
 
 /** Vietnamese names: the given name is the last word → use its first letter. */
 const getInitial = (fullName: string) => {
@@ -455,7 +479,6 @@ interface ScheduleFormValues {
   startTime?: string;
   endTime?: string;
   location?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   leadPhotographer?: string;
   bookedBy?: string;
   notes?: string;
@@ -492,6 +515,7 @@ const SchedulesPage = () => {
   const [detail, setDetail] = useState<ScheduleResponse | null>(null);
   const [costumeTouched, setCostumeTouched] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [contractSchedule, setContractSchedule] = useState<ScheduleResponse | null>(null);
   /** Class passed in from CustomerDetailPage — may be missing from the (season-filtered, capped) list. */
   const [prefillCustomer, setPrefillCustomer] = useState<{ value: string; label: string } | null>(
@@ -503,7 +527,7 @@ const SchedulesPage = () => {
     handleSubmit,
     reset,
     control,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting, errors, isDirty },
     watch,
   } = useForm<ScheduleFormValues>({ defaultValues: { extraServices: [] } });
 
@@ -560,7 +584,6 @@ const SchedulesPage = () => {
     setCostumeTouched(false);
     setPrefillCustomer(pre?.label ? { value: pre._id, label: pre.label } : null);
     reset({
-      status: 'pending',
       season: pre?.season || selectedSeasonId || null,
       extraServices: [],
       ...(pre?._id ? { customer: pre._id } : {}),
@@ -595,7 +618,6 @@ const SchedulesPage = () => {
       startTime: s.startTime,
       endTime: s.endTime,
       location: s.location,
-      status: s.status,
       notes: s.notes,
       leadPhotographer: leadId,
       bookedBy: s.bookedBy?._id ?? '',
@@ -658,6 +680,45 @@ const SchedulesPage = () => {
     setConfirmId(null);
   };
 
+  // Costumes / support photographers live outside react-hook-form, so compare them separately.
+  const sameIds = (a: string[], b: string[]) =>
+    a.length === b.length && [...a].sort().join() === [...b].sort().join();
+  const hasUnsavedChanges =
+    !!editing &&
+    (isDirty ||
+      !sameIds(
+        selectedCostumes,
+        (editing.costumes ?? []).map((c) => c._id),
+      ) ||
+      !sameIds(
+        supportIds,
+        editing.supportPhotographers.map((u) => u._id),
+      ));
+
+  /** Cancel (or restore) the schedule being edited — only the cancel flag is changed. */
+  const doToggleCancel = async () => {
+    if (!editing) return;
+    const cancelling = !isScheduleCancelled(editing);
+    try {
+      const saved = await scheduleService.update(editing._id, {
+        status: cancelling ? 'cancelled' : 'active',
+      });
+      toast.success(cancelling ? 'Đã huỷ lịch chụp.' : 'Đã khôi phục lịch chụp.');
+      setCancelConfirmOpen(false);
+      setModalOpen(false);
+      dispatch(fetchSchedules(buildFilterParams(appliedFilter, page, pageSize)));
+      // Show the refreshed schedule (same flow as after saving the form)
+      setDetail(await scheduleService.getOne(saved._id));
+    } catch (err) {
+      setCancelConfirmOpen(false);
+      // e.g. 409 when restoring while the class already has another active schedule
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          'Có lỗi xảy ra, vui lòng thử lại.',
+      );
+    }
+  };
+
   const handleDownloadContract = (s: ScheduleResponse) => setContractSchedule(s);
 
   const applyFilter = () => {
@@ -678,11 +739,12 @@ const SchedulesPage = () => {
         startTime: s.startTime,
         endTime: s.endTime,
         location: s.location,
-        status: s.status,
+        status: s.customer?.status,
+        cancelled: isScheduleCancelled(s),
         notes: s.notes,
         className: s.customer?.className ?? '—',
         leadName: s.leadPhotographer?.name ?? s.leadPhotographer?.username,
-        school: s.customer?.school,
+        school: getSchoolName(s.customer),
         packageName: s.package?.name,
         packagePrice: s.package?.pricePerMember,
         supportNames: s.supportPhotographers
@@ -694,11 +756,13 @@ const SchedulesPage = () => {
     [schedules],
   );
 
-  // Status counts are only meaningful when every matching schedule is on this page.
+  // Class-status counts over active schedules; only meaningful when every match is on this page.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     schedules.forEach((s) => {
-      counts[s.status] = (counts[s.status] ?? 0) + 1;
+      if (isScheduleCancelled(s)) return;
+      const st = getCustomerStatus(s.customer);
+      counts[st] = (counts[st] ?? 0) + 1;
     });
     return counts;
   }, [schedules]);
@@ -726,7 +790,7 @@ const SchedulesPage = () => {
             {s.customer?.className ?? '—'}
           </span>
           <span className="whitespace-nowrap break-keep text-xs text-muted-foreground">
-            {s.customer?.school ?? ''}
+            {getSchoolName(s.customer)}
           </span>
         </div>
       ),
@@ -763,7 +827,7 @@ const SchedulesPage = () => {
     {
       key: 'status',
       header: 'Trạng thái',
-      render: (s) => <StatusBadge status={s.status} className="whitespace-nowrap" />,
+      render: (s) => <StatusBadge schedule={s} className="whitespace-nowrap" />,
     },
     {
       key: 'notes',
@@ -863,11 +927,12 @@ const SchedulesPage = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {Object.entries(statusLabel).map(([v, l]) => (
+            {SCHEDULE_CUSTOMER_STATUSES.map((v) => (
               <SelectItem key={v} value={v}>
-                {l}
+                {CUSTOMER_STATUS_LABELS[v]}
               </SelectItem>
             ))}
+            <SelectItem value={SCHEDULE_CANCELLED}>{SCHEDULE_CANCELLED_LABEL}</SelectItem>
           </SelectContent>
         </Select>
         <div className="w-full sm:w-[200px]">
@@ -902,13 +967,11 @@ const SchedulesPage = () => {
         </Button>
         {showStatusCounts && (
           <div className="flex flex-wrap items-center gap-1.5 lg:ml-auto">
-            {Object.keys(statusLabel)
-              .filter((k) => statusCounts[k])
-              .map((k) => (
-                <Badge key={k} variant={STATUS_VARIANT[k]} dot className="font-medium">
-                  {statusLabel[k]} · {statusCounts[k]}
-                </Badge>
-              ))}
+            {CUSTOMER_STATUSES.filter((k) => statusCounts[k]).map((k) => (
+              <Badge key={k} variant={CUSTOMER_STATUS_VARIANT[k]} dot className="font-medium">
+                {CUSTOMER_STATUS_LABELS[k]} · {statusCounts[k]}
+              </Badge>
+            ))}
           </div>
         )}
       </div>
@@ -943,6 +1006,7 @@ const SchedulesPage = () => {
               keyExtractor={(s) => s._id}
               emptyTitle="Chưa có dữ liệu"
               columns={scheduleColumns}
+              rowClassName={(s) => (isScheduleCancelled(s) ? 'opacity-60' : '')}
               onRowClick={(s) => setDetail(s)}
               pagination={{
                 serverSide: true,
@@ -965,19 +1029,25 @@ const SchedulesPage = () => {
               const bookedByName = s.bookedBy?.name ?? s.bookedBy?.username ?? null;
               const supports = s.supportPhotographers.map((u) => u.name ?? u.username).join(', ');
               return (
-                <div key={s._id} className="rounded-[14px] border bg-card p-4">
+                <div
+                  key={s._id}
+                  className={cn(
+                    'rounded-[14px] border bg-card p-4',
+                    isScheduleCancelled(s) && 'opacity-60',
+                  )}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-[15px] font-semibold text-foreground">
                         {customer?.className ?? '—'}
                       </div>
-                      {customer?.school && (
+                      {getSchoolName(customer) && (
                         <div className="truncate text-xs text-muted-foreground">
-                          {customer.school}
+                          {getSchoolName(customer)}
                         </div>
                       )}
                     </div>
-                    <StatusBadge status={s.status} className="shrink-0" />
+                    <StatusBadge schedule={s} className="shrink-0" />
                   </div>
                   <div className="mt-3 space-y-1.5 text-[13px] text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -1107,7 +1177,7 @@ const SchedulesPage = () => {
                                 : []),
                               ...customers.map((c) => ({
                                 value: c._id,
-                                label: `${c.className} – ${c.school}`,
+                                label: classLabel(c),
                               })),
                             ]}
                             value={field.value ?? ''}
@@ -1143,26 +1213,6 @@ const SchedulesPage = () => {
                             <p className="mt-1 text-xs text-destructive">Vui lòng chọn gói chụp.</p>
                           )}
                         </>
-                      )}
-                    />
-                  </FormField>
-                  <FormField label="Trạng thái">
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Select value={field.value ?? 'pending'} onValueChange={field.onChange}>
-                          <SelectTrigger className={cn(formFieldCls, 'bg-card')}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(statusLabel).map(([v, l]) => (
-                              <SelectItem key={v} value={v}>
-                                {l}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       )}
                     />
                   </FormField>
@@ -1430,9 +1480,38 @@ const SchedulesPage = () => {
               </FormField>
             </div>
 
-            <div className="flex shrink-0 justify-end gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
+              {editing && (
+                // Wrapper carries the tooltip: a disabled button receives no pointer events
+                <span
+                  className="mr-auto"
+                  title={hasUnsavedChanges ? 'Lưu thay đổi trước' : undefined}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={hasUnsavedChanges}
+                    className={cn(
+                      'px-2',
+                      !isScheduleCancelled(editing) &&
+                        'text-rose-600 hover:bg-rose-500/10 hover:text-rose-600',
+                    )}
+                    onClick={() => setCancelConfirmOpen(true)}
+                  >
+                    {isScheduleCancelled(editing) ? (
+                      <>
+                        <RotateCcw /> Khôi phục lịch
+                      </>
+                    ) : (
+                      <>
+                        <Ban /> Huỷ lịch
+                      </>
+                    )}
+                  </Button>
+                </span>
+              )}
               <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-                Huỷ
+                Đóng
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 <Check /> Lưu lịch chụp
@@ -1448,6 +1527,21 @@ const SchedulesPage = () => {
         title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá lịch chụp này? Thao tác sẽ xoá luôn folder ảnh trên Google Drive và dòng tương ứng trong Google Sheet quản lý."
         onConfirm={doDelete}
+      />
+
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title={editing && isScheduleCancelled(editing) ? 'Khôi phục lịch chụp' : 'Huỷ lịch chụp'}
+        message={
+          editing && isScheduleCancelled(editing)
+            ? 'Khôi phục lịch chụp này? Lịch sẽ được tính lại là lịch đang áp dụng của lớp.'
+            : 'Huỷ lịch chụp này? Lịch vẫn được giữ lại (có thể khôi phục), thợ chụp sẽ nhận thông báo huỷ.'
+        }
+        confirmLabel={editing && isScheduleCancelled(editing) ? 'Khôi phục' : 'Huỷ lịch'}
+        cancelLabel="Đóng"
+        destructive={!(editing && isScheduleCancelled(editing))}
+        onConfirm={doToggleCancel}
       />
 
       {/* Detail modal */}
@@ -1471,10 +1565,10 @@ const SchedulesPage = () => {
               return (
                 <>
                   <div className="shrink-0 border-b bg-gradient-to-b from-amber-50 to-card px-5 pb-5 pr-12 pt-5 dark:from-amber-500/10 sm:px-6">
-                    <StatusBadge status={detail.status} />
+                    <StatusBadge schedule={detail} />
                     <DialogTitle className="mt-2.5 text-2xl sm:text-[26px]">
                       {customer?.className ?? '—'}
-                      {customer?.school && <span> · {customer.school}</span>}
+                      {getSchoolName(customer) && <span> · {getSchoolName(customer)}</span>}
                     </DialogTitle>
                     <DialogDescription asChild>
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/80">

@@ -15,8 +15,9 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { transactionService } from '../services/transactionService';
-import { formatDate, formatCurrency } from '../utils/format';
+import { classLabel, formatDate, formatCurrency } from '../utils/format';
 import type { Transaction, TransactionResponse } from '../types';
+import { getSchoolName } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
@@ -393,7 +394,7 @@ const FinancePage = () => {
       key: 'school',
       header: 'Trường',
       className: 'text-muted-foreground',
-      render: (row) => row.customer?.school,
+      render: (row) => getSchoolName(row.customer),
     },
     {
       key: 'income',
@@ -546,7 +547,7 @@ const FinancePage = () => {
               { value: '', label: 'Tất cả lớp' },
               ...customers.map((c) => ({
                 value: c._id,
-                label: `${c.className} - ${c.school}`,
+                label: classLabel(c, ' - '),
               })),
             ]}
             value={filter.customer}
@@ -755,10 +756,10 @@ const FinancePage = () => {
                 <div className="font-semibold mb-0.5">
                   {row.customer?.className ?? '(Không có lớp)'}
                 </div>
-                {row.customer?.school && (
+                {getSchoolName(row.customer) && (
                   <div className="text-sm text-muted-foreground mb-2 inline-flex items-center gap-1.5">
                     <School className="h-4 w-4 text-sky-500" />
-                    <span>{row.customer.school}</span>
+                    <span>{getSchoolName(row.customer)}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-3 gap-2 text-center text-sm">
@@ -904,7 +905,7 @@ const FinancePage = () => {
                     <Combobox
                       options={customers.map((c) => ({
                         value: c._id,
-                        label: `${c.className} – ${c.school}`,
+                        label: classLabel(c),
                       }))}
                       value={value}
                       onChange={(v) => field.onChange(v || undefined)}

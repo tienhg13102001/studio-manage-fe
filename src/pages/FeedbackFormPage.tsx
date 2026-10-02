@@ -18,13 +18,14 @@ import axios from 'axios';
 import Logo from '../components/atoms/Logo';
 import { Button, Combobox, Input, PageLoader, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { getSchoolName, type SchoolRef } from '../types';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
 interface ClassInfo {
   _id: string;
   className: string;
-  school?: string;
+  schoolId?: SchoolRef | null;
 }
 
 interface FormValues {
@@ -302,7 +303,7 @@ const FeedbackFormPage = () => {
         </p>
         <h1 className="mt-1.5 font-display text-2xl font-bold leading-tight">
           {fixedClass
-            ? [fixedClass.className, fixedClass.school].filter(Boolean).join(' · ')
+            ? [fixedClass.className, getSchoolName(fixedClass)].filter(Boolean).join(' · ')
             : 'Gửi phản hồi'}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
@@ -321,7 +322,7 @@ const FeedbackFormPage = () => {
             <Combobox
               options={classes.map((c) => ({
                 value: c._id,
-                label: c.school ? `${c.className} — ${c.school}` : c.className,
+                label: getSchoolName(c) ? `${c.className} — ${getSchoolName(c)}` : c.className,
               }))}
               value={selectedCustomerId}
               onChange={(v) => setValue('customer', v, { shouldValidate: true })}

@@ -1,3 +1,5 @@
+import type { CustomerStatus } from '../types';
+
 export const MONTH_VN = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
 
 export const DOW_VN = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -22,16 +24,19 @@ export const shortLabel = (label: string) => {
   return MONTH_LABELS[mo] ?? label;
 };
 
-export const SCHEDULE_STATUS_LABEL: Record<string, string> = {
-  pending: 'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã huỷ',
-};
+/** Class (pipeline) statuses that a shoot schedule can be in — used for filters & count chips. */
+export const SCHEDULE_CUSTOMER_STATUSES: CustomerStatus[] = [
+  'deposited',
+  'scheduled',
+  'shot',
+  'awaiting_print',
+  'done',
+  'lost',
+];
 
-export const SCHEDULE_STATUS_COLOR: Record<string, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-800',
-  confirmed: 'bg-blue-500/10 text-blue-800',
-  completed: 'bg-green-500/10 text-green-800',
-  cancelled: 'bg-red-500/10 text-red-800',
-};
+/** Filter value for cancelled schedules (the only schedule-level status). */
+export const SCHEDULE_CANCELLED = 'cancelled';
+export const SCHEDULE_CANCELLED_LABEL = 'Đã huỷ';
+
+export const isScheduleCancelled = (s: { status?: string } | null | undefined) =>
+  s?.status === SCHEDULE_CANCELLED;

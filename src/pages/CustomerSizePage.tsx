@@ -27,7 +27,7 @@ import { customerService } from '../services/customerService';
 import { studentService } from '../services/studentService';
 import { scheduleService } from '../services/scheduleService';
 import { useAppSelector } from '../store';
-import { CUSTOMER_STATUS_ORDER } from '../types';
+import { CUSTOMER_STATUS_ORDER, getSchoolName } from '../types';
 import type { Customer, ScheduleResponse, Student, StudentResponse } from '../types';
 import {
   Badge,
@@ -241,7 +241,7 @@ const CustomerSizePage = () => {
     const info = `
 Ngày chụp: ${schedule ? formatDate(schedule.shootDate) : 'N/A'}
 Lớp: ${selectedCustomer?.className}
-Trường: ${selectedCustomer?.school ?? 'N/A'}
+Trường: ${getSchoolName(selectedCustomer) || 'N/A'}
 Sĩ số nam: ${totalMale}
 Sĩ số nữ: ${totalFemale}
 Người nhận đồ: ${selectedCustomer?.contactName}
@@ -262,7 +262,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
   const handleExportExcel = async () => {
     if (!selectedCustomer || students.length === 0) return;
 
-    const className = `${selectedCustomer.className}${selectedCustomer.school ? ' - ' + selectedCustomer.school : ''}`;
+    const className = `${selectedCustomer.className}${getSchoolName(selectedCustomer) ? ' - ' + getSchoolName(selectedCustomer) : ''}`;
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Học sinh');
@@ -579,7 +579,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             className="pl-9 max-md:h-[42px] max-md:bg-muted max-md:font-semibold"
             options={customers.map((c) => ({
               value: c._id,
-              label: `${c.className}${c.school ? ` · ${c.school}` : ''}`,
+              label: `${c.className}${getSchoolName(c) ? ` · ${getSchoolName(c)}` : ''}`,
             }))}
             value={selectedCustomer?._id ?? ''}
             onChange={(v) => setSelectedCustomer(customers.find((c) => c._id === v) ?? null)}

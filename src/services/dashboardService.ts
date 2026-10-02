@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse } from '../types';
+import type { ApiResponse, CustomerStatus, ScheduleStatus, SchoolRef } from '../types';
 
 export interface UpcomingSchedule {
   _id: string;
@@ -7,8 +7,13 @@ export interface UpcomingSchedule {
   startTime?: string;
   endTime?: string;
   location?: string;
-  status: string;
-  customer?: { _id: string; className: string; school?: string };
+  status: ScheduleStatus;
+  customer?: {
+    _id: string;
+    className: string;
+    schoolId?: SchoolRef | null;
+    status?: CustomerStatus;
+  };
   leadPhotographer?: { _id: string; name?: string; username: string };
 }
 

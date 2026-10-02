@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { scheduleService } from '../../services/scheduleService';
 import type { ScheduleResponse } from '../../types';
+import { getSchoolName } from '../../types';
 
 const CONTRACT_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbzgl6HRhrlbo_nf_ZgmIXxeWRGgd7OlGMdMm2JQ0QISTQ0Z_ZHTb0E6W-DS1LRFSmw/exec';
@@ -101,7 +102,14 @@ const ContractForm = ({
   } = useForm<ContractFormValues>({ defaultValues: toFormValues(schedule) });
 
   const onSubmit = async (formData: ContractFormValues) => {
-    const payload = { ...schedule, ...formData };
+    // Apps Script (Code_create_HD.gs) vẫn đọc `customer.school` dạng chuỗi
+    const payload = {
+      ...schedule,
+      ...formData,
+      customer: schedule.customer
+        ? { ...schedule.customer, school: getSchoolName(schedule.customer) }
+        : schedule.customer,
+    };
     try {
       const res = await fetch(CONTRACT_SCRIPT_URL, {
         method: 'POST',
@@ -290,7 +298,7 @@ const ContractDialog = ({ schedule, onClose, onCreated }: ContractDialogProps) =
           <DialogTitle>Xác nhận thông tin hợp đồng</DialogTitle>
           <DialogDescription className="mt-0.5 truncate text-[13px]">
             {schedule?.customer?.className}
-            {schedule?.customer?.school ? ` — ${schedule.customer.school}` : ''}
+            {getSchoolName(schedule?.customer) ? ` — ${getSchoolName(schedule?.customer)}` : ''}
           </DialogDescription>
         </div>
       </div>

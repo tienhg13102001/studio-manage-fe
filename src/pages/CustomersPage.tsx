@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  School,
   Search,
   SlidersHorizontal,
   StickyNote,
@@ -22,13 +23,14 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchSales } from '../store/slices/usersSlice';
 import { useAuth } from '../context/AuthContext';
-import type { Customer, CustomerStatus, CustomerStatusCounts } from '../types';
+import type { Customer, CustomerStatus, CustomerStatusCounts, SchoolRef } from '../types';
 import {
   CUSTOMER_STATUSES,
   CUSTOMER_STATUS_LABELS,
   CUSTOMER_STATUS_VARIANT,
   getCustomerStatus,
   getUserRefName,
+  getSchoolName,
 } from '../types';
 import { cn } from '@/lib/utils';
 import {
@@ -44,18 +46,14 @@ import {
   Input,
   PageHeader,
   SearchInput,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Spinner,
   TableSkeleton,
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
 import CustomerFormDialog from '../components/organisms/CustomerFormDialog';
+import SchoolCombobox from '../components/organisms/SchoolCombobox';
 
-const ALL = '__all__';
+const SEARCH_DEBOUNCE_MS = 400;
 
 const StatusBadge = ({ customer }: { customer: Customer }) => {
   const status = getCustomerStatus(customer);
@@ -85,6 +83,7 @@ const CustomersPage = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<CustomerStatus | ''>('');
   const [mine, setMine] = useState(false);
+  const [schoolFilter, setSchoolFilter] = useState<SchoolRef | null>(null);
   const [counts, setCounts] = useState<CustomerStatusCounts | null>(null);
   /** Mobile "Tải thêm lớp": pages appended after the current redux page. */
   const [extra, setExtra] = useState<Customer[]>([]);
@@ -106,6 +105,7 @@ const CustomersPage = () => {
     if (selectedSeasonId) params.season = selectedSeasonId;
     if (statusFilter) params.status = statusFilter;
     if (mine) params.assignedSale = 'me';
+    if (schoolFilter) params.schoolId = schoolFilter._id;
     return params;
   };
 
@@ -113,16 +113,29 @@ const CustomersPage = () => {
     const params: Record<string, string> = {};
     if (selectedSeasonId) params.season = selectedSeasonId;
     if (mine) params.assignedSale = 'me';
+    if (schoolFilter) params.schoolId = schoolFilter._id;
     customerService
       .getStatusCounts(params)
       .then(setCounts)
       .catch(() => setCounts(null));
   };
 
+  // Auto-search while typing; Enter / clear apply immediately (setting appliedSearch cancels this)
   useEffect(() => {
-    dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+    if (search === appliedSearch) return;
+    const timer = setTimeout(() => {
+      setPage(1);
+      setAppliedSearch(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [search, appliedSearch]);
+
+  useEffect(() => {
+    // Abort the previous request so a slow, stale response can't overwrite newer results
+    const request = dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+    return () => request.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine]);
+  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine, schoolFilter]);
 
   const resetExtra = () => {
     loadMoreToken.current += 1;
@@ -137,7 +150,16 @@ const CustomersPage = () => {
   // in-flight loads. Edit/delete keep them and patch `extra` locally instead.
   useEffect(() => {
     resetExtra();
-  }, [appliedSearch, statusFilter, mine, selectedSeasonId, page, pageSize, extraEpoch]);
+  }, [
+    appliedSearch,
+    statusFilter,
+    mine,
+    schoolFilter,
+    selectedSeasonId,
+    page,
+    pageSize,
+    extraEpoch,
+  ]);
 
   useEffect(() => {
     if (isAdmin) dispatch(fetchSales());
@@ -146,7 +168,12 @@ const CustomersPage = () => {
   useEffect(() => {
     loadCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSeasonId, mine]);
+  }, [selectedSeasonId, mine, schoolFilter]);
+
+  const changeSchoolFilter = (school: SchoolRef | null) => {
+    setPage(1);
+    setSchoolFilter(school);
+  };
 
   const changeStatusFilter = (st: CustomerStatus | '') => {
     setPage(1);
@@ -271,7 +298,7 @@ const CustomersPage = () => {
         const row = ws.addRow([
           i + 1,
           c.className,
-          c.school ?? '',
+          getSchoolName(c),
           CUSTOMER_STATUS_LABELS[getCustomerStatus(c)],
           getUserRefName(c.assignedSale) ?? '',
           c.contactName ?? '',
@@ -375,12 +402,12 @@ const CustomersPage = () => {
             onClick={() => setFilterOpen(true)}
           >
             <SlidersHorizontal />
-            {(statusFilter || mine) && (
+            {(statusFilter || mine || schoolFilter) && (
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             )}
           </Button>
         </div>
-        {(statusFilter || mine) && (
+        {(statusFilter || mine || schoolFilter) && (
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
             {statusFilter && (
               <button
@@ -397,6 +424,18 @@ const CustomersPage = () => {
                   {CUSTOMER_STATUS_LABELS[statusFilter]}
                 </Badge>
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            )}
+            {schoolFilter && (
+              <button
+                type="button"
+                onClick={() => changeSchoolFilter(null)}
+                aria-label={`Bỏ lọc trường ${schoolFilter.name}`}
+                className="inline-flex h-[34px] max-w-[240px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
+              >
+                <School className="h-[15px] w-[15px] shrink-0 text-muted-foreground" />
+                <span className="truncate">{schoolFilter.name}</span>
+                <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </button>
             )}
             {mine && (
@@ -457,22 +496,12 @@ const CustomersPage = () => {
             setPage(1);
           }}
         />
-        <Select
-          value={statusFilter || ALL}
-          onValueChange={(v) => changeStatusFilter(v === ALL ? '' : (v as CustomerStatus))}
-        >
-          <SelectTrigger className="h-[38px] w-[190px] rounded-[10px] border-border bg-card shadow-none">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {CUSTOMER_STATUSES.map((st) => (
-              <SelectItem key={st} value={st}>
-                {CUSTOMER_STATUS_LABELS[st]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SchoolCombobox
+          allLabel="Tất cả trường"
+          value={schoolFilter}
+          onChange={changeSchoolFilter}
+          className="h-[38px] w-[220px] rounded-[10px] border-border bg-card shadow-none"
+        />
         <Button
           type="button"
           variant="outline"
@@ -525,8 +554,10 @@ const CustomersPage = () => {
                       >
                         {c.className}
                       </Link>
-                      {c.school && (
-                        <span className="block text-xs text-muted-foreground">{c.school}</span>
+                      {getSchoolName(c) && (
+                        <span className="block text-xs text-muted-foreground">
+                          {getSchoolName(c)}
+                        </span>
                       )}
                     </div>
                   ),
@@ -671,9 +702,9 @@ const CustomersPage = () => {
                       >
                         Lớp {code}
                       </Link>
-                      {c.school && (
+                      {getSchoolName(c) && (
                         <span className="block truncate text-[12.5px] text-muted-foreground">
-                          {c.school}
+                          {getSchoolName(c)}
                         </span>
                       )}
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1">
@@ -857,6 +888,16 @@ const CustomersPage = () => {
             })}
           </div>
           <div className="h-px bg-border" />
+          <span className="block text-[11px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
+            Trường
+          </span>
+          <SchoolCombobox
+            allLabel="Tất cả trường"
+            value={schoolFilter}
+            onChange={changeSchoolFilter}
+            className="h-[42px] rounded-[10px] bg-card shadow-none"
+          />
+          <div className="h-px bg-border" />
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/15 text-primary-700 dark:text-primary">
               <UserCheck className="h-[17px] w-[17px]" />
@@ -894,11 +935,12 @@ const CustomersPage = () => {
               type="button"
               variant="outline"
               className="h-[42px]"
-              disabled={!statusFilter && !mine}
+              disabled={!statusFilter && !mine && !schoolFilter}
               onClick={() => {
                 setPage(1);
                 setStatusFilter('');
                 setMine(false);
+                setSchoolFilter(null);
               }}
             >
               <RotateCcw />

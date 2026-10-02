@@ -20,10 +20,24 @@ export interface User {
   createdAt?: string;
 }
 
+/** School as populated on a class (`customer.schoolId`). */
+export interface SchoolRef {
+  _id: string;
+  name: string;
+  address?: string;
+}
+
+export interface School extends SchoolRef {
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Customer {
   _id: string;
   className: string;
-  school?: string;
+  /** Populated `{ _id, name, address }` in responses; plain id in create/update payloads. */
+  schoolId?: string | SchoolRef | null;
   contactName: string;
   contactPhone: string;
   contactAddress: string;
@@ -108,6 +122,14 @@ export const getCustomerStatus = (c: Pick<Customer, 'status'> | null | undefined
 /** Display name of a (possibly unpopulated) user reference. */
 export const getUserRefName = (u: string | CustomerSaleRef | null | undefined): string | null =>
   u && typeof u === 'object' ? u.name || u.username : null;
+
+/** School name of a class ('' when none) — use instead of reading `schoolId` directly. */
+export const getSchoolName = (c: Pick<Customer, 'schoolId'> | null | undefined): string =>
+  c?.schoolId && typeof c.schoolId === 'object' ? c.schoolId.name : '';
+
+/** School id of a class (populated or not). */
+export const getSchoolId = (c: Pick<Customer, 'schoolId'> | null | undefined): string | null =>
+  !c?.schoolId ? null : typeof c.schoolId === 'object' ? c.schoolId._id : c.schoolId;
 
 /** Id of a (possibly populated) user reference. */
 export const getUserRefId = (u: string | CustomerSaleRef | null | undefined): string | null =>
@@ -195,6 +217,8 @@ export interface ExtraService {
   note?: string;
 }
 
+export type ScheduleStatus = 'active' | 'cancelled';
+
 /**
  * Schedule model — relations are stored as ObjectId strings.
  * Use this type for create/update payloads.
@@ -212,7 +236,8 @@ export interface Schedule {
   leadPhotographer: string | null;
   supportPhotographers: string[];
   bookedBy: string | null;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  /** Only a cancel flag — the displayed status is the class pipeline status (`customer.status`). */
+  status: ScheduleStatus;
   notes?: string;
   season?: string | null;
   contractUrl?: string;
@@ -347,7 +372,7 @@ export interface PublicScheduleResponse {
   endTime?: string;
   location?: string;
   status: Schedule['status'];
-  customer: Pick<Customer, '_id' | 'className' | 'school'>;
+  customer: Pick<Customer, '_id' | 'className' | 'schoolId'>;
   costumes: Costume[];
   package: {
     _id: string;

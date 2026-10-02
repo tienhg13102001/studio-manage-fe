@@ -35,7 +35,7 @@ import { toast } from 'react-toastify';
 import { customerService } from '../services/customerService';
 import { scheduleService } from '../services/scheduleService';
 import { transactionService } from '../services/transactionService';
-import { formatDate, formatDateTime, formatCurrency } from '../utils/format';
+import { classLabel, formatDate, formatDateTime, formatCurrency } from '../utils/format';
 import type {
   Customer,
   CustomerActivity,
@@ -52,8 +52,9 @@ import {
   getCustomerStatus,
   getUserRefId,
   getUserRefName,
+  getSchoolName,
 } from '../types';
-import { SCHEDULE_STATUS_LABEL } from '../utils/scheduleConstants';
+import { SCHEDULE_CANCELLED_LABEL, isScheduleCancelled } from '../utils/scheduleConstants';
 import {
   Badge,
   Button,
@@ -84,13 +85,6 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
 import { cn } from '@/lib/utils';
-
-const STATUS_VARIANT = {
-  pending: 'warning',
-  confirmed: 'info',
-  completed: 'success',
-  cancelled: 'danger',
-} as const;
 
 const Fact = ({
   icon,
@@ -391,7 +385,8 @@ const CustomerDetailPage = () => {
     if (!id) return;
     Promise.all([
       customerService.getOne(id),
-      scheduleService.getAll({ customer: id, limit: 100 }),
+      // Include cancelled schedules so the class history shows them (marked "Đã huỷ")
+      scheduleService.getAll({ customer: id, limit: 100, includeCancelled: 'true' }),
       transactionService.getAll({ customer: id, limit: 100 }),
     ])
       .then(([c, s, t]) => {
@@ -492,7 +487,7 @@ const CustomerDetailPage = () => {
   const canNote = isAdmin || isAssigned || (!assignedId && isSaleRole);
 
   // Cancelled schedules don't count: the main schedule is the first non-cancelled one.
-  const activeSchedules = schedules.filter((s) => s.status !== 'cancelled');
+  const activeSchedules = schedules.filter((s) => !isScheduleCancelled(s));
   const mainSchedule = activeSchedules[0] ?? null;
   const needsContract = status === 'deposited' && !!mainSchedule && !mainSchedule.contractUrl;
   const linkSchedules = schedules.filter((s) => s.driveFolderUrl || s.contractUrl);
@@ -530,7 +525,7 @@ const CustomerDetailPage = () => {
     openCreate: true,
     customer: {
       _id: customer._id,
-      label: `${customer.className} – ${customer.school}`,
+      label: classLabel(customer),
       season: customer.season ?? null,
     },
   };
@@ -564,7 +559,7 @@ const CustomerDetailPage = () => {
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <School className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    {customer.school}
+                    {getSchoolName(customer)}
                     {seasonName ? ` · ${seasonName}` : ''}
                   </span>
                 </p>
@@ -880,7 +875,10 @@ const CustomerDetailPage = () => {
           schedules.map((s) => {
             const d = new Date(s.shootDate);
             return (
-              <Card key={s._id} className="rounded-[14px] shadow-none">
+              <Card
+                key={s._id}
+                className={cn('rounded-[14px] shadow-none', isScheduleCancelled(s) && 'opacity-60')}
+              >
                 <CardContent className="flex gap-3.5 p-3.5">
                   <div className="flex h-[52px] w-12 shrink-0 flex-col items-center justify-center rounded-[10px] border bg-muted">
                     <span className="text-[10px] font-bold leading-tight text-primary-700 dark:text-primary">
@@ -915,9 +913,12 @@ const CustomerDetailPage = () => {
                         </>
                       )}
                     </p>
-                    <Badge variant={STATUS_VARIANT[s.status]} dot>
-                      {SCHEDULE_STATUS_LABEL[s.status]}
-                    </Badge>
+                    {/* Class status is already shown in the page header — only flag cancelled */}
+                    {isScheduleCancelled(s) && (
+                      <Badge variant="danger" dot>
+                        {SCHEDULE_CANCELLED_LABEL}
+                      </Badge>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -933,6 +934,7 @@ const CustomerDetailPage = () => {
           data={schedules}
           keyExtractor={(s) => s._id}
           emptyTitle="Chưa có lịch"
+          rowClassName={(s) => (isScheduleCancelled(s) ? 'opacity-60' : '')}
           columns={[
             { key: 'date', header: 'Ngày', render: (s) => formatDate(s.shootDate) },
             {
@@ -982,11 +984,14 @@ const CustomerDetailPage = () => {
             {
               key: 'status',
               header: 'Trạng thái',
-              render: (s) => (
-                <Badge variant={STATUS_VARIANT[s.status]} dot>
-                  {SCHEDULE_STATUS_LABEL[s.status]}
-                </Badge>
-              ),
+              render: (s) =>
+                isScheduleCancelled(s) ? (
+                  <Badge variant="danger" dot>
+                    {SCHEDULE_CANCELLED_LABEL}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
             } satisfies Column<ScheduleResponse>,
           ]}
         />
@@ -1144,7 +1149,7 @@ const CustomerDetailPage = () => {
             <DialogTitle>Thêm ghi chú</DialogTitle>
             <DialogDescription className="mt-1">
               Lớp {customer.className}
-              {customer.school ? ` — ${customer.school}` : ''}
+              {getSchoolName(customer) ? ` — ${getSchoolName(customer)}` : ''}
             </DialogDescription>
           </div>
           <Textarea

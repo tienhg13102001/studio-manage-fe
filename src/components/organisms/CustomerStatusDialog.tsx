@@ -29,6 +29,7 @@ import {
   CUSTOMER_STATUS_VARIANT,
   getCustomerStatus,
   getUserRefId,
+  getSchoolName,
 } from '../../types';
 import { formatCurrency } from '../../utils/format';
 
@@ -180,7 +181,7 @@ const CustomerStatusDialog = ({
               )}
               <span className="truncate text-muted-foreground">
                 · Lớp {customer.className}
-                {customer.school ? ` — ${customer.school}` : ''}
+                {getSchoolName(customer) ? ` — ${getSchoolName(customer)}` : ''}
               </span>
             </div>
           </DialogDescription>

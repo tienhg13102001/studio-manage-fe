@@ -27,7 +27,13 @@ import {
 } from 'recharts';
 import type { UpcomingSchedule } from '../services/dashboardService';
 import { formatCurrency, formatDate } from '../utils/format';
-import { SCHEDULE_STATUS_LABEL } from '../utils/scheduleConstants';
+import { SCHEDULE_CANCELLED_LABEL, isScheduleCancelled } from '../utils/scheduleConstants';
+import {
+  CUSTOMER_STATUS_LABELS,
+  CUSTOMER_STATUS_VARIANT,
+  getCustomerStatus,
+  getSchoolName,
+} from '../types';
 import { ScheduleCalendar } from '../components/organisms';
 import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -44,18 +50,18 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-const STATUS_BADGE: Record<string, 'warning' | 'info' | 'success' | 'danger'> = {
-  pending: 'warning',
-  confirmed: 'info',
-  completed: 'success',
-  cancelled: 'danger',
-};
-
 const ScheduleItem = ({ s }: { s: UpcomingSchedule }) => {
   const d = new Date(s.shootDate);
   const time = `${s.startTime ?? '—'}${s.endTime ? ` – ${s.endTime}` : ''}`;
+  const cancelled = isScheduleCancelled(s);
+  const status = getCustomerStatus(s.customer);
   return (
-    <div className="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0">
+    <div
+      className={cn(
+        'flex items-start gap-3 py-3.5 first:pt-0 last:pb-0',
+        cancelled && 'opacity-60',
+      )}
+    >
       <div className="flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-[10px] border bg-muted/40">
         <span className="text-[10px] font-bold uppercase leading-none text-primary-700 dark:text-primary">
           Th{d.getMonth() + 1}
@@ -67,7 +73,7 @@ const ScheduleItem = ({ s }: { s: UpcomingSchedule }) => {
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">
           {s.customer?.className ?? '—'}
-          {s.customer?.school && <span> · {s.customer.school}</span>}
+          {getSchoolName(s.customer) && <span> · {getSchoolName(s.customer)}</span>}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
@@ -87,8 +93,12 @@ const ScheduleItem = ({ s }: { s: UpcomingSchedule }) => {
             </span>
           )}
         </div>
-        <Badge variant={STATUS_BADGE[s.status] ?? 'neutral'} dot className="mt-1.5">
-          {SCHEDULE_STATUS_LABEL[s.status] ?? s.status}
+        <Badge
+          variant={cancelled ? 'danger' : CUSTOMER_STATUS_VARIANT[status]}
+          dot
+          className="mt-1.5"
+        >
+          {cancelled ? SCHEDULE_CANCELLED_LABEL : CUSTOMER_STATUS_LABELS[status]}
         </Badge>
       </div>
     </div>
@@ -133,7 +143,8 @@ const DashboardPage = () => {
         startTime: s.startTime,
         endTime: s.endTime,
         location: s.location,
-        status: s.status,
+        status: s.customer?.status,
+        cancelled: isScheduleCancelled(s),
         className: s.customer?.className ?? '—',
         leadName: s.leadPhotographer
           ? (s.leadPhotographer.name ?? s.leadPhotographer.username)

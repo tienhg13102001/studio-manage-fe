@@ -32,6 +32,7 @@ import { customerService } from '../services/customerService';
 import { feedbackService } from '../services/feedbackService';
 import { packageService } from '../services/packageService';
 import type { Package } from '../types';
+import { getSchoolName } from '../types';
 
 /* ── Design tokens ───────────────────────────────
    Playful editorial palette from design/untitled.pen.
@@ -336,7 +337,7 @@ const PortfolioPage = () => {
       .listPublic()
       .then((list) => {
         setClassCount(list.length);
-        setSchoolCount(new Set(list.map((c) => (c.school || '').trim()).filter(Boolean)).size);
+        setSchoolCount(new Set(list.map((c) => getSchoolName(c).trim()).filter(Boolean)).size);
       })
       .catch(() => {
         setClassCount(0);
