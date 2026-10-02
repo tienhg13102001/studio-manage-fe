@@ -404,7 +404,7 @@ const CrewEditor = ({
           className={cn(
             'flex flex-col gap-0 overflow-hidden p-0',
             isDesktop
-              ? 'max-h-[calc(100dvh-2rem)] max-w-[372px] rounded-[14px] [&>button]:hidden'
+              ? 'max-h-[calc(100dvh-2rem)] max-w-[372px] rounded-[14px] [&>button:last-child]:hidden'
               : cn(SHEET_CONTENT_CLS, 'overflow-hidden px-0 pb-[env(safe-area-inset-bottom)]'),
           )}
         >

@@ -128,7 +128,7 @@ export const moveBlockReason = (
 
 /** Bottom-sheet look for Radix Dialog content on mobile (same as the customers filter sheet). */
 export const SHEET_CONTENT_CLS =
-  'inset-x-0 bottom-0 left-0 top-auto max-h-[calc(100dvh-2rem)] max-w-none translate-x-0 translate-y-0 gap-4 overflow-y-auto rounded-none rounded-t-[24px] border-0 bg-card px-4 pb-[calc(30px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-12px_40px_rgba(15,23,42,0.18)] duration-300 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-bottom-full data-[state=closed]:!zoom-out-100 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-bottom-full data-[state=open]:!zoom-in-100 sm:rounded-none sm:rounded-t-[24px] [&>button]:hidden';
+  'inset-x-0 bottom-0 left-0 top-auto max-h-[calc(100dvh-2rem)] max-w-none translate-x-0 translate-y-0 gap-4 overflow-y-auto rounded-none rounded-t-[24px] border-0 bg-card px-4 pb-[calc(30px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-12px_40px_rgba(15,23,42,0.18)] duration-300 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-bottom-full data-[state=closed]:!zoom-out-100 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-bottom-full data-[state=open]:!zoom-in-100 sm:rounded-none sm:rounded-t-[24px] [&>button:last-child]:hidden';
 
 export const apiErrorMessage = (err: unknown, fallback = 'Có lỗi xảy ra, vui lòng thử lại.') =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;

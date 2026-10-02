@@ -53,7 +53,7 @@ const PIPELINE_FIELDS = [
 
 /* Mobile (< md) styling — desktop keeps the regular centered modal + grid untouched. */
 const sheetCls =
-  'max-md:inset-0 max-md:left-0 max-md:top-0 max-md:translate-x-0 max-md:translate-y-0 max-md:!max-w-none max-md:h-[100dvh] max-md:max-h-none max-md:flex max-md:flex-col max-md:gap-0 max-md:overflow-hidden max-md:!rounded-none max-md:border-0 max-md:p-0 max-md:shadow-none max-md:bg-[var(--page-bg)] max-md:data-[state=open]:slide-in-from-left-0 max-md:data-[state=open]:slide-in-from-top-0 max-md:data-[state=open]:slide-in-from-bottom-8 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:slide-out-to-left-0 max-md:data-[state=closed]:slide-out-to-top-0 max-md:data-[state=closed]:slide-out-to-bottom-8 max-md:data-[state=closed]:zoom-out-100 max-md:[&>button]:hidden';
+  'max-md:inset-0 max-md:left-0 max-md:top-0 max-md:translate-x-0 max-md:translate-y-0 max-md:!max-w-none max-md:h-[100dvh] max-md:max-h-none max-md:flex max-md:flex-col max-md:gap-0 max-md:overflow-hidden max-md:!rounded-none max-md:border-0 max-md:p-0 max-md:shadow-none max-md:bg-[var(--page-bg)] max-md:data-[state=open]:slide-in-from-left-0 max-md:data-[state=open]:slide-in-from-top-0 max-md:data-[state=open]:slide-in-from-bottom-8 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:slide-out-to-left-0 max-md:data-[state=closed]:slide-out-to-top-0 max-md:data-[state=closed]:slide-out-to-bottom-8 max-md:data-[state=closed]:zoom-out-100 max-md:[&>button:last-child]:hidden';
 const fieldCls =
   'max-md:space-y-[7px] max-md:[&>label]:text-[12.5px] max-md:[&>label]:font-semibold max-md:[&>label]:text-[var(--text-muted)]';
 const sectionCls =
