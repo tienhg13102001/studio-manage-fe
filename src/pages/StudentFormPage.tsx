@@ -55,7 +55,7 @@ const PageShell = ({ children, sheet }: { children: React.ReactNode; sheet?: boo
   </div>
 );
 
-const inputCls = 'h-[46px] rounded-xl bg-card px-3.5 text-[15px]';
+const inputCls = 'h-[46px] rounded-xl bg-card px-3.5';
 
 const StudentFormPage = () => {
   const { customer } = useParams<{ customer: string }>();
@@ -361,7 +361,7 @@ const StudentFormPage = () => {
             id="notes"
             rows={3}
             placeholder="Tuỳ chọn…"
-            className="rounded-xl bg-card px-3.5 py-3 text-[15px]"
+            className="rounded-xl bg-card px-3.5 py-3"
             {...register('notes')}
           />
         </FormField>

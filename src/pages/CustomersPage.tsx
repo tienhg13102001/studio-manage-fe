@@ -377,7 +377,7 @@ const CustomersPage = () => {
             <Input
               type="search"
               enterKeyHint="search"
-              className="h-[42px] rounded-[10px] bg-card pl-9 pr-9 text-[13px] [&::-webkit-search-cancel-button]:hidden"
+              className="h-[42px] rounded-[10px] bg-card pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
               placeholder="Tìm kiếm lớp, trường…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

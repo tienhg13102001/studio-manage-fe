@@ -559,7 +559,7 @@ const ContractForm = (props: ContractFormProps) => {
                             })}
                             placeholder="Tên dịch vụ"
                             aria-invalid={!!rowErrors?.name || undefined}
-                            className={cn('h-9 text-sm', rowErrors?.name && 'border-destructive')}
+                            className={cn('h-9', rowErrors?.name && 'border-destructive')}
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -575,7 +575,7 @@ const ContractForm = (props: ContractFormProps) => {
                             min={0}
                             aria-invalid={!!rowErrors?.quantity || undefined}
                             className={cn(
-                              'h-9 text-sm tabular',
+                              'h-9 tabular',
                               rowErrors?.quantity && 'border-destructive',
                             )}
                           />
@@ -593,7 +593,7 @@ const ContractForm = (props: ContractFormProps) => {
                             min={0}
                             aria-invalid={!!rowErrors?.unitPrice || undefined}
                             className={cn(
-                              'h-9 text-sm tabular',
+                              'h-9 tabular',
                               rowErrors?.unitPrice && 'border-destructive',
                             )}
                           />

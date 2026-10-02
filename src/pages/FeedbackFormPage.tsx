@@ -122,7 +122,7 @@ const RatingTiles = ({ value, onChange }: { value: number; onChange: (v: number)
   </div>
 );
 
-const textareaCls = 'resize-none rounded-xl bg-muted/60 px-3.5 py-3 text-sm';
+const textareaCls = 'resize-none rounded-xl bg-muted/60 px-3.5 py-3';
 
 const FeedbackFormPage = () => {
   const { customer: paramCustomerId } = useParams<{ customer: string }>();
@@ -423,7 +423,7 @@ const FeedbackFormPage = () => {
           <Input
             type="tel"
             placeholder="Để chúng tôi có thể liên hệ lại nếu cần"
-            className="h-[46px] rounded-xl bg-muted/60 px-3.5 text-sm"
+            className="h-[46px] rounded-xl bg-muted/60 px-3.5"
             {...register('phone')}
           />
           <p className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">

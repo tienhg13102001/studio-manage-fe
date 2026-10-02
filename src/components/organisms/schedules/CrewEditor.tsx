@@ -267,7 +267,7 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm thợ chụp..."
-              className="h-9 rounded-[10px] border-transparent bg-muted pl-9 text-base shadow-none sm:text-sm"
+              className="h-9 rounded-[10px] border-transparent bg-muted pl-9 shadow-none"
             />
           </div>
           <div className="space-y-1">

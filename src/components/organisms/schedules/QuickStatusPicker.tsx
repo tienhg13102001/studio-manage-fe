@@ -227,7 +227,6 @@ const QuickStatusBody = ({
               rows={3}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="text-base sm:text-sm"
             />
             <p className="text-xs text-muted-foreground">
               Bắt buộc · lưu vào lịch sử chăm sóc của lớp

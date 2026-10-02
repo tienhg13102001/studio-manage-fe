@@ -1354,7 +1354,7 @@ const WaveHand = ({ reduceMotion }: { reduceMotion: boolean }) => (
 );
 
 const inputClass =
-  'w-full rounded-xl border border-[#EAE7E1] dark:border-[#2A2723] bg-transparent px-4 py-2.5 text-[15px] outline-none focus:border-[#12100E] dark:focus:border-[#F3EFE9] transition placeholder:text-[#B8B4AD] dark:placeholder:text-[#6B675F]';
+  'w-full rounded-xl border border-[#EAE7E1] dark:border-[#2A2723] bg-transparent px-4 py-2.5 text-base md:text-[15px] outline-none focus:border-[#12100E] dark:focus:border-[#F3EFE9] transition placeholder:text-[#B8B4AD] dark:placeholder:text-[#6B675F]';
 
 const FieldWrap = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex flex-col gap-2">

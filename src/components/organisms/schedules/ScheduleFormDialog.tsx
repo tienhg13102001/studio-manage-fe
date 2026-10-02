@@ -175,7 +175,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm trang phục..."
-              className="h-9 bg-card pl-8 text-base sm:text-sm"
+              className="h-9 bg-card pl-8"
             />
           </div>
           <div className="inline-flex items-center gap-0.5 rounded-[9px] bg-muted p-[3px] text-xs">
@@ -780,7 +780,7 @@ const ScheduleFormDialog = ({
                               <Input
                                 {...register(`extraServices.${idx}.name`)}
                                 placeholder="Tên dịch vụ"
-                                className="h-9 text-sm"
+                                className="h-9"
                               />
                             </td>
                             <td className="px-3 py-2">
@@ -790,7 +790,7 @@ const ScheduleFormDialog = ({
                                 })}
                                 type="number"
                                 min={1}
-                                className="h-9 text-sm tabular"
+                                className="h-9 tabular"
                               />
                             </td>
                             <td className="px-3 py-2">
@@ -800,7 +800,7 @@ const ScheduleFormDialog = ({
                                 })}
                                 type="number"
                                 min={0}
-                                className="h-9 text-sm tabular"
+                                className="h-9 tabular"
                               />
                             </td>
                             <td className="whitespace-nowrap px-3 py-2 font-semibold text-foreground tabular">
@@ -810,7 +810,7 @@ const ScheduleFormDialog = ({
                               <Input
                                 {...register(`extraServices.${idx}.note`)}
                                 placeholder="Ghi chú"
-                                className="h-9 text-sm"
+                                className="h-9"
                               />
                             </td>
                             <td className="px-2 py-2">

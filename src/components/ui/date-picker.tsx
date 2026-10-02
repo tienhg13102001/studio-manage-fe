@@ -104,7 +104,7 @@ export function DatePicker({
           aria-disabled={disabled || undefined}
           className={cn(
             // base
-            'group relative flex w-full items-center h-9 px-3 rounded-md text-sm',
+            'group relative flex w-full items-center h-9 px-3 rounded-md text-base md:text-sm',
             'border border-input bg-background',
             'transition-all duration-200',
             // hover

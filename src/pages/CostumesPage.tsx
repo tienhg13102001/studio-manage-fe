@@ -481,7 +481,7 @@ const CostumesPage = () => {
           <FormField label="Tên trang phục" required htmlFor="name" labelClassName={FORM_LABEL}>
             <Input
               id="name"
-              className="max-sm:h-11 sm:text-sm"
+              className="max-sm:h-11"
               placeholder="VD: Đồng phục trường, Áo dài, Tự do..."
               {...register('name', { required: true })}
             />
@@ -575,7 +575,7 @@ const CostumesPage = () => {
             <Textarea
               id="description"
               rows={2}
-              className="h-16 resize-none sm:text-sm"
+              className="h-16 resize-none"
               placeholder="Mô tả thêm về trang phục..."
               {...register('description')}
             />
