@@ -488,6 +488,7 @@ interface PrefillCustomer {
   _id: string;
   label?: string;
   season?: string | null;
+  expectedShootDate?: string | null;
 }
 
 const SchedulesPage = () => {
@@ -526,6 +527,8 @@ const SchedulesPage = () => {
     control,
     formState: { isSubmitting, errors, isDirty },
     watch,
+    getValues,
+    setValue,
   } = useForm<ScheduleFormValues>({ defaultValues: { extraServices: [] } });
 
   const {
@@ -584,6 +587,7 @@ const SchedulesPage = () => {
       season: pre?.season || selectedSeasonId || null,
       extraServices: [],
       ...(pre?._id ? { customer: pre._id } : {}),
+      ...(pre?.expectedShootDate ? { shootDate: pre.expectedShootDate.slice(0, 10) } : {}),
     });
     setModalOpen(true);
   };
@@ -1178,7 +1182,18 @@ const SchedulesPage = () => {
                               })),
                             ]}
                             value={field.value ?? ''}
-                            onChange={field.onChange}
+                            onChange={(v) => {
+                              field.onChange(v);
+                              // Lịch mới chưa chọn ngày → lấy ngày dự kiến chụp của lớp
+                              const expected = customers.find(
+                                (c) => c._id === v,
+                              )?.expectedShootDate;
+                              if (!editing && expected && !getValues('shootDate')) {
+                                setValue('shootDate', expected.slice(0, 10), {
+                                  shouldDirty: true,
+                                });
+                              }
+                            }}
                             placeholder="-- Chọn lớp --"
                             className={formFieldCls}
                           />

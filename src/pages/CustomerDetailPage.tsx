@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
+  CalendarClock,
   CalendarPlus,
   Check,
   Clock,
@@ -527,6 +528,7 @@ const CustomerDetailPage = () => {
       _id: customer._id,
       label: classLabel(customer),
       season: customer.season ?? null,
+      expectedShootDate: customer.expectedShootDate ?? null,
     },
   };
 
@@ -584,6 +586,13 @@ const CustomerDetailPage = () => {
               </Fact>
               <Fact icon={<Sparkles className="h-3.5 w-3.5" />} label="Nguồn khách">
                 {customer.source || <span className="font-normal text-muted-foreground">—</span>}
+              </Fact>
+              <Fact icon={<CalendarClock className="h-3.5 w-3.5" />} label="Ngày dự kiến chụp">
+                {customer.expectedShootDate ? (
+                  <span className="tabular">{formatDate(customer.expectedShootDate)}</span>
+                ) : (
+                  <span className="font-normal text-muted-foreground">—</span>
+                )}
               </Fact>
               {customer.deposit && customer.deposit.amount > 0 && (
                 <Fact icon={<Wallet className="h-3.5 w-3.5" />} label="Tiền cọc">

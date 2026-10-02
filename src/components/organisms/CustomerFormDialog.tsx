@@ -21,6 +21,7 @@ import { getSchoolId, getUserRefId } from '../../types';
 import { useAppSelector } from '../../store';
 import {
   Button,
+  DatePicker,
   FormField,
   Input,
   LoadingButton,
@@ -59,6 +60,7 @@ const sectionCls =
   'col-span-3 md:hidden text-[11px] font-bold uppercase tracking-[0.8px] text-[var(--text-faint)]';
 const iconInputCls = 'max-md:pl-9';
 const triggerCls = 'max-md:h-10 max-md:rounded-[10px] max-md:bg-card max-md:pl-9 max-md:text-base';
+const dateCls = 'max-md:h-10 max-md:rounded-[10px] max-md:bg-card max-md:text-base';
 
 /** Leading icon shown inside an input on mobile only. */
 const WithIcon = ({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) => (
@@ -108,6 +110,7 @@ const CustomerFormDialog = ({
       reset({
         ...customer,
         assignedSale: getUserRefId(customer.assignedSale),
+        expectedShootDate: customer.expectedShootDate?.slice(0, 10) ?? null,
         schoolId:
           customer.schoolId && typeof customer.schoolId === 'object' ? customer.schoolId : null,
       });
@@ -123,13 +126,18 @@ const CustomerFormDialog = ({
         totalFemale: 0,
         notes: '',
         source: '',
+        expectedShootDate: null,
         season: selectedSeasonId || undefined,
       });
     }
   }, [open, customer, selectedSeasonId, reset]);
 
   const onSubmit = async (values: FormValues) => {
-    const data: Partial<Customer> = { ...values, schoolId: getSchoolId(values) };
+    const data: Partial<Customer> = {
+      ...values,
+      schoolId: getSchoolId(values),
+      expectedShootDate: values.expectedShootDate || null,
+    };
     PIPELINE_FIELDS.forEach((k) => delete data[k]);
     // Only admins may (re)assign the sale in charge through the form.
     if (isAdmin) data.assignedSale = getUserRefId(values.assignedSale);
@@ -398,6 +406,20 @@ const CustomerFormDialog = ({
                       ))}
                     </SelectContent>
                   </Select>
+                )}
+              />
+            </FormField>
+            <FormField label="Ngày dự kiến chụp" className={`col-span-3 md:col-span-1 ${fieldCls}`}>
+              <Controller
+                name="expectedShootDate"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ?? undefined}
+                    onChange={(val) => field.onChange(val ?? null)}
+                    placeholder="Chọn ngày dự kiến chụp"
+                    className={dateCls}
+                  />
                 )}
               />
             </FormField>

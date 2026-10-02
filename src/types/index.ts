@@ -53,6 +53,8 @@ export interface Customer {
   lostReason?: string;
   statusChangedAt?: string;
   deposit?: { amount: number; date: string };
+  /** Ngày dự kiến chụp (ISO) — optional. */
+  expectedShootDate?: string | null;
   createdAt?: string;
 }
 

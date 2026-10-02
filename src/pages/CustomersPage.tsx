@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  CalendarClock,
   Check,
   ChevronsDown,
   Download,
@@ -32,6 +33,7 @@ import {
   getUserRefName,
   getSchoolName,
 } from '../types';
+import { formatDate } from '../utils/format';
 import { cn } from '@/lib/utils';
 import {
   Badge,
@@ -266,6 +268,7 @@ const CustomersPage = () => {
         { width: 8 },
         { width: 8 },
         { width: 8 },
+        { width: 16 },
         { width: 32 },
       ];
       const border: Partial<import('exceljs').Borders> = {
@@ -286,6 +289,7 @@ const CustomersPage = () => {
         'Sĩ số',
         'Nam',
         'Nữ',
+        'Ngày dự kiến chụp',
         'Ghi chú',
       ]);
       headerRow.font = { bold: true };
@@ -307,6 +311,7 @@ const CustomersPage = () => {
           c.total ?? '',
           c.totalMale ?? '',
           c.totalFemale ?? '',
+          c.expectedShootDate ? formatDate(c.expectedShootDate) : '',
           c.notes ?? '',
         ]);
         row.eachCell({ includeEmpty: true }, (cell) => {
@@ -565,7 +570,20 @@ const CustomersPage = () => {
                 {
                   key: 'status',
                   header: 'Trạng thái',
-                  render: (c) => <StatusBadge customer={c} />,
+                  render: (c) => (
+                    <div>
+                      <StatusBadge customer={c} />
+                      {c.expectedShootDate && (
+                        <span
+                          className="mt-1 flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground tabular"
+                          title="Ngày dự kiến chụp"
+                        >
+                          <CalendarClock className="h-3 w-3 shrink-0" />
+                          Dự kiến {formatDate(c.expectedShootDate)}
+                        </span>
+                      )}
+                    </div>
+                  ),
                 },
                 {
                   key: 'assignedSale',
@@ -711,6 +729,12 @@ const CustomersPage = () => {
                         <StatusBadge customer={c} />
                         {sale && (
                           <span className="text-xs text-muted-foreground">Sale: {sale}</span>
+                        )}
+                        {c.expectedShootDate && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground tabular">
+                            <CalendarClock className="h-3 w-3 shrink-0" />
+                            Dự kiến {formatDate(c.expectedShootDate)}
+                          </span>
                         )}
                       </div>
                     </div>

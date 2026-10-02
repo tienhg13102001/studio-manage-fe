@@ -114,7 +114,7 @@ const CustomerStatusDialog = ({
       depositDate: customer.deposit?.date?.slice(0, 10) ?? today(),
       createSchedule: true,
       package: '',
-      shootDate: '',
+      shootDate: customer.expectedShootDate?.slice(0, 10) ?? '',
       startTime: '',
       endTime: '',
       location: '',
