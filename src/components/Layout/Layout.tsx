@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import MobileTabBar from './MobileTabBar';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,11 +13,14 @@ const Layout = () => {
 
       <div className="flex-1 min-w-0 min-h-0 md:ml-64 flex flex-col">
         <Topbar onOpenMenu={() => setSidebarOpen(true)} />
-        {/* main tự cuộn; trang danh sách dùng DataTable `fill` để chỉ cuộn trong bảng */}
-        <main className="flex-1 min-h-0 overflow-y-auto flex flex-col px-4 py-5 md:px-8 md:pt-7 md:pb-6">
+        {/* main tự cuộn; trang danh sách dùng DataTable `fill` để chỉ cuộn trong bảng.
+            Mobile: pb chừa chỗ cho MobileTabBar (~47px + safe-area) + khoảng thở. */}
+        <main className="flex-1 min-h-0 overflow-y-auto flex flex-col px-4 pt-5 pb-[calc(68px+max(16px,env(safe-area-inset-bottom)))] md:px-8 md:pt-7 md:pb-6">
           <Outlet />
         </main>
       </div>
+
+      <MobileTabBar onOpenMenu={() => setSidebarOpen(true)} />
     </div>
   );
 };

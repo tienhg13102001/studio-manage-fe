@@ -92,7 +92,12 @@ function App() {
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} />
+            <ToastContainer
+              position="bottom-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              className="max-md:!bottom-[calc(68px+env(safe-area-inset-bottom))]"
+            />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

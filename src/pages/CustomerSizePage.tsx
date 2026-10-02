@@ -16,8 +16,11 @@ import {
   Plus,
   Ruler,
   School,
+  Search,
+  StickyNote,
   Trash2,
   Upload,
+  UserPlus,
   Weight,
 } from 'lucide-react';
 import { customerService } from '../services/customerService';
@@ -64,6 +67,19 @@ const GENDER_FROM_LABEL: Record<string, string> = {
 
 const normalizeName = (name: string) => name.toLowerCase().trim().replace(/\s+/g, ' ');
 
+const foldDiacritics = (text: string) =>
+  normalizeName(text)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
+
+const getInitials = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+};
+
 interface ImportRow {
   name: string;
   gender: 'male' | 'female';
@@ -93,6 +109,7 @@ const CustomerSizePage = () => {
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [showDupOnly, setShowDupOnly] = useState(false);
+  const [search, setSearch] = useState('');
   const importFileRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -143,6 +160,7 @@ const CustomerSizePage = () => {
 
   useEffect(() => {
     setShowDupOnly(false);
+    setSearch('');
     if (!selectedCustomer) {
       setStudents([]);
       setTotalMale(0);
@@ -520,10 +538,12 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
         kicker="Customers"
         title="Thông tin học sinh"
         description="Quản lý số đo và thông tin trang phục của từng học sinh."
+        className="max-md:[&>div:last-child]:self-stretch"
         action={
           <>
             <Button
               variant="outline"
+              className="max-md:flex-1"
               onClick={() => importFileRef.current?.click()}
               disabled={disabledAll}
             >
@@ -532,6 +552,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             </Button>
             <Button
               variant="outline"
+              className="max-md:flex-1"
               onClick={handleExportExcel}
               disabled={disabledAll || students.length === 0}
             >
@@ -552,13 +573,13 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Class selector */}
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[14px] border bg-card p-3.5">
         <Label className="sr-only">Chọn lớp</Label>
-        <div className="relative w-full min-w-[220px] sm:w-[320px]">
+        <div className="relative w-full min-w-[220px] md:w-[320px]">
           <School className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary-700 dark:text-primary" />
           <Combobox
-            className="pl-9"
+            className="pl-9 max-md:h-[42px] max-md:bg-muted max-md:font-semibold"
             options={customers.map((c) => ({
               value: c._id,
-              label: `${c.className}${c.school ? ` — ${c.school}` : ''}`,
+              label: `${c.className}${c.school ? ` · ${c.school}` : ''}`,
             }))}
             value={selectedCustomer?._id ?? ''}
             onChange={(v) => setSelectedCustomer(customers.find((c) => c._id === v) ?? null)}
@@ -579,8 +600,14 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             )}
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-1 sm:ml-auto">
-          <Button variant="ghost" onClick={handleCopy} disabled={disabledAll} title={publicUrl}>
+        <div className="flex flex-wrap items-center gap-1 sm:ml-auto max-md:w-full max-md:flex-col max-md:items-stretch max-md:gap-1.5 max-md:border-t max-md:pt-2.5">
+          <Button
+            variant="ghost"
+            className="max-md:bg-muted max-md:font-semibold"
+            onClick={handleCopy}
+            disabled={disabledAll}
+            title={publicUrl}
+          >
             {copied ? (
               <ClipboardCheck className="text-emerald-500" />
             ) : (
@@ -590,6 +617,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
           </Button>
           <Button
             variant="ghost"
+            className="max-md:bg-muted max-md:font-semibold"
             onClick={handleCopyInfo}
             disabled={disabledAll || students.length === 0}
           >
@@ -628,14 +656,14 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {/* Student list */}
       {selectedCustomer && (
         <>
-          <div className="mb-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-[14px] border bg-card p-5">
+          <div className="mb-6 grid grid-cols-2 gap-2.5 max-md:mb-3.5 md:grid-cols-3 md:gap-4">
+            <div className="self-start rounded-[14px] border bg-card p-3.5 md:self-auto md:p-5">
               <p className="text-xs text-muted-foreground">Đã đăng ký</p>
-              <p className="mt-1 font-display text-2xl font-bold text-foreground tabular">
+              <p className="mt-1 font-display text-xl font-bold text-foreground tabular md:text-2xl">
                 {selectedCustomer.total} học sinh
               </p>
             </div>
-            <div className="rounded-[14px] border bg-card p-5">
+            <div className="rounded-[14px] border bg-card p-3.5 md:p-5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Đã điền thông tin</span>
                 {selectedCustomer.total > 0 && (
@@ -644,7 +672,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-display text-2xl font-bold text-foreground tabular">
+              <p className="mt-1 font-display text-xl font-bold text-foreground tabular md:text-2xl">
                 {students.length} / {selectedCustomer.total}
               </p>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -662,7 +690,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               </p>
             </div>
             {duplicateNorms.size > 0 && (
-              <div className="rounded-[14px] bg-amber-50 p-5 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+              <div className="col-span-2 rounded-[14px] bg-amber-50 p-3.5 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 max-md:bg-primary/15 max-md:text-primary-700 max-md:dark:bg-primary/15 max-md:dark:text-primary md:col-span-1 md:p-5">
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -692,7 +720,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     </span>
                   </button>
                 </div>
-                <p className="mt-1 font-display text-2xl font-bold tabular">
+                <p className="mt-1 font-display text-xl font-bold tabular md:text-2xl">
                   {[...duplicateNorms].reduce(
                     (acc, norm) =>
                       acc + students.filter((s) => normalizeName(s.name) === norm).length,
@@ -705,12 +733,33 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
             )}
           </div>
 
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-display text-lg font-bold text-foreground">Danh sách học sinh</h3>
-            <Button variant="gradient" onClick={openCreate} disabled={noSchedule}>
-              <Plus />
-              Thêm học sinh
-            </Button>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 max-md:flex-col max-md:items-stretch max-md:gap-2.5 max-md:pt-1.5">
+            <h3 className="font-display text-lg font-bold text-foreground max-md:text-base max-md:font-semibold">
+              Danh sách học sinh
+            </h3>
+            <div className="flex items-center gap-2.5">
+              <div className="relative min-w-0 flex-1 md:hidden">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  className="h-10 rounded-[10px] bg-card pl-9"
+                  placeholder="Tìm học sinh…"
+                  aria-label="Tìm học sinh"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Button
+                variant="gradient"
+                className="max-md:h-10"
+                onClick={openCreate}
+                disabled={noSchedule}
+              >
+                <UserPlus className="md:hidden" />
+                <Plus className="hidden md:block" />
+                Thêm học sinh
+              </Button>
+            </div>
           </div>
 
           {loadingStudents ? (
@@ -720,6 +769,10 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               const displayedStudents = showDupOnly
                 ? students.filter((s) => duplicateNorms.has(normalizeName(s.name)))
                 : students;
+              const searchKey = foldDiacritics(search);
+              const mobileStudents = searchKey
+                ? displayedStudents.filter((s) => foldDiacritics(s.name).includes(searchKey))
+                : displayedStudents;
               const studentColumns: Column<StudentResponse>[] = [
                 {
                   key: 'index',
@@ -854,8 +907,8 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   </div>
 
                   {/* Mobile cards */}
-                  <div className="md:hidden space-y-3">
-                    {displayedStudents.map((s, i) => {
+                  <div className="space-y-2.5 md:hidden">
+                    {mobileStudents.map((s) => {
                       const isDup = duplicateNorms.has(normalizeName(s.name));
                       const isMale = s.gender === 'male';
                       return (
@@ -863,89 +916,123 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           key={s._id}
                           onClick={() => openEdit(s)}
                           className={cn(
-                            'rounded-[14px] border bg-card p-4 cursor-pointer',
-                            isDup && 'border-amber-300/60 bg-amber-50 dark:bg-amber-500/10',
+                            'cursor-pointer space-y-3 rounded-[14px] border bg-card p-3.5',
+                            isDup && 'border-primary',
                           )}
                         >
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-muted-foreground">{i + 1}.</span>
-                                <span className="font-semibold truncate">{s.name}</span>
-                                <Badge variant={isMale ? 'info' : 'pink'}>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
+                                isMale
+                                  ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+                                  : 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
+                              )}
+                            >
+                              {getInitials(s.name)}
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <p className="truncate text-[14.5px] font-semibold text-foreground">
+                                {s.name}
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                <Badge variant={isMale ? 'info' : 'violet'}>
                                   {GENDER_LABEL[s.gender]}
                                 </Badge>
                                 {isDup && (
-                                  <Badge variant="warning" className="px-2 py-0 font-medium">
-                                    trùng tên
+                                  <Badge
+                                    variant="warning"
+                                    className="bg-primary/15 text-primary-700 dark:text-primary"
+                                  >
+                                    Trùng tên
                                   </Badge>
                                 )}
                               </div>
                             </div>
-                          </div>
-                          {(s.height || s.weight) && (
-                            <div className="flex gap-4 text-sm text-muted-foreground">
-                              {s.height && (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <Ruler className="h-4 w-4 text-sky-500" />
-                                  <span>{s.height} cm</span>
-                                </span>
-                              )}
-                              {s.weight && (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <Weight className="h-4 w-4 text-amber-500" />
-                                  <span>{s.weight} kg</span>
-                                </span>
-                              )}
+                            <div
+                              className="flex shrink-0 items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-[30px] w-[30px] rounded-lg text-muted-foreground"
+                                title="Sửa"
+                                aria-label="Sửa"
+                                onClick={() => openEdit(s)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-[30px] w-[30px] rounded-lg text-rose-600 hover:text-rose-700 dark:text-rose-400"
+                                title="Xoá"
+                                aria-label="Xoá"
+                                onClick={() => setConfirmId(s._id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                          )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              {
+                                key: 'height',
+                                Icon: Ruler,
+                                label: 'Chiều cao',
+                                value: s.height != null ? `${s.height} cm` : '—',
+                              },
+                              {
+                                key: 'weight',
+                                Icon: Weight,
+                                label: 'Cân nặng',
+                                value: s.weight != null ? `${s.weight} kg` : '—',
+                              },
+                            ].map(({ key, Icon, label, value }) => (
+                              <div
+                                key={key}
+                                className="flex min-w-0 items-center gap-2 rounded-[10px] bg-muted px-2.5 py-2"
+                              >
+                                <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                                  {label}
+                                </span>
+                                <span className="shrink-0 text-[13.5px] font-semibold text-foreground tabular">
+                                  {value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                           {s.costumes?.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground">Trang phục</span>
                               {s.costumes.map((c) => (
-                                <Badge
+                                <span
                                   key={c._id}
-                                  variant="neutral"
-                                  className="px-2 py-0 font-medium"
+                                  className="rounded-md bg-muted px-2 py-0.5 text-[11.5px] text-muted-foreground"
                                 >
                                   {c.name}
-                                </Badge>
+                                </span>
                               ))}
                             </div>
                           )}
                           {s.notes && (
-                            <p className="text-xs text-muted-foreground mt-2 italic">{s.notes}</p>
+                            <div className="flex items-start gap-2">
+                              <StickyNote className="mt-px h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              <p className="min-w-0 text-[12.5px] text-muted-foreground">
+                                {s.notes}
+                              </p>
+                            </div>
                           )}
-                          <div
-                            className="flex justify-end gap-1 mt-3 pt-3 border-t"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-[30px] w-[30px] text-muted-foreground"
-                              title="Sửa"
-                              aria-label="Sửa"
-                              onClick={() => openEdit(s)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                              title="Xoá"
-                              aria-label="Xoá"
-                              onClick={() => setConfirmId(s._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       );
                     })}
-                    {displayedStudents.length === 0 && (
+                    {mobileStudents.length === 0 && (
                       <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
-                        {showDupOnly ? (
+                        {searchKey ? (
+                          'Không tìm thấy học sinh phù hợp'
+                        ) : showDupOnly ? (
                           <span>
                             Không còn học sinh trùng tên —{' '}
                             <Button
@@ -961,6 +1048,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           'Không có học sinh nào'
                         )}
                       </div>
+                    )}
+                    {mobileStudents.length > 0 && (
+                      <p className="pt-1 text-center text-[12.5px] text-muted-foreground">
+                        Hiển thị {mobileStudents.length} học sinh
+                      </p>
                     )}
                   </div>
                 </>

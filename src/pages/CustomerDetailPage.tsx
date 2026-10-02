@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   CalendarPlus,
   Check,
+  Clock,
   CircleSlash,
   Copy,
   ExternalLink,
@@ -16,9 +17,11 @@ import {
   MapPin,
   MessageSquare,
   MessageSquarePlus,
+  Pencil,
   Phone,
   School,
   Settings2,
+  SlidersHorizontal,
   Sparkles,
   StickyNote,
   User,
@@ -61,6 +64,10 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   PageLoader,
   Select,
   SelectContent,
@@ -71,6 +78,7 @@ import {
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
 import { ContractDialog, CustomerStatusDialog } from '../components/organisms';
+import CustomerFormDialog from '../components/organisms/CustomerFormDialog';
 import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchPackages } from '../store/slices/packagesSlice';
@@ -116,13 +124,20 @@ const StatCard = ({
   valueClass: string;
 }) => (
   <Card className="rounded-[14px] shadow-none">
-    <CardContent className="flex items-center gap-4 p-5">
-      <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]', tile)}>
+    <CardContent className="flex items-center gap-3 px-4 py-3.5 md:gap-4 md:p-5">
+      <div
+        className={cn(
+          'flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] md:h-9 md:w-9',
+          tile,
+        )}
+      >
         {icon}
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={cn('font-display text-2xl font-bold tabular', valueClass)}>{value}</p>
+        <p className={cn('font-display text-[19px] font-bold tabular md:text-2xl', valueClass)}>
+          {value}
+        </p>
       </div>
     </CardContent>
   </Card>
@@ -198,6 +213,48 @@ const StatusProgress = ({ status }: { status: CustomerStatus }) => {
         <p className="mt-2 text-xs text-muted-foreground sm:hidden">
           Bước {currentIdx + 1}/{CUSTOMER_STATUS_ORDER.length}:{' '}
           <span className="font-semibold text-foreground">{CUSTOMER_STATUS_LABELS[status]}</span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+/** Mobile pipeline progress: step counter, 8 segment bars and the upcoming steps. */
+const StatusSegments = ({ status }: { status: CustomerStatus }) => {
+  const lost = status === 'lost';
+  const currentIdx = lost ? -1 : CUSTOMER_STATUS_ORDER.indexOf(status);
+  const upcoming = lost ? [] : CUSTOMER_STATUS_ORDER.slice(currentIdx + 1);
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-2">
+        {!lost && (
+          <span className="text-xs font-semibold text-muted-foreground tabular">
+            Bước {currentIdx + 1}/{CUSTOMER_STATUS_ORDER.length}
+          </span>
+        )}
+        <StatusBadge status={status} />
+      </div>
+      <div className={cn('flex gap-1', lost && 'opacity-50')}>
+        {CUSTOMER_STATUS_ORDER.map((st, i) => (
+          <span
+            key={st}
+            className={cn(
+              'h-1.5 flex-1 rounded-[3px]',
+              i <= currentIdx ? 'bg-primary' : 'bg-muted',
+            )}
+          />
+        ))}
+      </div>
+      {upcoming.length > 0 && (
+        <p className="truncate text-[12.5px] text-muted-foreground">
+          Tiếp theo:{' '}
+          <span className="font-medium text-foreground">
+            {upcoming
+              .slice(0, 3)
+              .map((st) => CUSTOMER_STATUS_LABELS[st])
+              .join(' → ')}
+            {upcoming.length > 3 ? ' …' : ''}
+          </span>
         </p>
       )}
     </div>
@@ -295,7 +352,7 @@ const LinkRow = ({
       {icon}
     </span>
     <span className="min-w-0 flex-1 truncate font-medium text-foreground">{label}</span>
-    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground max-md:hidden" />
   </a>
 );
 
@@ -311,6 +368,7 @@ const CustomerDetailPage = () => {
   const [statusTarget, setStatusTarget] = useState<CustomerStatus | null>(null);
   const [contractSchedule, setContractSchedule] = useState<ScheduleResponse | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -362,6 +420,7 @@ const CustomerDetailPage = () => {
     setStatusTarget(null);
     setContractSchedule(null);
     setNoteOpen(false);
+    setEditOpen(false);
     load();
   }, [id, load]);
 
@@ -466,10 +525,19 @@ const CustomerDetailPage = () => {
     .reduce((s, t) => s + t.amount, 0);
   const profit = totalIncome - totalExpense;
   const seasonName = seasons.find((se) => se._id === customer.season)?.name;
+  /** Prefill for SchedulesPage's create modal (label matches its class Combobox options). */
+  const createScheduleState = {
+    openCreate: true,
+    customer: {
+      _id: customer._id,
+      label: `${customer.className} – ${customer.school}`,
+      season: customer.season ?? null,
+    },
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-4 md:gap-6">
+      <div className="flex items-center gap-3 max-md:order-none">
         <Link
           to="/customers"
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
@@ -479,19 +547,19 @@ const CustomerDetailPage = () => {
         </Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Card className="rounded-[14px] shadow-none">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-primary-100 font-display text-base font-bold text-primary-700 dark:bg-primary/15 dark:text-primary">
+      <div className="max-md:contents md:grid md:gap-4 lg:grid-cols-[1fr_320px]">
+        <Card className="rounded-[14px] shadow-none max-md:order-1">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-start gap-3.5 md:gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-primary-100 font-display text-sm font-bold text-primary-700 dark:bg-primary/15 dark:text-primary md:h-14 md:w-14 md:rounded-[14px] md:text-base">
                 {customer.className}
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-2xl font-bold tracking-tight">
+                  <h2 className="font-display text-[21px] font-bold tracking-tight md:text-2xl">
                     Lớp {customer.className}
                   </h2>
-                  <StatusBadge status={status} />
+                  <StatusBadge status={status} className="max-md:hidden" />
                 </div>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <School className="h-3.5 w-3.5 shrink-0" />
@@ -500,6 +568,7 @@ const CustomerDetailPage = () => {
                     {seasonName ? ` · ${seasonName}` : ''}
                   </span>
                 </p>
+                <StatusBadge status={status} className="mt-2 md:hidden" />
               </div>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -539,8 +608,20 @@ const CustomerDetailPage = () => {
           </CardContent>
         </Card>
 
+        {/* Mobile quick actions */}
+        <div className="grid grid-cols-2 gap-3 max-md:order-2 md:hidden">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil /> Sửa
+          </Button>
+          <Button asChild>
+            <Link to="/schedules" state={createScheduleState}>
+              <CalendarPlus /> Thêm lịch
+            </Link>
+          </Button>
+        </div>
+
         {/* Finance summary */}
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+        <div className="grid gap-3 max-md:order-5 sm:grid-cols-3 lg:grid-cols-1">
           <StatCard
             label="Tổng thu"
             value={formatCurrency(totalIncome)}
@@ -570,19 +651,50 @@ const CustomerDetailPage = () => {
       </div>
 
       {/* Pipeline */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-        <Card className="rounded-[14px] shadow-none">
-          <CardContent className="space-y-5 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-lg font-bold tracking-tight">Quy trình chăm sóc</h3>
-              {customer.statusChangedAt && (
-                <span className="text-xs text-muted-foreground">
-                  Cập nhật {formatDateTime(customer.statusChangedAt)}
-                </span>
+      <div className="max-md:contents md:grid md:gap-4 lg:grid-cols-[1fr_380px]">
+        <Card className="rounded-[14px] shadow-none max-md:order-3">
+          <CardContent className="space-y-4 p-4 md:space-y-5 md:p-6">
+            <div className="flex items-start justify-between gap-2 md:flex-wrap md:items-center">
+              <div className="min-w-0 md:contents">
+                <h3 className="font-display text-base font-bold tracking-tight md:text-lg">
+                  Quy trình chăm sóc
+                </h3>
+                {customer.statusChangedAt && (
+                  <span className="text-xs text-muted-foreground max-md:mt-0.5 max-md:block">
+                    Cập nhật {formatDateTime(customer.statusChangedAt)}
+                  </span>
+                )}
+              </div>
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-muted-foreground shadow-none md:hidden"
+                      aria-label="Đặt trạng thái (admin)"
+                      title="Đặt trạng thái (admin)"
+                    >
+                      <SlidersHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {CUSTOMER_STATUSES.filter((st) => st !== status).map((st) => (
+                      <DropdownMenuItem key={st} onSelect={() => setStatusTarget(st)}>
+                        {CUSTOMER_STATUS_LABELS[st]}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
 
-            <StatusProgress status={status} />
+            <div className="max-md:hidden">
+              <StatusProgress status={status} />
+            </div>
+            <div className="md:hidden">
+              <StatusSegments status={status} />
+            </div>
 
             {status === 'lost' && (
               <div className="flex items-start gap-2.5 rounded-[12px] border border-rose-500/30 bg-rose-500/10 px-3.5 py-3 text-sm text-rose-800 dark:text-rose-200">
@@ -620,7 +732,7 @@ const CustomerDetailPage = () => {
                   Chưa có lịch chụp nên chưa tạo folder Drive — tạo lịch chụp cho lớp này.
                 </p>
                 <Button variant="outline" asChild>
-                  <Link to="/schedules" state={{ openCreate: true }}>
+                  <Link to="/schedules" state={createScheduleState}>
                     <CalendarPlus /> Tạo lịch chụp
                   </Link>
                 </Button>
@@ -657,7 +769,7 @@ const CustomerDetailPage = () => {
             )}
 
             {linkSchedules.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2">
                 {linkSchedules.map((s) => (
                   <div key={s._id} className="contents">
                     {s.driveFolderUrl && (
@@ -682,9 +794,17 @@ const CustomerDetailPage = () => {
             )}
 
             {(canAdvance || canLose || canNote || isAdmin) && (
-              <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+              <div
+                className={cn(
+                  'grid grid-cols-2 gap-2 border-t pt-4 md:flex md:flex-wrap md:items-center',
+                  !(canAdvance || canLose || canNote) && 'max-md:hidden',
+                )}
+              >
                 {canAdvance && nextStatus && (
-                  <Button onClick={() => setStatusTarget(nextStatus)}>
+                  <Button
+                    className="col-span-2 max-md:h-11 max-md:whitespace-normal"
+                    onClick={() => setStatusTarget(nextStatus)}
+                  >
                     {`${canClaim && !isAdmin ? 'Nhận lớp & chuyển sang' : 'Chuyển sang'}: ${CUSTOMER_STATUS_LABELS[nextStatus]}`}
                     <ArrowRight />
                   </Button>
@@ -692,20 +812,27 @@ const CustomerDetailPage = () => {
                 {canLose && (
                   <Button
                     variant="outline"
-                    className="text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 dark:text-rose-400"
+                    className={cn(
+                      'text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 dark:text-rose-400',
+                      !canNote && 'max-md:col-span-2',
+                    )}
                     onClick={() => setStatusTarget('lost')}
                   >
                     <CircleSlash /> Không chốt
                   </Button>
                 )}
                 {canNote && (
-                  <Button variant="outline" onClick={() => setNoteOpen(true)}>
+                  <Button
+                    variant="outline"
+                    className={cn(!canLose && 'max-md:col-span-2')}
+                    onClick={() => setNoteOpen(true)}
+                  >
                     <MessageSquarePlus /> Thêm ghi chú
                   </Button>
                 )}
                 {isAdmin && (
                   <Select value="" onValueChange={(v) => setStatusTarget(v as CustomerStatus)}>
-                    <SelectTrigger className="h-[38px] w-auto min-w-[200px] gap-2 rounded-[10px] border-border bg-card shadow-none sm:ml-auto">
+                    <SelectTrigger className="h-[38px] w-auto min-w-[200px] gap-2 rounded-[10px] border-border bg-card shadow-none max-md:hidden sm:ml-auto">
                       <Settings2 className="h-4 w-4 text-muted-foreground" />
                       <SelectValue placeholder="Đặt trạng thái (admin)" />
                     </SelectTrigger>
@@ -724,132 +851,264 @@ const CustomerDetailPage = () => {
         </Card>
 
         {/* Activity timeline */}
-        <Card className="rounded-[14px] shadow-none">
-          <CardContent className="p-6">
-            <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-bold tracking-tight">
+        <Card className="rounded-[14px] shadow-none max-md:order-4">
+          <CardContent className="p-4 md:p-6">
+            <h3 className="mb-4 flex items-center gap-2 font-display text-base font-bold tracking-tight md:text-lg">
               <History className="h-4 w-4 text-muted-foreground" />
               Nhật ký
             </h3>
-            <div className="max-h-[520px] overflow-y-auto pr-1">
+            <div className="md:max-h-[520px] md:overflow-y-auto md:pr-1">
               <ActivityTimeline activities={activities} />
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Schedules — mobile card list */}
+      <section className="space-y-2.5 max-md:order-6 md:hidden">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-base font-semibold text-foreground">Lịch chụp</h3>
+          <span className="text-[12.5px] text-muted-foreground">{schedules.length} buổi</span>
+        </div>
+        {schedules.length === 0 ? (
+          <Card className="rounded-[14px] shadow-none">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Chưa có lịch
+            </CardContent>
+          </Card>
+        ) : (
+          schedules.map((s) => {
+            const d = new Date(s.shootDate);
+            return (
+              <Card key={s._id} className="rounded-[14px] shadow-none">
+                <CardContent className="flex gap-3.5 p-3.5">
+                  <div className="flex h-[52px] w-12 shrink-0 flex-col items-center justify-center rounded-[10px] border bg-muted">
+                    <span className="text-[10px] font-bold leading-tight text-primary-700 dark:text-primary">
+                      TH{String(d.getMonth() + 1).padStart(2, '0')}
+                    </span>
+                    <span className="font-display text-[19px] font-bold leading-tight tabular text-foreground">
+                      {String(d.getDate()).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-[5px]">
+                    <p className="truncate">
+                      <span className="text-sm font-semibold text-foreground">
+                        {s.package?.name ?? 'Chưa chọn gói'}
+                      </span>
+                      {s.package && (
+                        <span className="ml-1.5 text-xs text-muted-foreground tabular">
+                          · {formatCurrency(s.package.pricePerMember)}/thành viên
+                        </span>
+                      )}
+                    </p>
+                    <p className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                      <Clock className="h-[13px] w-[13px] shrink-0" />
+                      <span className="shrink-0 tabular">
+                        {s.startTime}
+                        {s.endTime ? ` – ${s.endTime}` : ''}
+                      </span>
+                      {s.location && (
+                        <>
+                          <span className="shrink-0">·</span>
+                          <MapPin className="h-[13px] w-[13px] shrink-0" />
+                          <span className="truncate">{s.location}</span>
+                        </>
+                      )}
+                    </p>
+                    <Badge variant={STATUS_VARIANT[s.status]} dot>
+                      {SCHEDULE_STATUS_LABEL[s.status]}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </section>
+
       {/* Schedules */}
-      <DataTable<ScheduleResponse>
-        title="Lịch chụp"
-        data={schedules}
-        keyExtractor={(s) => s._id}
-        emptyTitle="Chưa có lịch"
-        columns={[
-          { key: 'date', header: 'Ngày', render: (s) => formatDate(s.shootDate) },
-          {
-            key: 'time',
-            header: 'Giờ',
-            render: (s) => (
-              <span className="text-muted-foreground">
-                {s.startTime}
-                {s.endTime ? ` – ${s.endTime}` : ''}
-              </span>
-            ),
-          },
-          {
-            key: 'location',
-            header: 'Địa điểm',
-            render: (s) => <span className="text-muted-foreground">{s.location}</span>,
-          },
-          {
-            key: 'package',
-            header: 'Gói chụp',
-            render: (s) =>
-              s.package ? (
-                <div>
-                  <span className="block font-semibold text-foreground">{s.package.name}</span>
-                  <span className="block text-xs text-muted-foreground tabular">
-                    {formatCurrency(s.package.pricePerMember)}/thành viên
-                  </span>
-                </div>
-              ) : (
-                <span className="text-muted-foreground">—</span>
+      <div className="max-md:hidden">
+        <DataTable<ScheduleResponse>
+          title="Lịch chụp"
+          data={schedules}
+          keyExtractor={(s) => s._id}
+          emptyTitle="Chưa có lịch"
+          columns={[
+            { key: 'date', header: 'Ngày', render: (s) => formatDate(s.shootDate) },
+            {
+              key: 'time',
+              header: 'Giờ',
+              render: (s) => (
+                <span className="text-muted-foreground">
+                  {s.startTime}
+                  {s.endTime ? ` – ${s.endTime}` : ''}
+                </span>
               ),
-          },
-          {
-            key: 'crew',
-            header: 'Ekip',
-            render: (s) => (
-              <span className="text-muted-foreground">
-                {s.leadPhotographer?.username ?? '—'}
-                {s.supportPhotographers.length > 0 && (
-                  <span className="ml-1 text-xs text-muted-foreground/70">
-                    (+{s.supportPhotographers.length})
-                  </span>
-                )}
-              </span>
-            ),
-          },
-          {
-            key: 'status',
-            header: 'Trạng thái',
-            render: (s) => (
-              <Badge variant={STATUS_VARIANT[s.status]} dot>
-                {SCHEDULE_STATUS_LABEL[s.status]}
-              </Badge>
-            ),
-          } satisfies Column<ScheduleResponse>,
-        ]}
-      />
+            },
+            {
+              key: 'location',
+              header: 'Địa điểm',
+              render: (s) => <span className="text-muted-foreground">{s.location}</span>,
+            },
+            {
+              key: 'package',
+              header: 'Gói chụp',
+              render: (s) =>
+                s.package ? (
+                  <div>
+                    <span className="block font-semibold text-foreground">{s.package.name}</span>
+                    <span className="block text-xs text-muted-foreground tabular">
+                      {formatCurrency(s.package.pricePerMember)}/thành viên
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
+            },
+            {
+              key: 'crew',
+              header: 'Ekip',
+              render: (s) => (
+                <span className="text-muted-foreground">
+                  {s.leadPhotographer?.username ?? '—'}
+                  {s.supportPhotographers.length > 0 && (
+                    <span className="ml-1 text-xs text-muted-foreground/70">
+                      (+{s.supportPhotographers.length})
+                    </span>
+                  )}
+                </span>
+              ),
+            },
+            {
+              key: 'status',
+              header: 'Trạng thái',
+              render: (s) => (
+                <Badge variant={STATUS_VARIANT[s.status]} dot>
+                  {SCHEDULE_STATUS_LABEL[s.status]}
+                </Badge>
+              ),
+            } satisfies Column<ScheduleResponse>,
+          ]}
+        />
+      </div>
+
+      {/* Transactions — mobile list */}
+      <section className="space-y-2.5 max-md:order-7 md:hidden">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="text-base font-semibold text-foreground">Giao dịch</h3>
+          <span className="text-[12.5px] text-muted-foreground">
+            {transactions.length} giao dịch
+          </span>
+        </div>
+        <Card className="rounded-[14px] shadow-none">
+          {transactions.length === 0 ? (
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Chưa có giao dịch
+            </CardContent>
+          ) : (
+            <ul className="divide-y px-3.5 py-0.5">
+              {transactions.map((t) => {
+                const income = t.type === 'income';
+                return (
+                  <li key={t._id} className="flex items-center gap-3 py-3">
+                    <span
+                      className={cn(
+                        'flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px]',
+                        income
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+                      )}
+                    >
+                      {income ? (
+                        <ArrowDownLeft className="h-4 w-4" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-[3px]">
+                      <p className="truncate text-[13.5px] font-semibold text-foreground">
+                        {t.description || '—'}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {formatDate(t.date)}
+                        {t.categoryId?.name ? ` · ${t.categoryId.name}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className={cn(
+                          'text-[13.5px] font-bold tabular',
+                          income
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-rose-600 dark:text-rose-400',
+                        )}
+                      >
+                        {income ? '+' : '−'}
+                        {formatCurrency(t.amount)}
+                      </span>
+                      <Badge variant={income ? 'success' : 'danger'}>
+                        {income ? 'Thu' : 'Chi'}
+                      </Badge>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+      </section>
 
       {/* Transactions */}
-      <DataTable<TransactionResponse>
-        title="Giao dịch"
-        data={transactions}
-        keyExtractor={(t) => t._id}
-        emptyTitle="Chưa có giao dịch"
-        columns={[
-          { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
-          {
-            key: 'type',
-            header: 'Loại',
-            render: (t) => (
-              <Badge variant={t.type === 'income' ? 'success' : 'danger'}>
-                {t.type === 'income' ? 'Thu' : 'Chi'}
-              </Badge>
-            ),
-          },
-          {
-            key: 'category',
-            header: 'Danh mục',
-            render: (t) => (
-              <span className="text-muted-foreground">{t.categoryId?.name ?? '—'}</span>
-            ),
-          },
-          {
-            key: 'description',
-            header: 'Mô tả',
-            render: (t) => <span className="text-muted-foreground">{t.description}</span>,
-          },
-          {
-            key: 'amount',
-            header: 'Số tiền',
-            align: 'right',
-            render: (t) => (
-              <span
-                className={cn(
-                  'font-semibold tabular',
-                  t.type === 'income'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400',
-                )}
-              >
-                {t.type === 'expense' ? '−' : '+'}
-                {formatCurrency(t.amount)}
-              </span>
-            ),
-          } satisfies Column<TransactionResponse>,
-        ]}
-      />
+      <div className="max-md:hidden">
+        <DataTable<TransactionResponse>
+          title="Giao dịch"
+          data={transactions}
+          keyExtractor={(t) => t._id}
+          emptyTitle="Chưa có giao dịch"
+          columns={[
+            { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
+            {
+              key: 'type',
+              header: 'Loại',
+              render: (t) => (
+                <Badge variant={t.type === 'income' ? 'success' : 'danger'}>
+                  {t.type === 'income' ? 'Thu' : 'Chi'}
+                </Badge>
+              ),
+            },
+            {
+              key: 'category',
+              header: 'Danh mục',
+              render: (t) => (
+                <span className="text-muted-foreground">{t.categoryId?.name ?? '—'}</span>
+              ),
+            },
+            {
+              key: 'description',
+              header: 'Mô tả',
+              render: (t) => <span className="text-muted-foreground">{t.description}</span>,
+            },
+            {
+              key: 'amount',
+              header: 'Số tiền',
+              align: 'right',
+              render: (t) => (
+                <span
+                  className={cn(
+                    'font-semibold tabular',
+                    t.type === 'income'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400',
+                  )}
+                >
+                  {t.type === 'expense' ? '−' : '+'}
+                  {formatCurrency(t.amount)}
+                </span>
+              ),
+            } satisfies Column<TransactionResponse>,
+          ]}
+        />
+      </div>
 
       <CustomerStatusDialog
         customer={customer}
@@ -858,6 +1117,14 @@ const CustomerDetailPage = () => {
         isAdmin={isAdmin}
         onClose={() => setStatusTarget(null)}
         onChanged={load}
+      />
+
+      <CustomerFormDialog
+        customer={customer}
+        open={editOpen}
+        isAdmin={isAdmin}
+        onOpenChange={setEditOpen}
+        onSaved={load}
       />
 
       <ContractDialog

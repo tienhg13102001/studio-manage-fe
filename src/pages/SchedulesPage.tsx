@@ -463,6 +463,13 @@ interface ScheduleFormValues {
   extraServices: ExtraServiceFormRow[];
 }
 
+/** Customer prefill passed via location.state from CustomerDetailPage. */
+interface PrefillCustomer {
+  _id: string;
+  label?: string;
+  season?: string | null;
+}
+
 const SchedulesPage = () => {
   const dispatch = useAppDispatch();
   const location = useLocation();
@@ -486,6 +493,10 @@ const SchedulesPage = () => {
   const [costumeTouched, setCostumeTouched] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [contractSchedule, setContractSchedule] = useState<ScheduleResponse | null>(null);
+  /** Class passed in from CustomerDetailPage — may be missing from the (season-filtered, capped) list. */
+  const [prefillCustomer, setPrefillCustomer] = useState<{ value: string; label: string } | null>(
+    null,
+  );
 
   const {
     register,
@@ -541,18 +552,29 @@ const SchedulesPage = () => {
     costumeService.getAll().then(setAllCostumes);
   }, [dispatch, appliedFilter, page, pageSize, selectedSeasonId]);
 
-  const openCreate = () => {
+  const openCreate = (prefill?: string | PrefillCustomer) => {
+    const pre = typeof prefill === 'string' ? { _id: prefill } : prefill;
     setEditing(null);
     setSupportIds([]);
     setSelectedCostumes([]);
     setCostumeTouched(false);
-    reset({ status: 'pending', season: selectedSeasonId || null, extraServices: [] });
+    setPrefillCustomer(pre?.label ? { value: pre._id, label: pre.label } : null);
+    reset({
+      status: 'pending',
+      season: pre?.season || selectedSeasonId || null,
+      extraServices: [],
+      ...(pre?._id ? { customer: pre._id } : {}),
+    });
     setModalOpen(true);
   };
 
   useEffect(() => {
-    if ((location.state as { openCreate?: boolean } | null)?.openCreate) {
-      openCreate();
+    const state = location.state as {
+      openCreate?: boolean;
+      customer?: string | PrefillCustomer;
+    } | null;
+    if (state?.openCreate) {
+      openCreate(state.customer);
       navigate(location.pathname, { replace: true, state: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -560,6 +582,7 @@ const SchedulesPage = () => {
 
   const openEdit = (s: ScheduleResponse) => {
     setEditing(s);
+    setPrefillCustomer(null);
     const leadId = s.leadPhotographer?._id ?? '';
     const supIds = s.supportPhotographers.map((u) => u._id);
     setSupportIds(supIds);
@@ -823,7 +846,7 @@ const SchedulesPage = () => {
                 { value: 'calendar', label: 'Lịch', icon: <Calendar className="h-3.5 w-3.5" /> },
               ]}
             />
-            <Button onClick={openCreate}>
+            <Button onClick={() => openCreate()}>
               <Plus /> Thêm lịch
             </Button>
           </div>
@@ -1077,10 +1100,16 @@ const SchedulesPage = () => {
                       render={({ field, fieldState }) => (
                         <>
                           <Combobox
-                            options={customers.map((c) => ({
-                              value: c._id,
-                              label: `${c.className} – ${c.school}`,
-                            }))}
+                            options={[
+                              ...(prefillCustomer &&
+                              !customers.some((c) => c._id === prefillCustomer.value)
+                                ? [prefillCustomer]
+                                : []),
+                              ...customers.map((c) => ({
+                                value: c._id,
+                                label: `${c.className} – ${c.school}`,
+                              })),
+                            ]}
                             value={field.value ?? ''}
                             onChange={field.onChange}
                             placeholder="-- Chọn lớp --"
