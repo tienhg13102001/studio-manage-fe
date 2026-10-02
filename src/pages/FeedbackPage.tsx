@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Copy, Lightbulb, Link2, Phone, Star } from 'lucide-react';
+import { Copy, Lightbulb, Link2, Mail, MailOpen, Phone, Star, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { feedbackService } from '../services/feedbackService';
-import type { Customer, FeedbackItem, FeedbackResponse } from '../types';
+import type { Customer, FeedbackItem, FeedbackResponse, FeedbackStats } from '../types';
 import { getSchoolName } from '../types';
 import { formatDateTime } from '../utils/format';
 import {
@@ -60,8 +60,8 @@ const ratingColor = (r: number) => {
 };
 
 const RatingPanel = ({ label, item }: { label: string; item: FeedbackItem }) => (
-  <div className="rounded-xl bg-muted/60 px-4 py-3">
-    <div className="flex items-center justify-between gap-2 mb-1.5">
+  <div className="rounded-lg bg-muted/60 px-3 py-2">
+    <div className="flex items-center justify-between gap-2 mb-1">
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
         <Stars value={item.rating} />
@@ -69,15 +69,10 @@ const RatingPanel = ({ label, item }: { label: string; item: FeedbackItem }) => 
       </div>
     </div>
     {item.description && (
-      <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">
-        {item.description}
-      </p>
+      <p className="text-sm whitespace-pre-wrap leading-snug text-foreground">{item.description}</p>
     )}
   </div>
 );
-
-const average = (values: number[]) =>
-  values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 
 const fmtAvg = (n: number) => n.toFixed(1).replace('.', ',');
 
@@ -88,6 +83,7 @@ const FeedbackPage = () => {
   const [total, setTotal] = useState(0);
   const [totalRead, setTotalRead] = useState(0);
   const [totalUnread, setTotalUnread] = useState(0);
+  const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<FilterValue>('all');
   const [loading, setLoading] = useState(false);
@@ -105,6 +101,7 @@ const FeedbackPage = () => {
       setTotal(res.total);
       setTotalRead(res.totalRead);
       setTotalUnread(res.totalUnread);
+      setStats(res.stats);
     } catch {
       toast.error('Không thể tải phản hồi.');
     } finally {
@@ -124,16 +121,6 @@ const FeedbackPage = () => {
     const count = filter === 'unread' ? totalUnread : filter === 'read' ? totalRead : total;
     return Math.max(1, Math.ceil(count / LIMIT));
   }, [filter, total, totalRead, totalUnread]);
-
-  const stats = useMemo(() => {
-    const crew = list.map((f) => f.crewFeedback.rating);
-    const album = list.map((f) => f.albumFeedback.rating);
-    const dist = [5, 4, 3, 2, 1].map((star) => {
-      const n = crew.filter((r) => r === star).length;
-      return { star, pct: crew.length ? Math.round((n / crew.length) * 100) : 0 };
-    });
-    return { count: list.length, crew: average(crew), album: average(album), dist };
-  }, [list]);
 
   const toggleRead = async (fb: FeedbackResponse) => {
     try {
@@ -183,52 +170,52 @@ const FeedbackPage = () => {
         }
       />
 
-      {/* Summary (computed from the loaded page) */}
-      {stats.count > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      {/* Summary (all feedback) */}
+      {stats && stats.count > 0 && (
+        <div className="mb-6 grid grid-cols-1 divide-y rounded-[14px] border bg-card md:grid-cols-2 md:divide-x md:divide-y-0">
           {(
             [
-              { label: 'Ekip chụp ảnh', value: stats.crew },
-              { label: 'Album ảnh', value: stats.album },
+              { label: 'Ekip chụp ảnh', avg: stats.crewAvg, dist: stats.crewDist },
+              { label: 'Album ảnh', avg: stats.albumAvg, dist: stats.albumDist },
             ] as const
           ).map((c) => (
-            <div key={c.label} className="rounded-[14px] border bg-card p-5">
-              <p className="text-sm text-muted-foreground">{c.label}</p>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="font-display text-3xl font-bold">{fmtAvg(c.value)}</span>
-                <Stars value={Math.round(c.value)} size="md" />
+            <div
+              key={c.label}
+              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5"
+            >
+              <div className="shrink-0">
+                <p className="text-sm text-muted-foreground">{c.label}</p>
+                <div className="mt-1 flex items-center gap-2.5">
+                  <span className="font-display text-3xl font-bold">{fmtAvg(c.avg)}</span>
+                  <Stars value={Math.round(c.avg)} size="md" />
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{stats.count} đánh giá</p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                trung bình · {stats.count} đánh giá trên trang hiện tại
-              </p>
+              <div className="min-w-0 flex-1 space-y-1">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const pct = Math.round((c.dist[star - 1] / stats.count) * 100);
+                  return (
+                    <div
+                      key={star}
+                      className="flex items-center gap-2 text-xs text-muted-foreground"
+                    >
+                      <span className="inline-flex w-6 items-center gap-0.5">
+                        {star}
+                        <Star className="h-3 w-3" />
+                      </span>
+                      <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-right tabular">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
-          <div className="rounded-[14px] border bg-card p-5">
-            <p className="text-sm text-muted-foreground mb-2">
-              Phân bố điểm ekip
-              <span className="block text-xs">
-                trên trang hiện tại
-                {filter !== 'all' && ` · ${filter === 'unread' ? 'Chưa đọc' : 'Đã đọc'}`}
-              </span>
-            </p>
-            <div className="space-y-1.5">
-              {stats.dist.map((d) => (
-                <div key={d.star} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-flex w-6 items-center gap-0.5">
-                    {d.star}
-                    <Star className="h-3 w-3" />
-                  </span>
-                  <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${d.pct}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-right tabular">{d.pct}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
@@ -284,85 +271,99 @@ const FeedbackPage = () => {
               <div
                 key={fb._id}
                 className={cn(
-                  'rounded-[14px] border bg-card p-5 transition-shadow',
-                  !fb.isRead && 'border-primary shadow-[0_0_0_3px_rgba(245,158,11,0.15)]',
+                  'rounded-[14px] border border-l-[3px] bg-card p-4',
+                  !fb.isRead && 'border-l-primary',
                 )}
               >
-                <div className="flex items-start gap-3 mb-3">
+                <div className="flex items-start gap-3 mb-2.5">
                   <div
                     className={cn(
-                      'w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-sm',
+                      'w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-bold text-sm',
                       avatarColor(seed),
                     )}
                   >
                     {getInitials(fb.customer, fb.phone)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold truncate">
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 font-semibold truncate">
                         {classLabel ?? 'Khách hàng ẩn danh'}
                       </span>
                       {!fb.isRead && (
                         <Badge
                           variant="outline"
-                          className="border-transparent bg-primary px-2 text-[11px] text-primary-foreground"
+                          className="shrink-0 border-transparent bg-primary px-2 text-[11px] text-primary-foreground"
                         >
                           Mới
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs mt-0.5 flex-wrap text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-1.5 text-xs mt-0.5 text-muted-foreground">
                       {fb.phone && (
-                        <span className="inline-flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5 text-emerald-500" />
-                          <span>{fb.phone}</span>
-                        </span>
+                        <>
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <Phone className="h-3.5 w-3.5 text-emerald-500" />
+                            <span>{fb.phone}</span>
+                          </span>
+                          <span aria-hidden="true">·</span>
+                        </>
                       )}
-                      <span>{formatDateTime(fb.createdAt)}</span>
+                      <span className="whitespace-nowrap">{formatDateTime(fb.createdAt)}</span>
                     </div>
+                  </div>
+                  <div className="-mr-1.5 -mt-1 flex shrink-0 items-center gap-0.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
+                      onClick={() => toggleRead(fb)}
+                      title={fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
+                      aria-label={fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
+                    >
+                      {fb.isRead ? (
+                        <Mail className="h-3.5 w-3.5" />
+                      ) : (
+                        <MailOpen className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+                      onClick={() => setConfirmId(fb._id)}
+                      title="Xoá"
+                      aria-label="Xoá"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <RatingPanel label="Ekip chụp ảnh" item={fb.crewFeedback} />
                   <RatingPanel label="Album" item={fb.albumFeedback} />
                 </div>
 
                 {fb.content && (
-                  <div className="mb-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-1 text-muted-foreground">
+                  <div className="mt-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-0.5 text-muted-foreground">
                       Cảm nhận chung
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{fb.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-snug">{fb.content}</p>
                   </div>
                 )}
 
                 {fb.suggestion && (
-                  <div className="mt-3 rounded-xl p-3 px-4 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                  <div className="mt-2 rounded-lg px-3 py-2 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
                     <p className="text-xs font-semibold mb-0.5 inline-flex items-center gap-1.5">
                       <Lightbulb className="h-3.5 w-3.5" />
                       <span>Đề xuất cải thiện</span>
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{fb.suggestion}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-snug">{fb.suggestion}</p>
                   </div>
                 )}
-
-                <div className="flex justify-end gap-4 pt-3 mt-3">
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
-                    onClick={() => toggleRead(fb)}
-                  >
-                    {fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                    onClick={() => setConfirmId(fb._id)}
-                  >
-                    Xoá
-                  </button>
-                </div>
               </div>
             );
           })}

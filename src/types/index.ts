@@ -422,6 +422,15 @@ export interface FeedbackResponse extends Omit<Feedback, 'customer'> {
   customer: Customer | null;
 }
 
+/** Global feedback stats (all feedback). Dist arrays: index 0..4 = count of 1..5 stars. */
+export interface FeedbackStats {
+  count: number;
+  crewAvg: number;
+  albumAvg: number;
+  crewDist: number[];
+  albumDist: number[];
+}
+
 export interface Season {
   _id: string;
   name: string;
