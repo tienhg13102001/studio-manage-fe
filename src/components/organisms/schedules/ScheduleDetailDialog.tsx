@@ -195,9 +195,9 @@ const ScheduleDetailDialog = ({
                       tone="bg-sky-500/10 text-sky-600 dark:text-sky-300"
                       label="Folder ảnh"
                     >
-                      {detail.driveFolderUrl ? (
+                      {detail.customer?.driveFolderUrl ? (
                         <a
-                          href={detail.driveFolderUrl}
+                          href={detail.customer.driveFolderUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
@@ -206,7 +206,7 @@ const ScheduleDetailDialog = ({
                         </a>
                       ) : (
                         <span className="font-normal italic text-muted-foreground">
-                          Đang tạo folder…
+                          Lớp chưa có folder
                         </span>
                       )}
                     </InfoRow>

@@ -7,6 +7,7 @@ import type {
   CustomerStatusCounts,
   PaginatedApiResponse,
   PaginatedResponse,
+  SaveContractBody,
   ScheduleResponse,
   TransactionResponse,
 } from '../types';
@@ -48,6 +49,17 @@ export const customerService = {
     api
       .post<ApiResponse<ChangeCustomerStatusResult>>(`/customers/${id}/status`, body)
       .then((r) => r.data.data),
+  /** Save the contract created by the Apps Script on the class (admins may overwrite). */
+  saveContract: (id: string, body: SaveContractBody) =>
+    api.put<ApiResponse<Customer>>(`/customers/${id}/contract`, body).then((r) => r.data.data),
+  /** Re-fill "Tiền cọc" / "Đợt 2" on the class contract from the current deposit. */
+  syncContractDeposit: (id: string) =>
+    api
+      .post<ApiResponse<Customer>>(`/customers/${id}/contract/sync-deposit`)
+      .then((r) => r.data.data),
+  /** Create (or reuse) the class Drive photo folder. */
+  createDriveFolder: (id: string) =>
+    api.post<ApiResponse<Customer>>(`/customers/${id}/drive-folder`).then((r) => r.data.data),
   /** Public (no-auth) endpoint — used by the student self-entry form */
   getPublic: (id: string) =>
     api

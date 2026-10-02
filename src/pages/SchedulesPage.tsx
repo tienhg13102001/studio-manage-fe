@@ -324,7 +324,7 @@ const SchedulesPage = () => {
         packageName: s.package?.name,
         packagePrice: s.package?.pricePerMember,
         supportNames: s.supportPhotographers.map(personName).filter(Boolean),
-        driveFolderUrl: s.driveFolderUrl,
+        driveFolderUrl: s.customer?.driveFolderUrl ?? undefined,
         studentCount: s.customer?.total,
         crew: [
           ...(s.leadPhotographer ? [{ name: personName(s.leadPhotographer), lead: true }] : []),

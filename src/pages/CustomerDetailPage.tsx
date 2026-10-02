@@ -17,13 +17,16 @@ import {
   FilePlus,
   FileText,
   FolderOpen,
+  FolderPlus,
   History,
   MapPin,
   MessageSquare,
   MessageSquarePlus,
+  MoreHorizontal,
   Pencil,
   Phone,
   Plus,
+  RefreshCw,
   School,
   Settings2,
   SlidersHorizontal,
@@ -65,6 +68,7 @@ import {
   Button,
   Card,
   CardContent,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -80,6 +84,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Spinner,
   Textarea,
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
@@ -325,36 +330,6 @@ const ActivityTimeline = ({ activities }: { activities: CustomerActivity[] }) =>
   );
 };
 
-const LinkRow = ({
-  icon,
-  tile,
-  label,
-  href,
-}: {
-  icon: ReactNode;
-  tile: string;
-  label: string;
-  href: string;
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex items-center gap-3 rounded-[12px] border bg-card px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-  >
-    <span
-      className={cn(
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4',
-        tile,
-      )}
-    >
-      {icon}
-    </span>
-    <span className="min-w-0 flex-1 truncate font-medium text-foreground">{label}</span>
-    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground max-md:hidden" />
-  </a>
-);
-
 /** Contract can be prepared any time before the shoot (deposit may still be missing). */
 const CONTRACT_STATUSES: CustomerStatus[] = [
   'new',
@@ -364,55 +339,128 @@ const CONTRACT_STATUSES: CustomerStatus[] = [
   'scheduled',
 ];
 
+const cardTile =
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4';
+
+/** Muted dashed placeholder card ("Chưa có …") when the user can't act on it. */
+const EmptyLinkCard = ({ icon, label }: { icon: ReactNode; label: string }) => (
+  <div className="flex items-center gap-3 rounded-[12px] border border-dashed bg-card px-3 py-2.5 text-sm">
+    <span className={cn(cardTile, 'bg-muted text-muted-foreground')}>{icon}</span>
+    <span className="min-w-0 flex-1 truncate text-muted-foreground">{label}</span>
+  </div>
+);
+
+/** Small "Mở ↗" label used as a stretched link (the whole card opens the target). */
+const OpenLink = ({ href }: { href: string }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground after:absolute after:inset-0 after:rounded-[12px]"
+  >
+    Mở <ExternalLink className="h-3.5 w-3.5" />
+  </a>
+);
+
+/** "Folder ảnh" card of the class: open link, or "Tạo folder" when the class has none yet. */
+const DriveCard = ({
+  customer,
+  canCreate,
+  onCreated,
+}: {
+  customer: Customer;
+  canCreate: boolean;
+  onCreated: (customer: Customer) => void;
+}) => {
+  const [creating, setCreating] = useState(false);
+  if (customer.driveFolderUrl) {
+    return (
+      <div className="relative flex items-center gap-3 rounded-[12px] border bg-card px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5">
+        <span className={cn(cardTile, 'bg-amber-500/15 text-amber-700 dark:text-amber-300')}>
+          <FolderOpen />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-foreground">Folder ảnh</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            Google Drive · lớp {customer.className}
+          </span>
+        </span>
+        <OpenLink href={customer.driveFolderUrl} />
+      </div>
+    );
+  }
+  const create = async () => {
+    setCreating(true);
+    try {
+      onCreated(await customerService.createDriveFolder(customer._id));
+      toast.success('Đã tạo folder Drive');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không tạo được folder Drive.'));
+    } finally {
+      setCreating(false);
+    }
+  };
+  return (
+    <div className="flex items-center gap-3 rounded-[12px] border bg-card px-3 py-2.5 text-sm">
+      <span className={cn(cardTile, 'bg-muted text-muted-foreground')}>
+        <FolderPlus />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold text-foreground">Chưa có folder</span>
+        <span className="block truncate text-xs text-muted-foreground">
+          Tạo folder Google Drive cho lớp
+        </span>
+      </span>
+      {canCreate && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 shrink-0 px-3"
+          disabled={creating}
+          onClick={create}
+        >
+          {creating ? <Spinner size="sm" /> : <FolderPlus />} Tạo folder
+        </Button>
+      )}
+    </div>
+  );
+};
+
 /**
- * "Hợp đồng" card next to Folder Drive: open link + deposit sync state, or a highlighted
- * "Chưa có hợp đồng" card with a create button.
+ * "Hợp đồng" card of the class (next to Folder Drive): open link + deposit sync state,
+ * or a highlighted "Chưa có hợp đồng" card with a create button.
  */
 const ContractCard = ({
-  schedule,
+  customer,
   canCreate,
   createHint,
   onCreate,
-  depositAmount,
+  canRegenerate,
+  onRegenerate,
   canSync,
   onSynced,
-  suffix,
 }: {
-  schedule: ScheduleResponse;
+  customer: Customer;
   canCreate: boolean;
   createHint: string;
   onCreate: () => void;
-  /** Current class deposit (> 0) or null. */
-  depositAmount: number | null;
+  /** Admin-only "Tạo lại" (overwrites the existing contract). */
+  canRegenerate: boolean;
+  onRegenerate: () => void;
   canSync: boolean;
-  onSynced: (patch: Partial<ScheduleResponse>) => void;
-  suffix?: string;
+  onSynced: (customer: Customer) => void;
 }) => {
   const [syncing, setSyncing] = useState(false);
-  const tile =
-    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4';
-  if (!schedule.contractUrl) {
-    if (!canCreate) {
-      return (
-        <div className="flex items-center gap-3 rounded-[12px] border border-dashed bg-card px-3 py-2.5 text-sm">
-          <span className={cn(tile, 'bg-muted text-muted-foreground')}>
-            <FileText />
-          </span>
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">
-            Chưa có hợp đồng{suffix}
-          </span>
-        </div>
-      );
-    }
+  const contract = customer.contract;
+  if (!contract?.url) {
+    if (!canCreate) return <EmptyLinkCard icon={<FileText />} label="Chưa có hợp đồng" />;
     return (
       <div className="flex items-center gap-3 rounded-[12px] border border-primary/60 bg-primary-100 px-3 py-2.5 text-sm dark:bg-primary/15">
-        <span className={cn(tile, 'bg-card text-primary-700 shadow-sm dark:text-primary')}>
+        <span className={cn(cardTile, 'bg-card text-primary-700 shadow-sm dark:text-primary')}>
           <FilePlus />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold text-foreground">
-            Chưa có hợp đồng{suffix}
-          </span>
+          <span className="block truncate font-semibold text-foreground">Chưa có hợp đồng</span>
           <span className="block text-xs text-muted-foreground">{createHint}</span>
         </span>
         <Button size="sm" className="h-8 shrink-0 px-3" onClick={onCreate}>
@@ -422,19 +470,17 @@ const ContractCard = ({
     );
   }
   // Legacy contracts (created before named ranges) have no doc id and never auto-sync.
-  const legacy = !schedule.contractDocId;
-  const printed = schedule.contractDepositAmount ?? null;
+  const legacy = !contract.docId;
+  const printed = contract.depositAmount ?? null;
+  const deposit =
+    customer.deposit?.amount && customer.deposit.amount > 0 ? customer.deposit.amount : null;
   // Waiting for the class deposit / printed amount matches / differs from the class deposit
   const state =
-    depositAmount === null && printed === null
-      ? 'pending'
-      : printed === depositAmount
-        ? 'synced'
-        : 'mismatch';
+    deposit === null && printed === null ? 'pending' : printed === deposit ? 'synced' : 'mismatch';
   const syncNow = async () => {
     setSyncing(true);
     try {
-      onSynced(await scheduleService.syncContractDeposit(schedule._id));
+      onSynced(await customerService.syncContractDeposit(customer._id));
       toast.success('Đã cập nhật tiền cọc trên hợp đồng');
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Không cập nhật được tiền cọc trên hợp đồng.'));
@@ -444,20 +490,20 @@ const ContractCard = ({
   };
   return (
     <div className="relative flex items-center gap-3 rounded-[12px] border bg-card px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5">
-      <span className={cn(tile, 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300')}>
+      <span className={cn(cardTile, 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300')}>
         <FileText />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold text-foreground">Hợp đồng{suffix}</span>
+        <span className="block truncate font-semibold text-foreground">Hợp đồng</span>
         {legacy ? (
           <span className="block truncate text-xs text-muted-foreground">
             Hợp đồng cũ · không tự cập nhật cọc
           </span>
         ) : state === 'synced' ? (
-          <span className="flex items-start gap-1 text-xs text-muted-foreground">
-            <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            {schedule.contractDepositSyncedAt
-              ? `Tiền cọc đã cập nhật ${formatDate(schedule.contractDepositSyncedAt)}`
+          <span className="flex items-start gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0" />
+            {contract.depositSyncedAt
+              ? `Tiền cọc đã cập nhật ${formatDate(contract.depositSyncedAt)}`
               : 'Đã điền tiền cọc'}
           </span>
         ) : state === 'pending' ? (
@@ -485,15 +531,31 @@ const ContractCard = ({
           </span>
         )}
       </span>
-      {/* Stretched link: the whole card opens the doc; the "Cập nhật lại" button sits above it */}
-      <a
-        href={schedule.contractUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground after:absolute after:inset-0 after:rounded-[12px]"
-      >
-        Mở <ExternalLink className="h-3.5 w-3.5" />
-      </a>
+      <OpenLink href={contract.url} />
+      {canRegenerate && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Thao tác hợp đồng"
+              className="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem onSelect={onRegenerate} className="items-start gap-2.5 py-2">
+              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <span className="block font-medium">Tạo lại hợp đồng</span>
+                <span className="block text-xs text-muted-foreground">
+                  Chỉ admin · ghi đè file hiện tại
+                </span>
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };
@@ -508,7 +570,10 @@ const CustomerDetailPage = () => {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
   const [statusTarget, setStatusTarget] = useState<CustomerStatus | null>(null);
-  const [contractSchedule, setContractSchedule] = useState<ScheduleResponse | null>(null);
+  // Contract dialog: closed / create / admin "Tạo lại"
+  const [contractMode, setContractMode] = useState<'create' | 'regenerate' | null>(null);
+  const [regenerateConfirm, setRegenerateConfirm] = useState(false);
+  const packages = useAppSelector((st) => st.packages.list);
   const [noteOpen, setNoteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -563,7 +628,8 @@ const CustomerDetailPage = () => {
     setActivities([]);
     setLoadError(false);
     setStatusTarget(null);
-    setContractSchedule(null);
+    setContractMode(null);
+    setRegenerateConfirm(false);
     setNoteOpen(false);
     setEditOpen(false);
     load();
@@ -641,15 +707,11 @@ const CustomerDetailPage = () => {
   // Cancelled schedules don't count: the main schedule is the first non-cancelled one.
   const activeSchedules = schedules.filter((s) => !isScheduleCancelled(s));
   const mainSchedule = activeSchedules[0] ?? null;
-  const canCreateContract = CONTRACT_STATUSES.includes(status);
-  const depositAmount =
-    customer.deposit && customer.deposit.amount > 0 ? customer.deposit.amount : null;
-  // Mirrors backend POST /schedules/:id/sync-contract-deposit: admin / kế toán / sale phụ trách
-  const canSyncContract = isAdmin || roles.includes(5) || canNote;
-  // The main schedule always gets a "Hợp đồng" tile (create button while allowed)
-  const linkSchedules = schedules.filter(
-    (s) => s.driveFolderUrl || s.contractUrl || s._id === mainSchedule?._id,
-  );
+  // Mirrors backend customerContractController: admin / kế toán / sale phụ trách lớp
+  const canManageClass = isAdmin || roles.includes(5) || canNote;
+  const canCreateContract = canManageClass && (isAdmin || CONTRACT_STATUSES.includes(status));
+  const showLinks = !!customer.contract?.url || !!customer.driveFolderUrl || status !== 'lost';
+  const patchCustomer = (updated: Customer) => setCustomer(updated);
   const feedbackUrl = `${window.location.origin}/feedback/${customer._id}`;
 
   const submitNote = async () => {
@@ -875,7 +937,7 @@ const CustomerDetailPage = () => {
             {status === 'deposited' && !mainSchedule && (
               <div className="flex flex-col gap-3 rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 sm:flex-row sm:items-center">
                 <p className="min-w-0 flex-1 text-sm text-amber-900 dark:text-amber-200">
-                  Chưa có lịch chụp nên chưa tạo folder Drive — tạo lịch chụp cho lớp này.
+                  Lớp chưa có lịch chụp — tạo lịch chụp cho lớp này.
                 </p>
                 <Button variant="outline" asChild>
                   <Link to="/schedules" state={createScheduleState}>
@@ -914,40 +976,27 @@ const CustomerDetailPage = () => {
               </div>
             )}
 
-            {linkSchedules.length > 0 && (
+            {showLinks && (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {linkSchedules.map((s) => (
-                  <div key={s._id} className="contents">
-                    {s.driveFolderUrl && (
-                      <LinkRow
-                        href={s.driveFolderUrl}
-                        icon={<FolderOpen />}
-                        tile="bg-amber-500/15 text-amber-700 dark:text-amber-300"
-                        label={`Folder Drive${linkSchedules.length > 1 ? ` · ${formatDate(s.shootDate)}` : ''}`}
-                      />
-                    )}
-                    {(s.contractUrl || s._id === mainSchedule?._id) && (
-                      <ContractCard
-                        schedule={s}
-                        canCreate={canCreateContract && s._id === mainSchedule?._id}
-                        createHint={
-                          status === 'deposited'
-                            ? `Tạo hợp đồng xong lớp tự chuyển “${CUSTOMER_STATUS_LABELS.scheduled}”`
-                            : 'Tạo được ngay khi lớp có lịch chụp'
-                        }
-                        onCreate={() => setContractSchedule(s)}
-                        depositAmount={depositAmount}
-                        canSync={canSyncContract}
-                        onSynced={(patch) =>
-                          setSchedules((list) =>
-                            list.map((x) => (x._id === s._id ? { ...x, ...patch } : x)),
-                          )
-                        }
-                        suffix={linkSchedules.length > 1 ? ` · ${formatDate(s.shootDate)}` : ''}
-                      />
-                    )}
-                  </div>
-                ))}
+                <DriveCard
+                  customer={customer}
+                  canCreate={canManageClass}
+                  onCreated={patchCustomer}
+                />
+                <ContractCard
+                  customer={customer}
+                  canCreate={canCreateContract}
+                  createHint={
+                    status === 'deposited'
+                      ? `Tạo hợp đồng xong lớp tự chuyển “${CUSTOMER_STATUS_LABELS.scheduled}”`
+                      : 'Tạo được ngay từ thông tin lớp'
+                  }
+                  onCreate={() => setContractMode('create')}
+                  canRegenerate={isAdmin}
+                  onRegenerate={() => setRegenerateConfirm(true)}
+                  canSync={canManageClass}
+                  onSynced={patchCustomer}
+                />
               </div>
             )}
 
@@ -1302,11 +1351,27 @@ const CustomerDetailPage = () => {
       />
 
       <ContractDialog
-        schedule={contractSchedule}
-        onClose={() => setContractSchedule(null)}
-        onCreated={() => {
-          load();
+        customer={contractMode ? customer : null}
+        schedule={mainSchedule}
+        packages={packages}
+        seasonName={seasons.find((se) => se._id === customer.season)?.name}
+        regenerate={contractMode === 'regenerate'}
+        onClose={() => setContractMode(null)}
+        onSaved={(updated) => {
+          setCustomer(updated);
           loadActivities();
+        }}
+      />
+
+      <ConfirmDialog
+        open={regenerateConfirm}
+        onOpenChange={setRegenerateConfirm}
+        title="Tạo lại hợp đồng?"
+        message="Hợp đồng mới sẽ thay thế hợp đồng hiện tại của lớp. Link hợp đồng cũ được lưu trong nhật ký lớp."
+        confirmLabel="Tạo lại"
+        onConfirm={() => {
+          setRegenerateConfirm(false);
+          setContractMode('regenerate');
         }}
       />
 

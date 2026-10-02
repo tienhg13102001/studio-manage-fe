@@ -42,15 +42,6 @@ export const scheduleService = {
     api.post<ApiResponse<ScheduleResponse>>('/schedules', data).then((r) => r.data.data),
   update: (id: string, data: Partial<Schedule>) =>
     api.put<ApiResponse<ScheduleResponse>>(`/schedules/${id}`, data).then((r) => r.data.data),
-  /** Re-fill "Tiền cọc" / "Đợt 2" on the schedule's contract doc from the class deposit. */
-  syncContractDeposit: (id: string) =>
-    api
-      .post<
-        ApiResponse<
-          Pick<Schedule, 'contractDocId' | 'contractDepositAmount' | 'contractDepositSyncedAt'>
-        >
-      >(`/schedules/${id}/sync-contract-deposit`)
-      .then((r) => r.data.data),
   remove: (id: string) =>
     api.delete<ApiResponse<null>>(`/schedules/${id}`).then((r) => r.data),
   downloadContract: async (id: string, filename: string) => {

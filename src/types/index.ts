@@ -55,8 +55,42 @@ export interface Customer {
   deposit?: { amount: number; date: string };
   /** Ngày dự kiến chụp (ISO) — optional. */
   expectedShootDate?: string | null;
+  /** Class contract — `null`/missing when none yet. */
+  contract?: CustomerContract | null;
+  /** Drive photo folder of the class. */
+  driveFolderUrl?: string | null;
+  driveFolderId?: string | null;
   createdAt?: string;
 }
+
+/** Contract of a class (created via the Apps Script, saved with PUT /customers/:id/contract). */
+export interface CustomerContract {
+  url: string;
+  /** Google Doc id — `null` on legacy contracts (deposit cells can't be updated). */
+  docId?: string | null;
+  /** Total payment printed on the contract (package + extra services). */
+  total?: number | null;
+  /** Package id */
+  package?: string | null;
+  /** Price per member printed on the contract (defaults to the package price). */
+  pricePerMember?: number | null;
+  shootDate?: string | null;
+  location?: string;
+  extraServices?: ExtraService[];
+  crewCount?: number | null;
+  crewCountSystem?: number | null;
+  /** Deposit printed on the contract; `null` = left blank "………". */
+  depositAmount?: number | null;
+  depositSyncedAt?: string | null;
+  createdAt?: string | null;
+  createdBy?: string | null;
+}
+
+/** Body of PUT /customers/:id/contract. */
+export type SaveContractBody = Omit<CustomerContract, 'createdAt' | 'createdBy'> & {
+  /** Contract URL the client saw (null when creating) — server 409s if it changed meanwhile. */
+  expectedUrl: string | null;
+};
 
 // ---------------------------------------------------------------------------
 // Customer pipeline (quy trình chăm sóc lớp)
@@ -242,16 +276,6 @@ export interface Schedule {
   status: ScheduleStatus;
   notes?: string;
   season?: string | null;
-  contractUrl?: string;
-  /** Google Doc id of the contract (deposit cells are updated in place later). */
-  contractDocId?: string | null;
-  /** Total payment printed on the contract (package + extra services). */
-  contractTotal?: number | null;
-  /** Deposit printed on the contract; `null` = left blank "………". */
-  contractDepositAmount?: number | null;
-  contractDepositSyncedAt?: string | null;
-  driveFolderUrl?: string;
-  driveFolderId?: string;
   extraServices?: ExtraService[];
   createdAt?: string;
 }

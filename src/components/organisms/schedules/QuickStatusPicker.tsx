@@ -91,7 +91,7 @@ const QuickStatusBody = ({
     if (blocked !== null) return { allowed: false, reason: blocked || null };
     if (target === 'deposited') {
       // An active contract would immediately move the class back to "Chưa chụp"
-      if (schedule.contractUrl) return { allowed: false, reason: 'Lớp đã có hợp đồng' };
+      if (schedule.customer?.contract?.url) return { allowed: false, reason: 'Lớp đã có hợp đồng' };
       // Moving (back) to "Đã cọc" re-sends the class's recorded deposit, which the API requires
       if (!(deposit?.amount && deposit.date)) {
         return { allowed: false, reason: 'Lớp chưa có thông tin cọc' };
