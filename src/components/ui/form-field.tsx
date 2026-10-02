@@ -9,6 +9,8 @@ interface FormFieldProps {
   required?: boolean;
   hint?: string;
   className?: string;
+  /** Class bổ sung cho label (opt-in) */
+  labelClassName?: string;
   children: React.ReactNode;
 }
 
@@ -19,10 +21,11 @@ export const FormField = ({
   required,
   hint,
   className,
+  labelClassName,
   children,
 }: FormFieldProps) => (
   <div className={cn('space-y-1.5', className)}>
-    <Label htmlFor={htmlFor}>
+    <Label htmlFor={htmlFor} className={labelClassName}>
       {label}
       {required && <span className="text-destructive ml-0.5">*</span>}
     </Label>

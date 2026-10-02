@@ -88,6 +88,10 @@ function App() {
                 }
               >
                 {[...navItems, ...adminItems].map(renderRouteItem)}
+                <Route
+                  path="settings/costume-types"
+                  element={<Navigate to="/settings/costumes" replace />}
+                />
                 <Route path="profile" element={<ProfilePage />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

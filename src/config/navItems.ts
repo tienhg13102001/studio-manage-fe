@@ -3,7 +3,6 @@ import {
   Banknote,
   Calendar,
   ClipboardList,
-  Layers,
   LayoutDashboard,
   MessageSquare,
   Package,
@@ -23,7 +22,6 @@ import SchedulesPage from '../pages/SchedulesPage';
 import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
 import CostumesPage from '../pages/CostumesPage';
-import CostumeTypesPage from '../pages/CostumeTypesPage';
 import UsersPage from '../pages/UsersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
@@ -153,14 +151,6 @@ export const adminItems: NavItem[] = [
         component: CostumesPage,
       },
       {
-        to: '/costume-types',
-        label: 'Loại trang phục',
-        icon: Layers,
-        iconClassName: 'text-violet-200',
-        allowedRoles: [0, 1],
-        component: CostumeTypesPage,
-      },
-      {
         to: '/packages',
         label: 'Gói chụp',
         icon: Package,
@@ -186,5 +176,5 @@ export const adminItems: NavItem[] = [
         component: SeasonPage, // TODO: create season management page
       },
     ],
-  }
+  },
 ];

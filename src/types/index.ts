@@ -221,13 +221,25 @@ export interface Costume {
   name: string;
   description?: string;
   gender: 'male' | 'female' | 'unisex';
-  type?: string;
+  type?: string | null;
   createdAt?: string;
 }
 
-/** Populated Costume returned by GET endpoints (type is populated). */
+/** Populated Costume returned by GET endpoints (type is populated; null = "Không phân loại"). */
 export interface CostumeResponse extends Omit<Costume, 'type'> {
-  type?: CostumeType;
+  type?: CostumeType | null;
+}
+
+export interface CostumeTypeInput {
+  name: string;
+  description?: string;
+}
+
+export interface CostumeTypeUsage {
+  costumeCount: number;
+  packageCount: number;
+  costumeNames: string[];
+  packageNames: string[];
 }
 
 export interface Package {
