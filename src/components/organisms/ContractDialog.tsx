@@ -16,9 +16,11 @@ import {
   TimePicker,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { customerService } from '../../services/customerService';
 import { scheduleService } from '../../services/scheduleService';
 import type { ScheduleResponse } from '../../types';
 import { getSchoolName } from '../../types';
+import { calcCrewCount } from '../../utils/crewCount';
 
 const CONTRACT_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbzgl6HRhrlbo_nf_ZgmIXxeWRGgd7OlGMdMm2JQ0QISTQ0Z_ZHTb0E6W-DS1LRFSmw/exec';
@@ -34,6 +36,10 @@ interface ContractFormValues {
   total: number;
   totalMale: number;
   totalFemale: number;
+  /** Số thợ cuối cùng — mặc định theo số hệ thống tính, có thể chỉnh tay. */
+  crewCount: number;
+  /** Bắt buộc khi `crewCount` khác số hệ thống tính. */
+  crewCountReason: string;
   notes: string;
 }
 
@@ -81,6 +87,8 @@ const toFormValues = (schedule: ScheduleResponse): ContractFormValues => ({
   total: schedule.customer?.total ?? 0,
   totalMale: schedule.customer?.totalMale ?? 0,
   totalFemale: schedule.customer?.totalFemale ?? 0,
+  crewCount: calcCrewCount(schedule.customer?.total ?? 0, schedule.package?.studentsPerCrew) ?? NaN,
+  crewCountReason: '',
   notes: schedule.notes ?? '',
 });
 
@@ -94,18 +102,36 @@ const ContractForm = ({
   onCreated,
 }: ContractDialogProps & { schedule: ScheduleResponse }) => {
   const [contractDocUrl, setContractDocUrl] = useState<string | null>(schedule.contractUrl ?? null);
+  // Số thợ đi theo số hệ thống tính cho tới khi người dùng tự sửa ô "Số thợ"
+  const [crewEdited, setCrewEdited] = useState(false);
   const {
     register,
     handleSubmit,
     control,
-    formState: { isSubmitting },
+    watch,
+    setValue,
+    getValues,
+    formState: { isSubmitting, errors },
   } = useForm<ContractFormValues>({ defaultValues: toFormValues(schedule) });
 
+  const studentsPerCrew = schedule.package?.studentsPerCrew;
+  const crewSystem = calcCrewCount(watch('total'), studentsPerCrew);
+  const crewCountValue = watch('crewCount');
+  const crewAdjusted =
+    crewSystem != null && Number.isFinite(crewCountValue) && crewCountValue !== crewSystem;
+
   const onSubmit = async (formData: ContractFormValues) => {
+    const system = calcCrewCount(formData.total, studentsPerCrew);
+    const crewCount = formData.crewCount;
+    const adjusted = system != null && crewCount !== system;
+    const crewCountReason = adjusted ? formData.crewCountReason.trim() : '';
     // Apps Script (Code_create_HD.gs) vẫn đọc `customer.school` dạng chuỗi
     const payload = {
       ...schedule,
       ...formData,
+      crewCount,
+      crewCountSystem: system,
+      crewCountReason,
       customer: schedule.customer
         ? { ...schedule.customer, school: getSchoolName(schedule.customer) }
         : schedule.customer,
@@ -119,6 +145,17 @@ const ContractForm = ({
       const json = await res.json();
       if (json.document_url) {
         setContractDocUrl(json.document_url);
+        // Ghi nhật ký lớp khi số thợ khác số hệ thống tính — lỗi ở đây không làm hỏng hợp đồng
+        if (adjusted && schedule.customer?._id) {
+          try {
+            await customerService.addNote(
+              schedule.customer._id,
+              `Hợp đồng: số thợ ${crewCount} (hệ thống tính ${system}) — Lý do: ${crewCountReason}`,
+            );
+          } catch {
+            toast.warn('Đã tạo hợp đồng nhưng không ghi được nhật ký điều chỉnh số thợ.');
+          }
+        }
         await scheduleService.update(schedule._id, { contractUrl: json.document_url });
         onCreated?.(json.document_url);
         toast.success(json.message ?? 'Tạo hợp đồng thành công!');
@@ -208,7 +245,14 @@ const ContractForm = ({
                 type="number"
                 min={0}
                 className="tabular"
-                {...register('total', { valueAsNumber: true })}
+                {...register('total', {
+                  valueAsNumber: true,
+                  onChange: (e) => {
+                    if (crewEdited) return;
+                    const next = calcCrewCount(Number(e.target.value), studentsPerCrew);
+                    if (next != null) setValue('crewCount', next);
+                  },
+                })}
               />
             </FormField>
             <FormField label="Nam">
@@ -228,6 +272,58 @@ const ContractForm = ({
               />
             </FormField>
           </div>
+        </section>
+
+        <section>
+          <SectionLabel className="mb-3">Ekip</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Số thợ (hệ thống tính)">
+              <Input
+                readOnly
+                tabIndex={-1}
+                className="tabular bg-muted/50"
+                value={crewSystem ?? '—'}
+              />
+            </FormField>
+            <FormField label="Số thợ" required error={errors.crewCount?.message}>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                className="tabular"
+                {...register('crewCount', {
+                  valueAsNumber: true,
+                  onChange: () => setCrewEdited(true),
+                  validate: (v) =>
+                    (Number.isInteger(v) && v >= 0) || 'Vui lòng nhập số thợ (số nguyên ≥ 0).',
+                })}
+              />
+            </FormField>
+          </div>
+          {crewSystem == null && (
+            <p className="mt-1.5 text-xs text-muted-foreground">Gói chưa cài số học sinh / 1 thợ</p>
+          )}
+          {crewAdjusted && (
+            <FormField
+              label="Lý do điều chỉnh số thợ"
+              required
+              error={errors.crewCountReason?.message}
+              className="mt-4"
+            >
+              <Textarea
+                rows={2}
+                placeholder="Vì sao số thợ khác số hệ thống tính..."
+                {...register('crewCountReason', {
+                  validate: (v) => {
+                    const system = calcCrewCount(getValues('total'), studentsPerCrew);
+                    const crew = getValues('crewCount');
+                    if (system == null || !Number.isFinite(crew) || crew === system) return true;
+                    return !!v.trim() || 'Vui lòng nhập lý do điều chỉnh số thợ.';
+                  },
+                })}
+              />
+            </FormField>
+          )}
         </section>
 
         <FormField label="Ghi chú">

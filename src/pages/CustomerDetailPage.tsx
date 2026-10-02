@@ -1135,7 +1135,10 @@ const CustomerDetailPage = () => {
       <ContractDialog
         schedule={contractSchedule}
         onClose={() => setContractSchedule(null)}
-        onCreated={load}
+        onCreated={() => {
+          load();
+          loadActivities();
+        }}
       />
 
       <Dialog
