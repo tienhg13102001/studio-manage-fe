@@ -9,4 +9,6 @@ export const schoolService = {
     api.post<ApiResponse<School>>('/schools', data).then((r) => r.data.data),
   update: (id: string, data: Partial<Pick<School, 'name' | 'address' | 'note'>>) =>
     api.put<ApiResponse<School>>(`/schools/${id}`, data).then((r) => r.data.data),
+  /** 409 (with the server message) while any class still references the school. */
+  remove: (id: string) => api.delete(`/schools/${id}`),
 };

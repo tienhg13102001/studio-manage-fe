@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { schoolService } from '../../services/schoolService';
+import { useAuth } from '../../context/AuthContext';
 import type { School, SchoolRef } from '../../types';
 import { cn } from '@/lib/utils';
 import {
@@ -12,6 +13,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  ConfirmDialog,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -25,6 +27,9 @@ const CREATE = '__create__';
  * Same key as the backend `toSchoolSearchKey` (accent-insensitive) — used to hide "Tạo trường"
  * when a school with the same folded name already exists ("Dong Do" vs "Đông Đô").
  */
+const getApiErrorMessage = (err: unknown, fallback: string) =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+
 const searchKey = (s: string) =>
   s
     .normalize('NFC')
@@ -69,6 +74,9 @@ const SchoolCombobox = ({
   const results = fetched.list;
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const { user } = useAuth();
+  const canDelete = !!user?.roles.some((r) => r === 0 || r === 1);
+  const [deleting, setDeleting] = useState<School | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -119,81 +127,128 @@ const SchoolCombobox = ({
     }
   };
 
+  const confirmDelete = async () => {
+    const target = deleting;
+    if (!target) return;
+    setDeleting(null);
+    try {
+      await schoolService.remove(target._id);
+      toast.success(`Đã xoá trường “${target.name}”`);
+      setFetched((f) => ({ ...f, list: f.list.filter((s) => s._id !== target._id) }));
+      if (value?._id === target._id) onChange(null);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không xoá được trường, vui lòng thử lại.'));
+    }
+  };
+
   return (
-    <Popover
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (o) setQuery('');
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-invalid={invalid || undefined}
-          className={cn(
-            'w-full justify-between font-normal',
-            invalid && 'border-destructive',
-            className,
-          )}
-        >
-          <span className={cn('truncate', !value && 'text-muted-foreground')}>
-            {value?.name ?? allLabel ?? placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="p-0"
-        align="start"
-        style={{ width: 'max(var(--radix-popover-trigger-width), 240px)' }}
+    <>
+      <Popover
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (o) setQuery('');
+        }}
       >
-        <Command shouldFilter={false}>
-          <CommandInput placeholder="Tìm trường…" value={query} onValueChange={setQuery} />
-          <CommandList>
-            {!loading && !canCreate && <CommandEmpty>Không có trường phù hợp.</CommandEmpty>}
-            {loading && results.length === 0 && (
-              <div className="flex justify-center py-4">
-                <Spinner size="sm" />
-              </div>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-invalid={invalid || undefined}
+            className={cn(
+              'w-full justify-between font-normal',
+              invalid && 'border-destructive',
+              className,
             )}
-            <CommandGroup>
-              {allLabel && !typed && (
-                <CommandItem value={ALL} onSelect={() => select(null)}>
-                  <Check className={cn('mr-2 h-4 w-4', value ? 'opacity-0' : 'opacity-100')} />
-                  {allLabel}
-                </CommandItem>
+          >
+            <span className={cn('truncate', !value && 'text-muted-foreground')}>
+              {value?.name ?? allLabel ?? placeholder}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="p-0"
+          align="start"
+          style={{ width: 'max(var(--radix-popover-trigger-width), 240px)' }}
+        >
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="Tìm trường…" value={query} onValueChange={setQuery} />
+            <CommandList>
+              {!loading && !canCreate && <CommandEmpty>Không có trường phù hợp.</CommandEmpty>}
+              {loading && results.length === 0 && (
+                <div className="flex justify-center py-4">
+                  <Spinner size="sm" />
+                </div>
               )}
-              {results.map((s) => (
-                <CommandItem key={s._id} value={s._id} onSelect={() => select(s)}>
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value?._id === s._id ? 'opacity-100' : 'opacity-0',
+              <CommandGroup>
+                {allLabel && !typed && (
+                  <CommandItem value={ALL} onSelect={() => select(null)}>
+                    <Check className={cn('mr-2 h-4 w-4', value ? 'opacity-0' : 'opacity-100')} />
+                    {allLabel}
+                  </CommandItem>
+                )}
+                {results.map((s) => (
+                  <CommandItem key={s._id} value={s._id} onSelect={() => select(s)}>
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value?._id === s._id ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <span className="truncate">{s.name}</span>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        aria-label={`Xoá trường ${s.name}`}
+                        className="-my-1 -mr-1 ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        // Keep the click from selecting the item / moving focus out of the list
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOpen(false);
+                          setDeleting(s);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     )}
-                  />
-                  <span className="truncate">{s.name}</span>
-                </CommandItem>
-              ))}
-              {canCreate && (
-                <CommandItem value={CREATE} disabled={creating} onSelect={create}>
-                  {creating ? (
-                    <Spinner size="sm" className="mr-2" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
-                  <span className="truncate">Tạo trường “{typed}”</span>
-                </CommandItem>
-              )}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                  </CommandItem>
+                ))}
+                {canCreate && (
+                  <CommandItem value={CREATE} disabled={creating} onSelect={create}>
+                    {creating ? (
+                      <Spinner size="sm" className="mr-2" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    <span className="truncate">Tạo trường “{typed}”</span>
+                  </CommandItem>
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(o) => {
+          if (!o) setDeleting(null);
+        }}
+        title="Xoá trường?"
+        message={`Xoá trường “${deleting?.name ?? ''}”? Chỉ xoá được khi trường không còn lớp nào.`}
+        confirmLabel="Xoá"
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 };
 
