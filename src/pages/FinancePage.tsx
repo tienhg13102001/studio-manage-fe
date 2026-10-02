@@ -157,9 +157,10 @@ const FinancePage = () => {
       fetchTransactionSummary({
         dateFrom: appliedFilter.dateFrom,
         dateTo: appliedFilter.dateTo,
+        season: selectedSeasonId || undefined,
       }),
     );
-  }, [dispatch, appliedFilter.dateFrom, appliedFilter.dateTo]);
+  }, [dispatch, appliedFilter.dateFrom, appliedFilter.dateTo, selectedSeasonId]);
 
   useEffect(() => {
     dispatch(
@@ -484,7 +485,7 @@ const FinancePage = () => {
             />
           </div>
           <p className="mb-6 text-xs text-muted-foreground">
-            Theo khoảng ngày đã chọn, không áp dụng các bộ lọc khác.
+            Theo mùa đang chọn (hoặc khoảng ngày nếu có nhập), không áp dụng các bộ lọc khác.
           </p>
         </>
       )}

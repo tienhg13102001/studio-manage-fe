@@ -25,7 +25,8 @@ export const fetchTransactions = createAsyncThunk(
 
 export const fetchTransactionSummary = createAsyncThunk(
   'transactions/fetchSummary',
-  (params?: { dateFrom?: string; dateTo?: string }) => transactionService.getSummary(params),
+  (params?: { dateFrom?: string; dateTo?: string; season?: string }) =>
+    transactionService.getSummary(params),
 );
 
 const transactionsSlice = createSlice({

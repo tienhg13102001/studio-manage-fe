@@ -21,7 +21,7 @@ export const transactionService = {
     api.put<ApiResponse<TransactionResponse>>(`/transactions/${id}`, data).then((r) => r.data.data),
   remove: (id: string) =>
     api.delete<ApiResponse<null>>(`/transactions/${id}`).then((r) => r.data),
-  getSummary: (params?: { dateFrom?: string; dateTo?: string }) =>
+  getSummary: (params?: { dateFrom?: string; dateTo?: string; season?: string }) =>
     api
       .get<ApiResponse<TransactionSummaryRow[]>>('/transactions/summary', { params })
       .then((r) => r.data.data),
