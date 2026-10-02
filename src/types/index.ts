@@ -260,6 +260,27 @@ export interface ScheduleResponse extends Omit<
   leadPhotographer: User | null;
   supportPhotographers: User[];
   bookedBy: User | null;
+  /** Only on GET /schedules: crew members who also have another active schedule that day. */
+  conflicts?: ScheduleConflict[];
+}
+
+/** A crew member double-booked on the same shoot day (GET /schedules). */
+export interface ScheduleConflict {
+  user: { _id: string; name: string };
+  schedule: { _id: string; className: string; startTime?: string; endTime?: string };
+}
+
+/** Schedule counts per shoot status (+ cancelled), from GET /schedules `pagination.statusCounts`. */
+export type ScheduleStatusCounts = Record<'deposited' | 'not_shot' | 'shot' | 'cancelled', number>;
+
+/** Active schedule of a day with its crew ids (GET /schedules/busy). */
+export interface BusySchedule {
+  _id: string;
+  className: string;
+  startTime?: string;
+  endTime?: string;
+  leadPhotographer: string | null;
+  supportPhotographers: string[];
 }
 
 export interface Category {

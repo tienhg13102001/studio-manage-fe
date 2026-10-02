@@ -198,6 +198,8 @@ export function DataTable<T>({
               onClick={(e) => {
                 if (!onRowClick) return;
                 const target = e.target as HTMLElement;
+                // Ignore clicks bubbling from portaled content (popovers/dialogs opened in a cell)
+                if (!e.currentTarget.contains(target)) return;
                 if (target.closest('button,a,input,label,select,textarea')) return;
                 onRowClick(row, absoluteIndex);
               }}

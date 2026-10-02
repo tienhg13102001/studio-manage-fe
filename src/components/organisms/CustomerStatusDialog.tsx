@@ -21,8 +21,10 @@ import {
   Textarea,
   TimePicker,
 } from '@/components/ui';
+import { useAuth } from '../../context/AuthContext';
 import { customerService } from '../../services/customerService';
 import { useAppSelector } from '../../store';
+import { CREW_EDITOR_HINT, canEditCrew } from '../../utils/permissions';
 import type { ChangeCustomerStatusBody, Customer, CustomerStatus } from '../../types';
 import {
   CUSTOMER_STATUS_LABELS,
@@ -89,6 +91,8 @@ const CustomerStatusDialog = ({
 }: CustomerStatusDialogProps) => {
   const packages = useAppSelector((s) => s.packages.list);
   const photographers = useAppSelector((s) => s.users.photographers);
+  const { user } = useAuth();
+  const crewEditor = canEditCrew(user);
   const sales = useAppSelector((s) => s.users.sales);
   const currentSaleId = getUserRefId(customer.assignedSale) ?? '';
   const current = getCustomerStatus(customer);
@@ -142,7 +146,7 @@ const CustomerStatusDialog = ({
           startTime: v.startTime || undefined,
           endTime: v.endTime || undefined,
           location: v.location || undefined,
-          leadPhotographer: v.leadPhotographer || undefined,
+          leadPhotographer: (crewEditor && v.leadPhotographer) || undefined,
         };
       }
     }
@@ -361,6 +365,7 @@ const CustomerStatusDialog = ({
                             <Select
                               value={field.value || NONE}
                               onValueChange={(val) => field.onChange(val === NONE ? '' : val)}
+                              disabled={!crewEditor}
                             >
                               <SelectTrigger className={`${fieldCls} bg-card`}>
                                 <SelectValue placeholder="Chưa phân công" />
@@ -376,6 +381,9 @@ const CustomerStatusDialog = ({
                             </Select>
                           )}
                         />
+                        {!crewEditor && (
+                          <p className="mt-1 text-xs text-muted-foreground">{CREW_EDITOR_HINT}</p>
+                        )}
                       </FormField>
                     </div>
                   )}

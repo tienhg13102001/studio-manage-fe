@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
-  FileText,
   FolderOpen,
   MapPin,
   Pencil,
@@ -12,6 +11,7 @@ import {
   User as UserIcon,
   Users as UsersIcon,
 } from 'lucide-react';
+import { getInitial } from './schedules/scheduleHelpers';
 import { cn } from '@/lib/utils';
 import {
   CUSTOMER_STATUSES,
@@ -50,6 +50,8 @@ export interface CalendarScheduleItem {
   supportNames?: string[];
   driveFolderUrl?: string;
   studentCount?: number;
+  /** Crew initials on the event chip (lead first, ringed). */
+  crew?: { name: string; lead?: boolean }[];
 }
 
 interface Props {
@@ -59,7 +61,7 @@ interface Props {
   onDelete?: (id: string) => void;
   /** Open the full detail of a schedule (event chip click / title click). */
   onOpen?: (id: string) => void;
-  onContract?: (id: string) => void;
+  onEditCrew?: (id: string) => void;
   /** Render the selected-day panel beside the grid (lg+) instead of below it. */
   sidePanel?: boolean;
 }
@@ -175,7 +177,7 @@ const ScheduleCalendar = ({
   onEdit,
   onDelete,
   onOpen,
-  onContract,
+  onEditCrew,
   sidePanel = false,
 }: Props) => {
   const [calendarDate, setCalendarDate] = useState(() => {
@@ -213,7 +215,11 @@ const ScheduleCalendar = ({
   /** Legend = only the statuses actually present, so every chip color is explained. */
   const legend = useMemo(() => {
     const active = items.filter((s) => !s.cancelled);
-    const shoot = new Set(active.map((s) => s.shootStatus).filter(Boolean));
+    // Shoot-status calendars (schedules page) always explain every status
+    const shootMode = items.some((s) => s.shootStatus);
+    const shoot = new Set(
+      shootMode ? SHOOT_STATUSES : active.map((s) => s.shootStatus).filter(Boolean),
+    );
     const pipeline = new Set(active.filter((s) => !s.shootStatus).map((s) => s.status ?? 'new'));
     return {
       statuses: [
@@ -228,7 +234,7 @@ const ScheduleCalendar = ({
           label: CUSTOMER_STATUS_LABELS[k],
         })),
       ],
-      cancelled: items.some((s) => s.cancelled),
+      cancelled: shootMode || items.some((s) => s.cancelled),
     };
   }, [items]);
 
@@ -393,7 +399,26 @@ const ScheduleCalendar = ({
                         <span className="mr-1 hidden tabular sm:inline">{s.startTime}</span>
                       )}
                       {s.className}
-                      {s.school && <span className="hidden sm:inline"> {s.school}</span>}
+                      {s.school && !s.crew && <span className="hidden sm:inline"> {s.school}</span>}
+                      {s.crew && s.crew.length > 0 && (
+                        <span className="mt-0.5 hidden items-center gap-0.5 sm:flex">
+                          {s.crew.slice(0, 4).map((c, ci) => (
+                            <span
+                              key={ci}
+                              title={c.name}
+                              className={cn(
+                                'inline-flex h-4 w-4 items-center justify-center rounded-full bg-card text-[9px] font-bold',
+                                c.lead && 'ring-1 ring-current',
+                              )}
+                            >
+                              {getInitial(c.name)}
+                            </span>
+                          ))}
+                          {s.crew.length > 4 && (
+                            <span className="text-[9px] font-semibold">+{s.crew.length - 4}</span>
+                          )}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -461,7 +486,7 @@ const ScheduleCalendar = ({
         {s.leadName && (
           <div className="flex gap-3">
             <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
-              <UserIcon className="h-3.5 w-3.5" /> Leader
+              <UserIcon className="h-3.5 w-3.5" /> {s.crew ? 'Thợ chính' : 'Leader'}
             </dt>
             <dd className="min-w-0 text-foreground">{s.leadName}</dd>
           </div>
@@ -469,7 +494,7 @@ const ScheduleCalendar = ({
         {s.supportNames && s.supportNames.length > 0 && (
           <div className="flex gap-3">
             <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
-              <UsersIcon className="h-3.5 w-3.5" /> Support
+              <UsersIcon className="h-3.5 w-3.5" /> {s.crew ? 'Thợ phụ' : 'Support'}
             </dt>
             <dd className="min-w-0 text-foreground">{s.supportNames.join(', ')}</dd>
           </div>
@@ -497,11 +522,11 @@ const ScheduleCalendar = ({
           {s.notes}
         </div>
       )}
-      {(onContract || onEdit || onDelete) && (
+      {(onEditCrew || onEdit || onDelete) && (
         <div className="mt-4 flex gap-2">
-          {onContract && (
-            <button type="button" onClick={() => onContract(s._id)} className={actionBtn}>
-              <FileText className="h-4 w-4" /> Hợp đồng
+          {onEditCrew && !s.cancelled && (
+            <button type="button" onClick={() => onEditCrew(s._id)} className={actionBtn}>
+              <UsersIcon className="h-4 w-4" /> Sửa ekip
             </button>
           )}
           {onEdit && (

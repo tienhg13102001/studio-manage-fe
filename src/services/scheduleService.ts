@@ -1,18 +1,25 @@
 import api from './api';
 import type {
   ApiResponse,
+  BusySchedule,
   PaginatedApiResponse,
   PaginatedResponse,
   PublicScheduleResponse,
   Schedule,
   ScheduleResponse,
+  ScheduleStatusCounts,
 } from '../types';
 
 export const scheduleService = {
   getAll: (params?: Record<string, string | number>) =>
     api
       .get<PaginatedApiResponse<ScheduleResponse>>('/schedules', { params })
-      .then((r) => ({ data: r.data.data, ...r.data.pagination }) as PaginatedResponse<ScheduleResponse>),
+      .then(
+        (r) =>
+          ({ data: r.data.data, ...r.data.pagination }) as PaginatedResponse<ScheduleResponse> & {
+            statusCounts?: ScheduleStatusCounts;
+          },
+      ),
   getByCustomer: (customer: string) =>
     api
       .get<ApiResponse<ScheduleResponse | null>>(`/schedules/customer/${customer}`)
@@ -21,6 +28,13 @@ export const scheduleService = {
   getPublicByCustomer: (customer: string) =>
     api
       .get<ApiResponse<PublicScheduleResponse | null>>(`/public/schedules/customer/${customer}`)
+      .then((r) => r.data.data),
+  /** Active schedules on `date` (YYYY-MM-DD) with their crew — for crew availability. */
+  getBusy: (date: string, exclude?: string) =>
+    api
+      .get<ApiResponse<BusySchedule[]>>('/schedules/busy', {
+        params: exclude ? { date, exclude } : { date },
+      })
       .then((r) => r.data.data),
   getOne: (id: string) =>
     api.get<ApiResponse<ScheduleResponse>>(`/schedules/${id}`).then((r) => r.data.data),

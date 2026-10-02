@@ -1,15 +1,23 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { scheduleService } from '../../services/scheduleService';
-import type { ScheduleResponse } from '../../types';
+import type { ScheduleResponse, ScheduleStatusCounts } from '../../types';
 
 interface SchedulesState {
   list: ScheduleResponse[];
   total: number;
+  /** GET /schedules facets: counts per shoot status for the current filters minus `status`. */
+  statusCounts: ScheduleStatusCounts | null;
   loading: boolean;
   error: string | null;
 }
 
-const initialState: SchedulesState = { list: [], total: 0, loading: false, error: null };
+const initialState: SchedulesState = {
+  list: [],
+  total: 0,
+  statusCounts: null,
+  loading: false,
+  error: null,
+};
 
 export const fetchSchedules = createAsyncThunk(
   'schedules/fetchAll',
@@ -30,8 +38,11 @@ const schedulesSlice = createSlice({
         state.loading = false;
         state.list = action.payload.data;
         state.total = action.payload.total;
+        state.statusCounts = action.payload.statusCounts ?? null;
       })
       .addCase(fetchSchedules.rejected, (state, action) => {
+        // A newer request superseded this one — it owns `loading`
+        if (action.meta.aborted) return;
         state.loading = false;
         state.error = action.error.message ?? 'Lỗi tải lịch chụp';
       });
