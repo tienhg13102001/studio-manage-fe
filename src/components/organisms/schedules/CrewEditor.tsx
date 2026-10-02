@@ -218,7 +218,7 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
           <Select value={lead || NO_LEAD} onValueChange={(v) => pickLead(v === NO_LEAD ? '' : v)}>
             <SelectTrigger className="h-11 rounded-[10px] bg-card shadow-none data-[state=open]:border-primary">
               {leadUser ? (
-                <span className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
                   <CrewAvatar name={personName(leadUser)} size={24} lead />
                   <span className="truncate font-semibold text-foreground">
                     {personName(leadUser)}
@@ -233,7 +233,7 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
                       </span>
                     )}
                   </span>
-                </span>
+                </div>
               ) : (
                 <span className="text-muted-foreground">Chưa chọn thợ chính</span>
               )}

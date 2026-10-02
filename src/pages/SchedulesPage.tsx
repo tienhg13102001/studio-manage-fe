@@ -529,10 +529,10 @@ const SchedulesPage = () => {
             onValueChange={(v) => changeFilters({ status: v === ALL ? '' : v })}
           >
             <SelectTrigger className={cn(filterControlCls, 'w-[180px]')}>
-              <span className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <ListFilter className="h-4 w-4 text-muted-foreground" />
                 <SelectValue />
-              </span>
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
@@ -559,7 +559,7 @@ const SchedulesPage = () => {
             onValueChange={(v) => changeFilters({ photographer: v === ALL ? '' : v, mine: false })}
           >
             <SelectTrigger className={cn(filterControlCls, 'w-[200px]')}>
-              <span className="flex min-w-0 items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <Camera className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">
                   Thợ chụp:{' '}
@@ -568,7 +568,7 @@ const SchedulesPage = () => {
                       'Đã chọn'
                     : 'Tất cả'}
                 </span>
-              </span>
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>Tất cả</SelectItem>
