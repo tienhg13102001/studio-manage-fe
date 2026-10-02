@@ -236,7 +236,7 @@ export interface Schedule {
   leadPhotographer: string | null;
   supportPhotographers: string[];
   bookedBy: string | null;
-  /** Only a cancel flag — the displayed status is the class pipeline status (`customer.status`). */
+  /** Only a cancel flag — the displayed status is the shoot status derived from `customer.status`. */
   status: ScheduleStatus;
   notes?: string;
   season?: string | null;

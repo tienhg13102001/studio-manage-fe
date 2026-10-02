@@ -19,7 +19,14 @@ import {
   CUSTOMER_STATUS_VARIANT,
   type CustomerStatus,
 } from '../../types';
-import { DOW_VN, SCHEDULE_CANCELLED_LABEL } from '../../utils/scheduleConstants';
+import {
+  DOW_VN,
+  SCHEDULE_CANCELLED_LABEL,
+  SHOOT_STATUSES,
+  SHOOT_STATUS_LABELS,
+  SHOOT_STATUS_VARIANT,
+  type ShootStatus,
+} from '../../utils/scheduleConstants';
 
 export interface CalendarScheduleItem {
   _id: string;
@@ -29,6 +36,8 @@ export interface CalendarScheduleItem {
   location?: string;
   /** Class pipeline status (`customer.status`) — drives the color. */
   status?: CustomerStatus;
+  /** Shoot status (schedules page) — when set, overrides `status` for color & label. */
+  shootStatus?: ShootStatus;
   /** Cancelled schedules are rendered muted / struck through. */
   cancelled?: boolean;
   className: string;
@@ -122,11 +131,21 @@ const CANCELLED_STYLE: StatusStyle = {
   badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
 };
 
-const getStyle = (s: Pick<CalendarScheduleItem, 'status' | 'cancelled'>): StatusStyle =>
-  s.cancelled ? CANCELLED_STYLE : VARIANT_STYLE[CUSTOMER_STATUS_VARIANT[s.status ?? 'new']];
+type StatusItem = Pick<CalendarScheduleItem, 'status' | 'shootStatus' | 'cancelled'>;
 
-const getLabel = (s: Pick<CalendarScheduleItem, 'status' | 'cancelled'>) =>
-  s.cancelled ? SCHEDULE_CANCELLED_LABEL : CUSTOMER_STATUS_LABELS[s.status ?? 'new'];
+const getStyle = (s: StatusItem): StatusStyle => {
+  if (s.cancelled) return CANCELLED_STYLE;
+  return VARIANT_STYLE[
+    s.shootStatus ? SHOOT_STATUS_VARIANT[s.shootStatus] : CUSTOMER_STATUS_VARIANT[s.status ?? 'new']
+  ];
+};
+
+const getLabel = (s: StatusItem) => {
+  if (s.cancelled) return SCHEDULE_CANCELLED_LABEL;
+  return s.shootStatus
+    ? SHOOT_STATUS_LABELS[s.shootStatus]
+    : CUSTOMER_STATUS_LABELS[s.status ?? 'new'];
+};
 
 const DOW_LONG = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
@@ -135,7 +154,7 @@ const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 const parseKey = (key: string) =>
   new Date(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10));
 
-const StatusPill = ({ item }: { item: Pick<CalendarScheduleItem, 'status' | 'cancelled'> }) => {
+const StatusPill = ({ item }: { item: StatusItem }) => {
   const st = getStyle(item);
   return (
     <span
@@ -193,9 +212,22 @@ const ScheduleCalendar = ({
 
   /** Legend = only the statuses actually present, so every chip color is explained. */
   const legend = useMemo(() => {
-    const present = new Set(items.filter((s) => !s.cancelled).map((s) => s.status ?? 'new'));
+    const active = items.filter((s) => !s.cancelled);
+    const shoot = new Set(active.map((s) => s.shootStatus).filter(Boolean));
+    const pipeline = new Set(active.filter((s) => !s.shootStatus).map((s) => s.status ?? 'new'));
     return {
-      statuses: CUSTOMER_STATUSES.filter((k) => present.has(k)),
+      statuses: [
+        ...SHOOT_STATUSES.filter((k) => shoot.has(k)).map((k) => ({
+          key: `shoot-${k}`,
+          dot: VARIANT_STYLE[SHOOT_STATUS_VARIANT[k]].dot,
+          label: SHOOT_STATUS_LABELS[k],
+        })),
+        ...CUSTOMER_STATUSES.filter((k) => pipeline.has(k)).map((k) => ({
+          key: k,
+          dot: VARIANT_STYLE[CUSTOMER_STATUS_VARIANT[k]].dot,
+          label: CUSTOMER_STATUS_LABELS[k],
+        })),
+      ],
       cancelled: items.some((s) => s.cancelled),
     };
   }, [items]);
@@ -244,14 +276,9 @@ const ScheduleCalendar = ({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="hidden items-center gap-3 text-xs text-muted-foreground md:flex">
             {legend.statuses.map((k) => (
-              <span key={k} className="inline-flex items-center gap-1.5">
-                <span
-                  className={cn(
-                    'h-2 w-2 rounded-full',
-                    VARIANT_STYLE[CUSTOMER_STATUS_VARIANT[k]].dot,
-                  )}
-                />
-                {CUSTOMER_STATUS_LABELS[k]}
+              <span key={k.key} className="inline-flex items-center gap-1.5">
+                <span className={cn('h-2 w-2 rounded-full', k.dot)} />
+                {k.label}
               </span>
             ))}
             {legend.cancelled && (

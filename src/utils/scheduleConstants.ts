@@ -1,4 +1,4 @@
-import type { CustomerStatus } from '../types';
+import { CUSTOMER_STATUS_VARIANT, type CustomerStatus } from '../types';
 
 export const MONTH_VN = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
 
@@ -24,15 +24,37 @@ export const shortLabel = (label: string) => {
   return MONTH_LABELS[mo] ?? label;
 };
 
-/** Class (pipeline) statuses that a shoot schedule can be in — used for filters & count chips. */
-export const SCHEDULE_CUSTOMER_STATUSES: CustomerStatus[] = [
-  'deposited',
-  'scheduled',
-  'shot',
-  'awaiting_print',
-  'done',
-  'lost',
-];
+/** Class statuses that count as "Đã chụp" on the schedules page. */
+export const SHOT_CUSTOMER_STATUSES: CustomerStatus[] = ['shot', 'awaiting_print', 'done'];
+
+/** Shoot status shown on the schedules page — derived from the class pipeline status. */
+export const SHOOT_STATUSES = ['deposited', 'not_shot', 'shot'] as const;
+export type ShootStatus = (typeof SHOOT_STATUSES)[number];
+
+export const SHOOT_STATUS_LABELS: Record<ShootStatus, string> = {
+  deposited: 'Đã cọc',
+  not_shot: 'Chưa chụp',
+  shot: 'Đã chụp',
+};
+
+/** Reuse the pipeline colors so badges stay consistent with the rest of the app. */
+export const SHOOT_STATUS_VARIANT: Record<
+  ShootStatus,
+  (typeof CUSTOMER_STATUS_VARIANT)[CustomerStatus]
+> = {
+  deposited: CUSTOMER_STATUS_VARIANT.deposited,
+  not_shot: CUSTOMER_STATUS_VARIANT.scheduled,
+  shot: CUSTOMER_STATUS_VARIANT.shot,
+};
+
+/** `deposited` → Đã cọc; shot/awaiting_print/done → Đã chụp; anything else (incl. missing) → Chưa chụp. */
+export const toShootStatus = (status: CustomerStatus | null | undefined): ShootStatus => {
+  if (status === 'deposited') return 'deposited';
+  return status && SHOT_CUSTOMER_STATUSES.includes(status) ? 'shot' : 'not_shot';
+};
+
+export const getShootStatus = (s: { customer?: { status?: CustomerStatus } | null }): ShootStatus =>
+  toShootStatus(s.customer?.status);
 
 /** Filter value for cancelled schedules (the only schedule-level status). */
 export const SCHEDULE_CANCELLED = 'cancelled';

@@ -62,20 +62,17 @@ import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchSchedules } from '../store/slices/schedulesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
 import type { CostumeResponse, ExtraService, ScheduleResponse } from '../types';
-import {
-  CUSTOMER_STATUSES,
-  CUSTOMER_STATUS_LABELS,
-  CUSTOMER_STATUS_VARIANT,
-  ROLE_LABELS,
-  getCustomerStatus,
-  getSchoolName,
-} from '../types';
+import { ROLE_LABELS, getSchoolName } from '../types';
 import { classLabel, formatDate } from '../utils/format';
 import {
   SCHEDULE_CANCELLED,
   SCHEDULE_CANCELLED_LABEL,
-  SCHEDULE_CUSTOMER_STATUSES,
+  SHOOT_STATUSES,
+  SHOOT_STATUS_LABELS,
+  SHOOT_STATUS_VARIANT,
+  getShootStatus,
   isScheduleCancelled,
+  type ShootStatus,
 } from '../utils/scheduleConstants';
 
 interface FilterState {
@@ -88,7 +85,7 @@ interface FilterState {
 const defaultFilter: FilterState = { status: '', dateFrom: '', dateTo: '', customer: '' };
 const ALL = '__all__';
 
-/** Schedule status = the class pipeline status; cancelled schedules show "Đã huỷ" instead. */
+/** Schedule status = shoot status derived from the class status; cancelled schedules show "Đã huỷ". */
 const StatusBadge = ({
   schedule,
   className,
@@ -103,10 +100,10 @@ const StatusBadge = ({
       </Badge>
     );
   }
-  const status = getCustomerStatus(schedule.customer);
+  const status = getShootStatus(schedule);
   return (
-    <Badge variant={CUSTOMER_STATUS_VARIANT[status]} dot className={className}>
-      {CUSTOMER_STATUS_LABELS[status]}
+    <Badge variant={SHOOT_STATUS_VARIANT[status]} dot className={className}>
+      {SHOOT_STATUS_LABELS[status]}
     </Badge>
   );
 };
@@ -739,7 +736,7 @@ const SchedulesPage = () => {
         startTime: s.startTime,
         endTime: s.endTime,
         location: s.location,
-        status: s.customer?.status,
+        shootStatus: getShootStatus(s),
         cancelled: isScheduleCancelled(s),
         notes: s.notes,
         className: s.customer?.className ?? '—',
@@ -756,12 +753,12 @@ const SchedulesPage = () => {
     [schedules],
   );
 
-  // Class-status counts over active schedules; only meaningful when every match is on this page.
+  // Shoot-status counts over active schedules; only meaningful when every match is on this page.
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const counts: Partial<Record<ShootStatus, number>> = {};
     schedules.forEach((s) => {
       if (isScheduleCancelled(s)) return;
-      const st = getCustomerStatus(s.customer);
+      const st = getShootStatus(s);
       counts[st] = (counts[st] ?? 0) + 1;
     });
     return counts;
@@ -927,9 +924,9 @@ const SchedulesPage = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {SCHEDULE_CUSTOMER_STATUSES.map((v) => (
+            {SHOOT_STATUSES.map((v) => (
               <SelectItem key={v} value={v}>
-                {CUSTOMER_STATUS_LABELS[v]}
+                {SHOOT_STATUS_LABELS[v]}
               </SelectItem>
             ))}
             <SelectItem value={SCHEDULE_CANCELLED}>{SCHEDULE_CANCELLED_LABEL}</SelectItem>
@@ -967,9 +964,9 @@ const SchedulesPage = () => {
         </Button>
         {showStatusCounts && (
           <div className="flex flex-wrap items-center gap-1.5 lg:ml-auto">
-            {CUSTOMER_STATUSES.filter((k) => statusCounts[k]).map((k) => (
-              <Badge key={k} variant={CUSTOMER_STATUS_VARIANT[k]} dot className="font-medium">
-                {CUSTOMER_STATUS_LABELS[k]} · {statusCounts[k]}
+            {SHOOT_STATUSES.filter((k) => statusCounts[k]).map((k) => (
+              <Badge key={k} variant={SHOOT_STATUS_VARIANT[k]} dot className="font-medium">
+                {SHOOT_STATUS_LABELS[k]} · {statusCounts[k]}
               </Badge>
             ))}
           </div>
