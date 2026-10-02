@@ -243,6 +243,13 @@ export interface Schedule {
   notes?: string;
   season?: string | null;
   contractUrl?: string;
+  /** Google Doc id of the contract (deposit cells are updated in place later). */
+  contractDocId?: string | null;
+  /** Total payment printed on the contract (package + extra services). */
+  contractTotal?: number | null;
+  /** Deposit printed on the contract; `null` = left blank "………". */
+  contractDepositAmount?: number | null;
+  contractDepositSyncedAt?: string | null;
   driveFolderUrl?: string;
   driveFolderId?: string;
   extraServices?: ExtraService[];

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { Copy, FileText } from 'lucide-react';
+import { Calculator, Copy, FileText, Info, Lock } from 'lucide-react';
 import {
   Button,
   DatePicker,
@@ -21,6 +21,10 @@ import { scheduleService } from '../../services/scheduleService';
 import type { ScheduleResponse } from '../../types';
 import { getSchoolName } from '../../types';
 import { calcCrewCount } from '../../utils/crewCount';
+import { formatDate } from '../../utils/format';
+
+const formatNum = (n: number) => Math.round(n).toLocaleString('vi-VN');
+const formatVnd = (n: number) => `${formatNum(n)} ₫`;
 
 const CONTRACT_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbzgl6HRhrlbo_nf_ZgmIXxeWRGgd7OlGMdMm2JQ0QISTQ0Z_ZHTb0E6W-DS1LRFSmw/exec';
@@ -120,6 +124,20 @@ const ContractForm = ({
   const crewAdjusted =
     crewSystem != null && Number.isFinite(crewCountValue) && crewCountValue !== crewSystem;
 
+  // Same formula as Code_create_HD.gs: students × package price + extra services
+  const pricePerMember = schedule.package?.pricePerMember ?? 0;
+  const extraTotal = (schedule.extraServices ?? []).reduce((sum, sv) => {
+    const amount = Number(sv.amount);
+    return (
+      sum +
+      (Number.isFinite(amount) ? amount : (Number(sv.quantity) || 0) * (Number(sv.unitPrice) || 0))
+    );
+  }, 0);
+  const totalPaymentOf = (total: number) => (Number(total) || 0) * pricePerMember + extraTotal;
+  const totalPayment = totalPaymentOf(watch('total'));
+  const deposit = schedule.customer?.deposit;
+  const depositAmount = deposit?.amount && deposit.amount > 0 ? deposit.amount : null;
+
   const onSubmit = async (formData: ContractFormValues) => {
     const system = calcCrewCount(formData.total, studentsPerCrew);
     const crewCount = formData.crewCount;
@@ -132,6 +150,8 @@ const ContractForm = ({
       crewCount,
       crewCountSystem: system,
       crewCountReason,
+      // null → hợp đồng để trống "………" ở Tiền cọc & Đợt 2 (tự cập nhật khi ghi nhận cọc)
+      depositAmount,
       customer: schedule.customer
         ? { ...schedule.customer, school: getSchoolName(schedule.customer) }
         : schedule.customer,
@@ -156,7 +176,15 @@ const ContractForm = ({
             toast.warn('Đã tạo hợp đồng nhưng không ghi được nhật ký điều chỉnh số thợ.');
           }
         }
-        await scheduleService.update(schedule._id, { contractUrl: json.document_url });
+        const printedDeposit: number | null =
+          json.depositAmount === undefined ? depositAmount : (json.depositAmount ?? null);
+        await scheduleService.update(schedule._id, {
+          contractUrl: json.document_url,
+          contractDocId: json.documentId ?? null,
+          contractTotal: Number(json.totalPayment ?? totalPaymentOf(formData.total)),
+          contractDepositAmount: printedDeposit,
+          contractDepositSyncedAt: printedDeposit !== null ? new Date().toISOString() : null,
+        });
         onCreated?.(json.document_url);
         toast.success(json.message ?? 'Tạo hợp đồng thành công!');
       } else {
@@ -326,6 +354,73 @@ const ContractForm = ({
           )}
         </section>
 
+        <section>
+          <SectionLabel className="mb-3">Thanh toán</SectionLabel>
+          {depositAmount === null && (
+            <div className="mb-3 flex items-start gap-2.5 rounded-[12px] border border-primary/40 bg-primary-100 px-3.5 py-3 text-[13px] dark:bg-primary/15">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary-700 dark:text-primary" />
+              <div>
+                <div className="font-semibold text-primary-700 dark:text-primary">
+                  Lớp chưa có tiền cọc
+                </div>
+                <p className="mt-0.5 text-muted-foreground">
+                  Hợp đồng sẽ để trống “………” ở Tiền cọc và Đợt 2. Khi ghi nhận cọc, hợp đồng tự cập
+                  nhật 2 ô này.
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <div className="text-sm font-medium">Tiền cọc (đợt 1)</div>
+              <div className="flex h-10 items-center gap-2 rounded-[10px] border bg-muted/50 px-3 text-sm">
+                <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {depositAmount !== null ? (
+                  <>
+                    <span className="font-semibold tabular">{formatVnd(depositAmount)}</span>
+                    {deposit?.date && (
+                      <span className="ml-auto text-xs text-muted-foreground tabular">
+                        {formatDate(deposit.date)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted-foreground">……… ₫</span>
+                    <span className="ml-auto text-xs text-muted-foreground">chờ cọc</span>
+                  </>
+                )}
+              </div>
+              {depositAmount !== null && (
+                <p className="text-xs text-muted-foreground">Lấy từ giao dịch cọc của lớp</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <div className="text-sm font-medium">Đợt 2 (còn lại)</div>
+              {depositAmount !== null ? (
+                <>
+                  <div className="flex h-10 items-center gap-2 rounded-[10px] border border-primary/60 bg-primary-100 px-3 text-sm dark:bg-primary/15">
+                    <Calculator className="h-3.5 w-3.5 shrink-0 text-primary-700 dark:text-primary" />
+                    <span className="font-semibold text-primary-700 tabular dark:text-primary">
+                      {formatVnd(Math.max(totalPayment - depositAmount, 0))}
+                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground">= Tổng − cọc</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground tabular">
+                    Tự tính · {formatNum(totalPayment)} − {formatNum(depositAmount)}
+                  </p>
+                </>
+              ) : (
+                <div className="flex h-10 items-center gap-2 rounded-[10px] border bg-muted/50 px-3 text-sm">
+                  <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="text-muted-foreground">……… ₫</span>
+                  <span className="ml-auto text-xs text-muted-foreground">chờ cọc</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
         <FormField label="Ghi chú">
           <Textarea rows={3} placeholder="Ghi chú hợp đồng..." {...register('notes')} />
         </FormField>
@@ -364,6 +459,16 @@ const ContractForm = ({
             </div>
           </div>
         )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t px-5 py-2.5 text-sm sm:px-6">
+        <span className="truncate text-xs text-muted-foreground">Gói + dịch vụ thêm</span>
+        <span className="shrink-0">
+          <span className="text-muted-foreground">Tổng cộng</span>{' '}
+          <span className="text-base font-bold text-primary-700 tabular dark:text-primary">
+            {formatVnd(totalPayment)}
+          </span>
+        </span>
       </div>
 
       <div className="flex shrink-0 justify-end gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
