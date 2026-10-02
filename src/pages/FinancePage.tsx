@@ -1,224 +1,252 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  CheckCircle2,
-  Clock,
-  Pencil,
-  Plus,
-  ReceiptText,
-  School,
-  Trash2,
-  UserCircle2,
-  Wallet,
-} from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { transactionService } from '../services/transactionService';
-import { classLabel, formatDate, formatCurrency } from '../utils/format';
-import type { Transaction, TransactionResponse } from '../types';
-import { getSchoolName } from '../types';
+import { Button, ConfirmDialog, Input, Spinner } from '@/components/ui';
+import { cn } from '@/lib/utils';
+import ClassSummaryTable from '../components/organisms/finance/ClassSummaryTable';
+import FinanceFilterSheet from '../components/organisms/finance/FinanceFilterSheet';
+import FinanceKpis from '../components/organisms/finance/FinanceKpis';
+import FinanceToolbar, {
+  FinanceTabs,
+  TypeSegmented,
+  type FinanceTab,
+} from '../components/organisms/finance/FinanceToolbar';
+import TransactionFormModal from '../components/organisms/finance/TransactionFormModal';
+import TransactionMobileList from '../components/organisms/finance/TransactionMobileList';
+import TransactionTable from '../components/organisms/finance/TransactionTable';
+import { exportTransactions } from '../components/organisms/finance/exportTransactions';
+import {
+  DEFAULT_FINANCE_FILTERS,
+  EXPENSE_TEXT,
+  INCOME_TEXT,
+  activeFilterCount,
+  buildTxParams,
+  kpiFromSummary,
+  rangeLabel,
+  shortMoney,
+  type FinanceFilters,
+  type TxSort,
+} from '../components/organisms/finance/financeHelpers';
 import { useAuth } from '../context/AuthContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { transactionService } from '../services/transactionService';
 import { useAppDispatch, useAppSelector } from '../store';
+import { fetchCategories } from '../store/slices/categoriesSlice';
+import { fetchCustomers } from '../store/slices/customersSlice';
 import {
   fetchTransactions,
+  fetchMoreTransactions,
   fetchTransactionSummary,
   patchTransaction,
 } from '../store/slices/transactionsSlice';
-import { fetchCustomers } from '../store/slices/customersSlice';
-import { fetchCategories } from '../store/slices/categoriesSlice';
 import { fetchUsers } from '../store/slices/usersSlice';
-import {
-  Badge,
-  Button,
-  Checkbox,
-  Combobox,
-  ConfirmDialog,
-  DataTable,
-  DatePicker,
-  FormField,
-  Input,
-  Label,
-  Modal,
-  PageHeader,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  TableSkeleton,
-  Textarea,
-} from '@/components/ui';
-import type { Column } from '@/components/ui';
-import { cn } from '@/lib/utils';
+import type { TransactionResponse } from '../types';
+import { getSchoolName } from '../types';
+import { classLabel } from '../utils/format';
 
-interface FilterState {
-  type: string;
-  customer: string;
-  categoryId: string;
-  createdBy: string;
-  dateFrom: string;
-  dateTo: string;
-}
-
-const defaultFilter: FilterState = {
-  type: '',
-  customer: '',
-  categoryId: '',
-  createdBy: '',
-  dateFrom: '',
-  dateTo: '',
-};
-
-const ALL = '__all__';
-
-const SummaryCard = ({
-  icon,
-  label,
-  value,
-  valueClass,
-  hint,
-  highlight,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  valueClass?: string;
-  hint?: string;
-  highlight?: boolean;
-}) => (
-  <div
-    className={cn(
-      'rounded-[14px] border p-4',
-      highlight ? 'border-primary/40 bg-amber-50 dark:bg-amber-500/10' : 'bg-card',
-    )}
-  >
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      {icon}
-      {label}
-    </div>
-    <div className={cn('font-display tabular text-2xl font-bold mt-2', valueClass)}>{value}</div>
-    {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
-  </div>
-);
+const SEARCH_DEBOUNCE_MS = 300;
+const MOBILE_PAGE_SIZE = 20;
+/** Backend `limit` cap (GET /transactions). */
+const MAX_LIMIT = 500;
 
 const FinancePage = () => {
   const { user } = useAuth();
   const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
   const canRefund = user?.roles.some((r) => r === 5) ?? false;
+  /** Privileged users (admin / accountant) see everyone's transactions. */
+  const privileged = isAdmin || canRefund;
+  // The dense table needs ~1024px; narrower screens (incl. tablets with the sidebar) get the list
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const dispatch = useAppDispatch();
-  const { list: transactions, total, summary, loading } = useAppSelector((s) => s.transactions);
+  const {
+    list: transactions,
+    total,
+    totals,
+    summary,
+    summaryLoading,
+    loading,
+    loadingMore,
+  } = useAppSelector((s) => s.transactions);
   const { list: customers } = useAppSelector((s) => s.customers);
   const { list: categories } = useAppSelector((s) => s.categories);
   const { list: users } = useAppSelector((s) => s.users);
   const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
-  const [filter, setFilter] = useState<FilterState>(defaultFilter);
-  const [appliedFilter, setAppliedFilter] = useState<FilterState>(defaultFilter);
+  const season = seasons.find((s) => s._id === selectedSeasonId) ?? null;
+
+  const [filters, setFilters] = useState<FinanceFilters>(DEFAULT_FINANCE_FILTERS);
+  const [searchInput, setSearchInput] = useState('');
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  /** "Tổng hợp theo lớp" search (client-side over class / school). */
+  const [summarySearch, setSummarySearch] = useState('');
+  const [sort, setSort] = useState<TxSort>('date_desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [tab, setTab] = useState<'list' | 'summary'>('list');
+  /** Mobile pages loaded so far ("Tải thêm 20" appends the next one). */
+  const [mobilePages, setMobilePages] = useState(1);
+  const [tab, setTab] = useState<FinanceTab>('list');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [formSession, setFormSession] = useState(0);
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    formState: { isSubmitting },
-  } = useForm<Partial<Transaction>>();
+  const [deleteTarget, setDeleteTarget] = useState<TransactionResponse | null>(null);
+  const [exporting, setExporting] = useState(false);
+  /** Background refresh (after a mutation / load more): no loading overlay. */
+  const [softReload, setSoftReload] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRequest = useRef<{ abort: () => void } | null>(null);
+  const summaryRequest = useRef<{ abort: () => void } | null>(null);
+  const moreRequest = useRef<{ abort: () => void } | null>(null);
 
-  const selectedType = watch('type');
+  /** Mobile: first page, or every loaded page when refreshing after a mutation. */
+  const listParams = (mobileCount = 1) =>
+    buildTxParams(
+      filters,
+      selectedSeasonId,
+      isDesktop
+        ? { page, limit: pageSize, sort }
+        : { page: 1, limit: Math.min(MOBILE_PAGE_SIZE * mobileCount, MAX_LIMIT), sort },
+    );
 
-  const buildListParams = (
-    f: FilterState,
-    p: number,
-    l: number,
-  ): Record<string, string | number> => {
-    const params: Record<string, string | number> = { page: p, limit: l };
-    if (f.type) params.type = f.type;
-    if (f.customer) params.customer = f.customer;
-    if (f.categoryId) params.categoryId = f.categoryId;
-    if (f.createdBy) params.createdBy = f.createdBy;
-    if (f.dateFrom) params.dateFrom = f.dateFrom;
-    if (f.dateTo) params.dateTo = f.dateTo;
-    if (selectedSeasonId) params.season = selectedSeasonId;
-    return params;
+  const fetchList = (mobileCount = 1) => {
+    // Abort previous requests so a slow, stale response can't overwrite newer results
+    listRequest.current?.abort();
+    moreRequest.current?.abort();
+    const request = dispatch(fetchTransactions(listParams(mobileCount)));
+    listRequest.current = request;
+    return request;
   };
 
-  useEffect(() => {
-    dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
-  }, [dispatch, appliedFilter, page, pageSize, selectedSeasonId]);
-
-  useEffect(() => {
-    dispatch(
+  /** KPIs + per-class summary follow only the season / date range. */
+  const fetchSummary = () => {
+    summaryRequest.current?.abort();
+    const request = dispatch(
       fetchTransactionSummary({
-        dateFrom: appliedFilter.dateFrom,
-        dateTo: appliedFilter.dateTo,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
         season: selectedSeasonId || undefined,
       }),
     );
-  }, [dispatch, appliedFilter.dateFrom, appliedFilter.dateTo, selectedSeasonId]);
+    summaryRequest.current = request;
+    return request;
+  };
+
+  const reload = () => {
+    setSoftReload(true);
+    fetchList(mobilePages);
+    fetchSummary();
+  };
+
+  const loadMore = () => {
+    moreRequest.current?.abort();
+    const next = mobilePages + 1;
+    moreRequest.current = dispatch(
+      fetchMoreTransactions(
+        buildTxParams(filters, selectedSeasonId, { page: next, limit: MOBILE_PAGE_SIZE, sort }),
+      ),
+    );
+    setMobilePages(next);
+  };
+
+  useEffect(() => {
+    const request = fetchList();
+    return () => request.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, filters, page, pageSize, sort, isDesktop, selectedSeasonId]);
+
+  useEffect(() => {
+    const request = fetchSummary();
+    return () => request.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, filters.dateFrom, filters.dateTo, selectedSeasonId]);
+
+  useEffect(() => {
+    if (!loading) setSoftReload(false);
+  }, [loading]);
+
+  // A new season starts from the first page
+  useEffect(() => {
+    setPage(1);
+    setMobilePages(1);
+  }, [selectedSeasonId]);
 
   useEffect(() => {
     dispatch(
       fetchCustomers(selectedSeasonId ? { limit: 200, season: selectedSeasonId } : { limit: 200 }),
     );
     dispatch(fetchCategories());
-    if (canRefund) dispatch(fetchUsers());
-  }, [dispatch, canRefund, selectedSeasonId]);
+    if (privileged) dispatch(fetchUsers());
+  }, [dispatch, privileged, selectedSeasonId]);
+
+  const changeFilters = (patch: Partial<FinanceFilters>) => {
+    setPage(1);
+    setMobilePages(1);
+    setSoftReload(false);
+    setFilters((f) => {
+      const next = { ...f, ...patch };
+      // Refund status only exists on expenses: Thu ⇄ hoàn tiền are mutually exclusive
+      if (patch.type === 'income') next.refund = '';
+      else if (patch.refund && next.type === 'income') next.type = '';
+      // Keep the category only if it matches the selected type
+      if (patch.type !== undefined && next.categoryId && next.type) {
+        const cat = categories.find((c) => c._id === next.categoryId);
+        if (cat && cat.type !== next.type) next.categoryId = '';
+      }
+      if (next.dateFrom && next.dateTo && next.dateFrom > next.dateTo) {
+        [next.dateFrom, next.dateTo] = [next.dateTo, next.dateFrom];
+      }
+      return next;
+    });
+  };
+
+  const resetFilters = () => {
+    setSearchInput('');
+    changeFilters(DEFAULT_FINANCE_FILTERS);
+  };
+
+  // Debounced server-side search on the description
+  useEffect(() => {
+    if (searchInput === filters.search) return;
+    const timer = setTimeout(() => changeFilters({ search: searchInput }), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  // "/" focuses the search box (unless typing somewhere else)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) {
+        return;
+      }
+      // Not while a dialog / sheet / popover is open
+      if (document.querySelector('[role="dialog"]')) return;
+      e.preventDefault();
+      if (!isDesktop) setMobileSearchOpen(true);
+      setTimeout(() => searchRef.current?.focus(), 0);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isDesktop]);
 
   const openCreate = () => {
     setEditing(null);
-    reset({
-      type: 'income',
-      date: new Date().toISOString().slice(0, 10),
-      season: selectedSeasonId || undefined,
-    });
+    setFormSession((n) => n + 1);
     setModalOpen(true);
   };
 
   const openEdit = (t: TransactionResponse) => {
     setEditing(t);
-    reset({
-      ...t,
-      customer: t.customer?._id ?? '',
-      categoryId: t.categoryId._id,
-      date: t.date.slice(0, 10),
-      createdBy: t.createdBy?._id ?? '',
-    });
+    setFormSession((n) => n + 1);
     setModalOpen(true);
-  };
-
-  const onSubmit = async (data: Partial<Transaction>) => {
-    const payload = { ...data, customer: data.customer || null };
-    try {
-      if (editing) {
-        await transactionService.update(editing._id, payload);
-        toast.success('Cập nhật giao dịch thành công!');
-      } else {
-        await transactionService.create(payload);
-        toast.success('Thêm giao dịch thành công!');
-      }
-      setModalOpen(false);
-      dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
-      dispatch(
-        fetchTransactionSummary({
-          dateFrom: appliedFilter.dateFrom,
-          dateTo: appliedFilter.dateTo,
-        }),
-      );
-    } catch {
-      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
-    }
   };
 
   const toggleRefund = async (t: TransactionResponse, value: boolean) => {
     dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: value } }));
     try {
       await transactionService.update(t._id, { accountantRefunded: value });
+      reload();
     } catch {
       dispatch(patchTransaction({ id: t._id, changes: { accountantRefunded: !value } }));
       toast.error('Không thể cập nhật trạng thái hoàn tiền.');
@@ -226,779 +254,417 @@ const FinancePage = () => {
   };
 
   const doDelete = async () => {
-    if (!confirmId) return;
+    if (!deleteTarget) return;
     try {
-      await transactionService.remove(confirmId);
+      await transactionService.remove(deleteTarget._id);
       toast.success('Đã xoá giao dịch.');
-      dispatch(fetchTransactions(buildListParams(appliedFilter, page, pageSize)));
-      dispatch(
-        fetchTransactionSummary({
-          dateFrom: appliedFilter.dateFrom,
-          dateTo: appliedFilter.dateTo,
-        }),
-      );
+      setModalOpen(false);
+      reload();
     } catch {
       toast.error('Xoá thất bại, vui lòng thử lại.');
     }
-    setConfirmId(null);
+    setDeleteTarget(null);
   };
 
-  const applyFilter = () => {
-    setPage(1);
-    setAppliedFilter(filter);
-  };
-  const resetFilter = () => {
-    setFilter(defaultFilter);
-    setAppliedFilter(defaultFilter);
-    setPage(1);
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      const params =
+        tab === 'list'
+          ? buildTxParams(filters, selectedSeasonId, { sort })
+          : buildTxParams(
+              {
+                ...DEFAULT_FINANCE_FILTERS,
+                customer: filters.customer,
+                dateFrom: filters.dateFrom,
+                dateTo: filters.dateTo,
+              },
+              selectedSeasonId,
+              { sort },
+            );
+      await exportTransactions(params, `Thu chi${season ? ` - ${season.name}` : ''}.xlsx`);
+    } catch {
+      toast.error('Xuất Excel thất bại, vui lòng thử lại.');
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const filteredCategories = categories.filter((c) => !selectedType || c.type === selectedType);
+  const kpi = useMemo(() => kpiFromSummary(summary), [summary]);
+  const pendingActive = filters.refund === 'pending';
+  const togglePending = () => {
+    setTab('list');
+    if (pendingActive) {
+      changeFilters({ refund: '' });
+      return;
+    }
+    // Match the KPI: all pending expenses of the season / date range
+    setSearchInput('');
+    changeFilters({
+      refund: 'pending',
+      type: '',
+      customer: '',
+      categoryId: '',
+      createdBy: '',
+      search: '',
+    });
+  };
 
-  const grandTotal = summary.reduce(
-    (acc, r) => ({
-      income: acc.income + r.income,
-      expense: acc.expense + r.expense,
-      profit: acc.profit + r.profit,
-    }),
-    { income: 0, expense: 0, profit: 0 },
+  const customerOptions = useMemo(
+    () => [
+      { value: '', label: 'Tất cả lớp' },
+      ...customers.map((c) => ({ value: c._id, label: classLabel(c, ' - ') })),
+    ],
+    [customers],
+  );
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'Tất cả danh mục' },
+      ...categories
+        .filter((c) => !filters.type || c.type === filters.type)
+        .map((c) => ({ value: c._id, label: c.name })),
+    ],
+    [categories, filters.type],
+  );
+  const userOptions = useMemo(
+    () =>
+      privileged && users.length > 0
+        ? [
+            { value: '', label: 'Tất cả người thực hiện' },
+            ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
+          ]
+        : undefined,
+    [privileged, users],
   );
 
-  const txColumns: Column<TransactionResponse>[] = [
-    { key: 'date', header: 'Ngày', render: (t) => formatDate(t.date) },
-    {
+  const summaryRows = useMemo(() => {
+    const q = summarySearch.trim().toLowerCase();
+    return summary.filter((r) => {
+      if (filters.customer && r._id !== filters.customer) return false;
+      if (!q) return true;
+      return `${r.customer?.className ?? ''} ${getSchoolName(r.customer)}`
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [summary, filters.customer, summarySearch]);
+
+  const filterCount = activeFilterCount(filters);
+  const canReset = filterCount > 0 || !!filters.search;
+  const seasonLabel = season?.name ?? 'Tất cả mùa';
+  const datePlaceholder = season
+    ? rangeLabel(season.startDate.slice(0, 10), season.endDate.slice(0, 10))
+    : 'Khoảng ngày';
+  const txCount = kpi.incomeCount + kpi.expenseCount;
+  const listLoading = loading && !softReload;
+
+  const searchBox = (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        ref={searchRef}
+        type="search"
+        value={tab === 'list' ? searchInput : summarySearch}
+        onChange={(e) =>
+          tab === 'list' ? setSearchInput(e.target.value) : setSummarySearch(e.target.value)
+        }
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') (e.target as HTMLInputElement).blur();
+        }}
+        placeholder={tab === 'list' ? 'Tìm mô tả…' : 'Tìm lớp, trường…'}
+        aria-label={tab === 'list' ? 'Tìm theo mô tả' : 'Tìm lớp, trường'}
+        className="h-[34px] w-full rounded-[9px] bg-card pl-8 pr-8 text-base shadow-none md:w-[240px] md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
+      />
+      {isDesktop && (
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border px-1 text-[11px] text-muted-foreground">
+          /
+        </kbd>
+      )}
+    </div>
+  );
+
+  /** Mobile chips for active filters (each removable). */
+  const chips: { key: string; label: string; clear: Partial<FinanceFilters> }[] = [];
+  if (filters.type) {
+    chips.push({
       key: 'type',
-      header: 'Loại',
-      render: (t) => (
-        <Badge variant={t.type === 'income' ? 'success' : 'danger'}>
-          {t.type === 'income' ? 'Thu' : 'Chi'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'category',
-      header: 'Danh mục',
-      className: 'text-muted-foreground',
-      render: (t) => t.categoryId?.name ?? '—',
-    },
-    {
-      key: 'class',
-      header: 'Lớp',
-      className: 'text-muted-foreground',
-      render: (t) => t.customer?.className ?? '—',
-    },
-    {
-      key: 'description',
-      header: 'Mô tả',
-      className: 'text-muted-foreground',
-      render: (t) => t.description,
-    },
-    {
-      key: 'createdBy',
-      header: 'Người thực hiện',
-      className: 'text-muted-foreground',
-      render: (t) => t.createdBy?.name ?? t.createdBy?.username ?? '—',
-    },
-    {
-      key: 'amount',
-      header: 'Số tiền',
-      align: 'right',
-      render: (t) => (
-        <span
-          className={cn(
-            'tabular font-semibold',
-            t.type === 'income'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400',
-          )}
-        >
-          {t.type === 'expense' ? '−' : '+'}
-          {formatCurrency(t.amount)}
-        </span>
-      ),
-    },
-    {
+      label: filters.type === 'income' ? 'Thu' : 'Chi',
+      clear: { type: '' },
+    });
+  }
+  if (filters.refund) {
+    chips.push({
       key: 'refund',
-      header: 'KT hoàn tiền',
-      render: (t) => (
-        <span className="inline-flex items-center gap-2">
-          <Checkbox
-            checked={!!t.accountantRefunded}
-            disabled={!canRefund}
-            onCheckedChange={(c) => toggleRefund(t, !!c)}
-            aria-label="KT hoàn tiền"
-          />
-          {t.accountantRefunded ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Đã hoàn
-            </span>
-          ) : t.type === 'expense' ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-              <Clock className="h-3.5 w-3.5" />
-              Chưa hoàn
-            </span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: '',
-      align: 'right',
-      render: (t) => (
-        <span className="inline-flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-[30px] w-[30px]"
-            title="Sửa"
-            aria-label="Sửa"
-            onClick={() => openEdit(t)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
-            title="Xoá"
-            aria-label="Xoá"
-            onClick={() => setConfirmId(t._id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </span>
-      ),
-    },
-  ];
-
-  const pendingRefund = transactions.reduce(
-    (acc, t) =>
-      t.type === 'expense' && !t.accountantRefunded
-        ? { count: acc.count + 1, amount: acc.amount + t.amount }
-        : acc,
-    { count: 0, amount: 0 },
-  );
-
-  type SummaryRow = (typeof summary)[number];
-  const summaryColumns: Column<SummaryRow>[] = [
-    {
-      key: 'class',
-      header: 'Lớp',
-      className: 'font-medium',
-      render: (row) => row.customer?.className ?? '(Không có lớp)',
-    },
-    {
-      key: 'school',
-      header: 'Trường',
-      className: 'text-muted-foreground',
-      render: (row) => getSchoolName(row.customer),
-    },
-    {
-      key: 'income',
-      header: <span className="text-emerald-600 dark:text-emerald-400">Tổng thu</span>,
-      align: 'right',
-      render: (row) => (
-        <span className="tabular text-emerald-600 dark:text-emerald-400">
-          {formatCurrency(row.income)}
-        </span>
-      ),
-    },
-    {
-      key: 'expense',
-      header: <span className="text-rose-600 dark:text-rose-400">Tổng chi</span>,
-      align: 'right',
-      render: (row) => (
-        <span className="tabular text-rose-600 dark:text-rose-400">
-          {formatCurrency(row.expense)}
-        </span>
-      ),
-    },
-    {
-      key: 'profit',
-      header: 'Lợi nhuận',
-      align: 'right',
-      render: (row) => (
-        <span
-          className={cn(
-            'tabular font-semibold',
-            row.profit >= 0
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-rose-600 dark:text-rose-400',
-          )}
-        >
-          {formatCurrency(row.profit)}
-        </span>
-      ),
-    },
-  ];
+      label: filters.refund === 'pending' ? 'Chưa hoàn' : 'Đã hoàn',
+      clear: { refund: '' },
+    });
+  }
+  if (filters.customer) {
+    chips.push({
+      key: 'customer',
+      label: customers.find((c) => c._id === filters.customer)?.className ?? 'Lớp',
+      clear: { customer: '' },
+    });
+  }
+  if (filters.categoryId) {
+    chips.push({
+      key: 'category',
+      label: categories.find((c) => c._id === filters.categoryId)?.name ?? 'Danh mục',
+      clear: { categoryId: '' },
+    });
+  }
+  if (filters.createdBy) {
+    const u = users.find((x) => x._id === filters.createdBy);
+    chips.push({
+      key: 'user',
+      label: u?.name ?? u?.username ?? 'Người thực hiện',
+      clear: { createdBy: '' },
+    });
+  }
+  if (filters.dateFrom || filters.dateTo) {
+    chips.push({
+      key: 'date',
+      label: rangeLabel(filters.dateFrom, filters.dateTo),
+      clear: { dateFrom: '', dateTo: '' },
+    });
+  }
 
   return (
-    <div className="flex flex-col md:min-h-0 md:flex-1">
-      <PageHeader
-        kicker="Finance"
-        title="Quản lý Thu Chi"
-        description="Theo dõi thu chi, lọc theo lớp, danh mục và khoảng thời gian."
-        action={
-          <Button variant="gradient" onClick={openCreate}>
-            <Plus />
-            Thêm giao dịch
+    <div className="flex flex-col gap-3 md:min-h-0 md:flex-1">
+      {/* Header */}
+      {isDesktop ? (
+        <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="shrink-0 font-display text-[22px] font-bold tracking-tight text-foreground">
+            Quản lý Thu Chi
+          </h1>
+          <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+            {seasonLabel} · {txCount} giao dịch
+          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {searchBox}
+            <Button variant="outline" className="h-[34px]" onClick={doExport} disabled={exporting}>
+              {exporting ? <Spinner size="sm" /> : <Download />}
+              Xuất Excel
+            </Button>
+            <Button className="h-[34px]" onClick={openCreate}>
+              <Plus /> Thêm giao dịch
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-[22px] font-bold tracking-tight text-foreground">
+              Quản lý Thu Chi
+            </h1>
+            <p className="truncate text-[13px] text-muted-foreground">
+              {seasonLabel} · {txCount} giao dịch
+            </p>
+          </div>
+          <Button onClick={openCreate}>
+            <Plus /> Thêm
           </Button>
-        }
+        </div>
+      )}
+
+      <FinanceKpis
+        kpi={kpi}
+        compact={!isDesktop}
+        pendingActive={pendingActive}
+        onPendingClick={togglePending}
       />
 
-      {tab === 'summary' && (
-        <>
-          {/* Summary cards (date range only) */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
-            <SummaryCard
-              icon={<ArrowDownLeft className="h-3.5 w-3.5" />}
-              label="Tổng thu"
-              value={formatCurrency(grandTotal.income)}
-              valueClass="text-emerald-600 dark:text-emerald-400"
-            />
-            <SummaryCard
-              icon={<ArrowUpRight className="h-3.5 w-3.5" />}
-              label="Tổng chi"
-              value={formatCurrency(grandTotal.expense)}
-              valueClass="text-rose-600 dark:text-rose-400"
-            />
-            <SummaryCard
-              icon={<Wallet className="h-3.5 w-3.5" />}
-              label="Lợi nhuận"
-              value={formatCurrency(grandTotal.profit)}
-              valueClass={
-                grandTotal.profit >= 0
-                  ? 'text-primary-700 dark:text-primary'
-                  : 'text-rose-600 dark:text-rose-400'
-              }
-              hint={
-                grandTotal.income > 0
-                  ? `Biên ${((grandTotal.profit / grandTotal.income) * 100)
-                      .toFixed(1)
-                      .replace('.', ',')}%`
-                  : undefined
-              }
-            />
-          </div>
-          <p className="mb-6 text-xs text-muted-foreground">
-            Theo mùa đang chọn (hoặc khoảng ngày nếu có nhập), không áp dụng các bộ lọc khác.
-          </p>
-        </>
-      )}
-      {tab === 'list' && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <SummaryCard
-            icon={<ReceiptText className="h-3.5 w-3.5" />}
-            label="Chưa hoàn tiền (trang này)"
-            value={formatCurrency(pendingRefund.amount)}
-            valueClass="text-primary-700 dark:text-primary"
-            hint={`${pendingRefund.count} khoản chi đang chờ (trang hiện tại)`}
-            highlight
-          />
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-6 border-b mb-4">
-        {(
-          [
-            { v: 'list', label: 'Danh sách' },
-            { v: 'summary', label: 'Tổng hợp theo lớp' },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.v}
-            type="button"
-            onClick={() => setTab(t.v)}
-            className={cn(
-              '-mb-px border-b-2 pb-3 text-sm font-semibold transition-colors',
-              tab === t.v
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="mb-4 space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Select
-            value={filter.type || ALL}
-            onValueChange={(v) => setFilter((f) => ({ ...f, type: v === ALL ? '' : v }))}
-          >
-            <SelectTrigger className="h-[38px] rounded-[10px] bg-card" aria-label="Loại giao dịch">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Loại: Tất cả</SelectItem>
-              <SelectItem value="income">Thu</SelectItem>
-              <SelectItem value="expense">Chi</SelectItem>
-            </SelectContent>
-          </Select>
-          <Combobox
-            className="h-[38px] rounded-[10px] bg-card"
-            options={[
-              { value: '', label: 'Tất cả lớp' },
-              ...customers.map((c) => ({
-                value: c._id,
-                label: classLabel(c, ' - '),
-              })),
-            ]}
-            value={filter.customer}
-            onChange={(v) => setFilter((f) => ({ ...f, customer: v }))}
-            placeholder="Tất cả lớp"
-          />
-          <Combobox
-            className="h-[38px] rounded-[10px] bg-card"
-            options={[
-              { value: '', label: 'Tất cả danh mục' },
-              ...categories.map((c) => ({ value: c._id, label: c.name })),
-            ]}
-            value={filter.categoryId}
-            onChange={(v) => setFilter((f) => ({ ...f, categoryId: v }))}
-            placeholder="Tất cả danh mục"
-          />
-          {canRefund && (
-            <Combobox
-              className="h-[38px] rounded-[10px] bg-card"
-              options={[
-                { value: '', label: 'Tất cả người thực hiện' },
-                ...users.map((u) => ({ value: u._id, label: u.name ?? u.username })),
-              ]}
-              value={filter.createdBy}
-              onChange={(v) => setFilter((f) => ({ ...f, createdBy: v }))}
-              placeholder="Người thực hiện"
-            />
+      {/* Toolbar */}
+      {isDesktop ? (
+        <FinanceToolbar
+          tab={tab}
+          onTabChange={setTab}
+          filters={filters}
+          onChange={changeFilters}
+          onReset={resetFilters}
+          canReset={canReset}
+          customerOptions={customerOptions}
+          categoryOptions={categoryOptions}
+          userOptions={userOptions}
+          datePlaceholder={datePlaceholder}
+        />
+      ) : (
+        <div className="space-y-2.5">
+          <FinanceTabs tab={tab} onChange={setTab} className="flex w-full" />
+          {tab === 'list' && (
+            <>
+              <div className="flex items-center gap-2">
+                {mobileSearchOpen ? (
+                  <div className="flex flex-1 items-center gap-2">
+                    <div className="flex-1">{searchBox}</div>
+                    <button
+                      type="button"
+                      aria-label="Đóng tìm kiếm"
+                      className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[9px] text-muted-foreground"
+                      onClick={() => {
+                        setMobileSearchOpen(false);
+                        setSearchInput('');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <TypeSegmented
+                      value={filters.type}
+                      onChange={(type) => changeFilters({ type })}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className={cn(
+                        'h-[34px] w-[34px] shrink-0 shadow-none',
+                        filters.search && 'border-primary text-primary-700 dark:text-primary',
+                      )}
+                      aria-label="Tìm kiếm"
+                      onClick={() => {
+                        setMobileSearchOpen(true);
+                        setTimeout(() => searchRef.current?.focus(), 0);
+                      }}
+                    >
+                      <Search />
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative h-[34px] w-[34px] shrink-0 text-muted-foreground shadow-none"
+                  aria-label="Bộ lọc"
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <SlidersHorizontal />
+                  {filterCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground tabular">
+                      {filterCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
+                  {chips.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => changeFilters(c.clear)}
+                      aria-label={`Bỏ lọc ${c.label}`}
+                      className="inline-flex h-[26px] shrink-0 items-center gap-1 rounded-full bg-primary-100 px-2.5 text-xs font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary"
+                    >
+                      <span className="tabular">{c.label}</span>
+                      <X className="h-3 w-3" />
+                    </button>
+                  ))}
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground tabular">
+                  <span className={INCOME_TEXT}>Thu +{shortMoney(totals?.income ?? 0)}</span>
+                  {' · '}
+                  <span className={EXPENSE_TEXT}>Chi −{shortMoney(totals?.expense ?? 0)}</span>
+                </span>
+              </div>
+            </>
           )}
+          {tab === 'summary' && searchBox}
         </div>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
-          <DatePicker
-            className="h-[38px] rounded-[10px] bg-card"
-            value={filter.dateFrom}
-            onChange={(v) => setFilter((f) => ({ ...f, dateFrom: v ?? '' }))}
-            placeholder="Từ ngày"
+      {/* Content */}
+      {tab === 'list' ? (
+        isDesktop ? (
+          <TransactionTable
+            rows={transactions}
+            loading={listLoading}
+            season={season}
+            sort={sort}
+            onSortToggle={() => {
+              setPage(1);
+              setSort((s) => (s === 'date_desc' ? 'date_asc' : 'date_desc'));
+            }}
+            canRefund={canRefund}
+            onToggleRefund={toggleRefund}
+            onEdit={openEdit}
+            onDelete={setDeleteTarget}
+            totals={totals}
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
           />
-          <DatePicker
-            className="h-[38px] rounded-[10px] bg-card"
-            value={filter.dateTo}
-            onChange={(v) => setFilter((f) => ({ ...f, dateTo: v ?? '' }))}
-            placeholder="Đến ngày"
-          />
-          <div className="flex gap-2 sm:col-span-2 md:col-span-1 md:justify-end">
-            <Button
-              variant="gradient"
-              onClick={applyFilter}
-              className="h-[38px] flex-1 md:flex-none min-w-[96px]"
-            >
-              Lọc
-            </Button>
-            <Button
-              variant="outline"
-              onClick={resetFilter}
-              className="h-[38px] flex-1 md:flex-none min-w-[88px]"
-            >
-              Xoá
-            </Button>
+        ) : listLoading && transactions.length === 0 ? (
+          <div className="flex justify-center py-10">
+            <Spinner />
           </div>
-        </div>
-      </div>
-
-      {tab === 'list' &&
-        (loading ? (
-          <TableSkeleton cols={8} />
         ) : (
-          <>
-            <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
-              <DataTable<TransactionResponse>
-                fill
-                className="flex-1"
-                data={transactions}
-                keyExtractor={(t) => t._id}
-                emptyTitle="Chưa có dữ liệu"
-                columns={txColumns}
-                pagination={{
-                  serverSide: true,
-                  page,
-                  pageSize,
-                  total,
-                  onPageChange: setPage,
-                  onPageSizeChange: (size: number) => {
-                    setPageSize(size);
-                    setPage(1);
-                  },
-                }}
+          <div className="relative" aria-busy={listLoading}>
+            <div
+              className={cn('transition-opacity', listLoading && 'pointer-events-none opacity-50')}
+            >
+              <TransactionMobileList
+                rows={transactions}
+                total={total}
+                season={season}
+                canRefund={canRefund}
+                onToggleRefund={toggleRefund}
+                onOpen={openEdit}
+                hasMore={!listLoading && transactions.length < total}
+                loadingMore={loadingMore}
+                onLoadMore={loadMore}
               />
             </div>
-
-            <div className="md:hidden space-y-3">
-              {transactions.map((t) => (
-                <div key={t._id} className="rounded-[14px] border bg-card p-4">
-                  <div className="flex items-start justify-between mb-2 gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm text-muted-foreground">{formatDate(t.date)}</div>
-                      <div className="text-sm font-medium mt-0.5">{t.categoryId?.name ?? '—'}</div>
-                      {t.customer && (
-                        <div className="text-xs text-muted-foreground">{t.customer.className}</div>
-                      )}
-                      {t.description && (
-                        <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>
-                      )}
-                      {t.createdBy && (
-                        <div className="text-xs text-muted-foreground mt-0.5 inline-flex items-center gap-1.5">
-                          <UserCircle2 className="h-3.5 w-3.5 text-indigo-400" />
-                          <span>{t.createdBy.name ?? t.createdBy.username}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <Badge variant={t.type === 'income' ? 'success' : 'danger'}>
-                        {t.type === 'income' ? 'Thu' : 'Chi'}
-                      </Badge>
-                      <div
-                        className={cn(
-                          'tabular font-semibold text-sm mt-1',
-                          t.type === 'income' ? 'text-emerald-500' : 'text-rose-500',
-                        )}
-                      >
-                        {t.type === 'expense' ? '−' : '+'}
-                        {formatCurrency(t.amount)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 pt-2 border-t items-center">
-                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground mr-auto">
-                      <Checkbox
-                        checked={!!t.accountantRefunded}
-                        disabled={!canRefund}
-                        onCheckedChange={(c) => toggleRefund(t, !!c)}
-                      />
-                      KT hoàn tiền
-                    </label>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px]"
-                      title="Sửa"
-                      aria-label="Sửa"
-                      onClick={() => openEdit(t)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                      title="Xoá"
-                      aria-label="Xoá"
-                      onClick={() => setConfirmId(t._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {transactions.length === 0 && (
-                <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
-                  Chưa có dữ liệu
-                </div>
-              )}
-            </div>
-          </>
-        ))}
-
-      {tab === 'summary' && (
-        <>
-          <div className="hidden md:block">
-            <DataTable<SummaryRow>
-              data={summary}
-              keyExtractor={(row) => row._id ?? 'unknown'}
-              emptyTitle="Chưa có dữ liệu"
-              columns={summaryColumns}
-              pagination
-              footer={
-                summary.length > 0 ? (
-                  <tr className="border-t bg-muted/40 font-semibold tabular">
-                    <td className="px-5 py-3" colSpan={2}>
-                      Tổng cộng
-                    </td>
-                    <td className="px-5 py-3 text-right text-emerald-600 dark:text-emerald-400">
-                      {formatCurrency(grandTotal.income)}
-                    </td>
-                    <td className="px-5 py-3 text-right text-rose-600 dark:text-rose-400">
-                      {formatCurrency(grandTotal.expense)}
-                    </td>
-                    <td
-                      className={cn(
-                        'px-5 py-3 text-right',
-                        grandTotal.profit >= 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400',
-                      )}
-                    >
-                      {formatCurrency(grandTotal.profit)}
-                    </td>
-                  </tr>
-                ) : undefined
-              }
-            />
-          </div>
-
-          <div className="md:hidden space-y-3">
-            {summary.map((row) => (
-              <div key={row._id ?? 'unknown'} className="rounded-[14px] border bg-card p-4">
-                <div className="font-semibold mb-0.5">
-                  {row.customer?.className ?? '(Không có lớp)'}
-                </div>
-                {getSchoolName(row.customer) && (
-                  <div className="text-sm text-muted-foreground mb-2 inline-flex items-center gap-1.5">
-                    <School className="h-4 w-4 text-sky-500" />
-                    <span>{getSchoolName(row.customer)}</span>
-                  </div>
-                )}
-                <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Thu</div>
-                    <div className="text-emerald-500 font-medium">{formatCurrency(row.income)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Chi</div>
-                    <div className="text-rose-500 font-medium">{formatCurrency(row.expense)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Lợi nhuận</div>
-                    <div
-                      className={cn(
-                        'font-semibold',
-                        row.profit >= 0 ? 'text-emerald-500' : 'text-rose-500',
-                      )}
-                    >
-                      {formatCurrency(row.profit)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {summary.length > 0 && (
-              <div className="rounded-[14px] border bg-muted/40 p-4">
-                <div className="font-semibold mb-2">Tổng cộng</div>
-                <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Thu</div>
-                    <div className="text-emerald-500 font-semibold">
-                      {formatCurrency(grandTotal.income)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Chi</div>
-                    <div className="text-rose-500 font-semibold">
-                      {formatCurrency(grandTotal.expense)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Lợi nhuận</div>
-                    <div
-                      className={cn(
-                        'font-semibold',
-                        grandTotal.profit >= 0 ? 'text-emerald-500' : 'text-rose-500',
-                      )}
-                    >
-                      {formatCurrency(grandTotal.profit)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {summary.length === 0 && (
-              <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
-                Chưa có dữ liệu
+            {listLoading && (
+              <div className="pointer-events-none absolute inset-x-0 top-10 flex justify-center">
+                <Spinner />
               </div>
             )}
           </div>
-        </>
+        )
+      ) : (
+        <ClassSummaryTable rows={summaryRows} loading={summaryLoading} compact={!isDesktop} />
       )}
 
-      <Modal
+      <FinanceFilterSheet
+        open={filterOpen && !isDesktop}
+        onOpenChange={setFilterOpen}
+        filters={filters}
+        onChange={changeFilters}
+        onReset={resetFilters}
+        canReset={canReset}
+        customerOptions={customerOptions}
+        categoryOptions={categoryOptions}
+        userOptions={userOptions}
+        total={total}
+        loading={loading}
+      />
+
+      <TransactionFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editing ? 'Sửa giao dịch' : 'Thêm giao dịch'}
-        size="lg"
-      >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField label="Loại" required>
-              <Controller
-                name="type"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select value={field.value ?? 'income'} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="income">Thu</SelectItem>
-                      <SelectItem value="expense">Chi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
-            <FormField label="Danh mục" required>
-              <Controller
-                name="categoryId"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => {
-                  const value =
-                    typeof field.value === 'object' && field.value !== null
-                      ? (field.value as { _id: string })._id
-                      : ((field.value as string | undefined) ?? '');
-                  return (
-                    <Combobox
-                      options={filteredCategories.map((c) => ({ value: c._id, label: c.name }))}
-                      value={value}
-                      onChange={field.onChange}
-                      placeholder="-- Chọn danh mục --"
-                    />
-                  );
-                }}
-              />
-            </FormField>
-            <FormField label="Số tiền" required htmlFor="amount">
-              <Input
-                id="amount"
-                type="number"
-                {...register('amount', { required: true, valueAsNumber: true, min: 0 })}
-              />
-            </FormField>
-            <FormField label="Ngày" required htmlFor="date">
-              <Controller
-                name="date"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <DatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Chọn ngày"
-                  />
-                )}
-              />
-            </FormField>
-            <FormField label="Lớp (tuỳ chọn)" className="sm:col-span-2">
-              <Controller
-                name="customer"
-                control={control}
-                render={({ field }) => {
-                  const value =
-                    typeof field.value === 'object' && field.value !== null
-                      ? (field.value as { _id: string })._id
-                      : ((field.value as string | undefined) ?? '');
-                  return (
-                    <Combobox
-                      options={customers.map((c) => ({
-                        value: c._id,
-                        label: classLabel(c),
-                      }))}
-                      value={value}
-                      onChange={(v) => field.onChange(v || undefined)}
-                      placeholder="-- Không có lớp --"
-                    />
-                  );
-                }}
-              />
-            </FormField>
-            {isAdmin && (
-              <FormField label="Người thực hiện" className="sm:col-span-2">
-                <Controller
-                  name="createdBy"
-                  control={control}
-                  render={({ field }) => {
-                    const value =
-                      typeof field.value === 'object' && field.value !== null
-                        ? (field.value as { _id: string })._id
-                        : ((field.value as string | undefined) ?? '');
-                    return (
-                      <Combobox
-                        options={users.map((u) => ({
-                          value: u._id,
-                          label: u.name ?? u.username,
-                        }))}
-                        value={value}
-                        onChange={(v) => field.onChange(v || undefined)}
-                        placeholder="-- Mặc định (tôi) --"
-                      />
-                    );
-                  }}
-                />
-              </FormField>
-            )}
-            <FormField label="Mùa chụp">
-              <Controller
-                name="season"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? ''}
-                    onValueChange={(v) => field.onChange(v || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-- Chọn mùa --" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {seasons.map((s) => (
-                        <SelectItem key={s._id} value={s._id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
-            <FormField label="Mô tả" htmlFor="description" className="sm:col-span-2">
-              <Textarea id="description" rows={2} {...register('description')} />
-            </FormField>
-            {canRefund && (
-              <div className="sm:col-span-2">
-                <Controller
-                  name="accountantRefunded"
-                  control={control}
-                  render={({ field }) => (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={!!field.value}
-                        onCheckedChange={(c) => field.onChange(!!c)}
-                      />
-                      <Label className="cursor-pointer">Kế toán đã hoàn tiền</Label>
-                    </label>
-                  )}
-                />
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Huỷ
-            </Button>
-            <Button type="submit" variant="gradient" disabled={isSubmitting}>
-              Lưu
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        editing={editing}
+        sessionKey={formSession}
+        customers={customers}
+        categories={categories}
+        users={users}
+        seasons={seasons}
+        selectedSeasonId={selectedSeasonId}
+        isAdmin={isAdmin}
+        canRefund={canRefund}
+        onSaved={reload}
+        onDelete={isDesktop ? undefined : setDeleteTarget}
+      />
 
       <ConfirmDialog
-        open={!!confirmId}
-        onOpenChange={(o) => !o && setConfirmId(null)}
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
         title="Xác nhận xoá"
         message="Bạn có chắc muốn xoá giao dịch này?"
         onConfirm={doDelete}

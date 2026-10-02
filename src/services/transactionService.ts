@@ -6,13 +6,19 @@ import type {
   Transaction,
   TransactionResponse,
   TransactionSummaryRow,
+  TransactionTotals,
 } from '../types';
 
 export const transactionService = {
   getAll: (params?: Record<string, string | number>) =>
     api
       .get<PaginatedApiResponse<TransactionResponse>>('/transactions', { params })
-      .then((r) => ({ data: r.data.data, ...r.data.pagination }) as PaginatedResponse<TransactionResponse>),
+      .then(
+        (r) =>
+          ({ data: r.data.data, ...r.data.pagination }) as PaginatedResponse<TransactionResponse> & {
+            totals?: TransactionTotals;
+          },
+      ),
   getOne: (id: string) =>
     api.get<ApiResponse<TransactionResponse>>(`/transactions/${id}`).then((r) => r.data.data),
   create: (data: Partial<Transaction>) =>

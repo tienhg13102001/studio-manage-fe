@@ -326,6 +326,21 @@ export interface TransactionSummaryRow {
   income: number;
   expense: number;
   profit: number;
+  /** Number of transactions (income + expense). */
+  count: number;
+  incomeCount: number;
+  expenseCount: number;
+  /** Expenses the accountant hasn't refunded yet. */
+  pendingRefund: number;
+  pendingRefundCount: number;
+}
+
+/** Totals of the whole filtered set (GET /transactions `pagination.totals`). */
+export interface TransactionTotals {
+  income: number;
+  expense: number;
+  incomeCount: number;
+  expenseCount: number;
 }
 
 export interface PaginatedResponse<T> {
