@@ -39,6 +39,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDashboardStats } from '../store/slices/dashboardSlice';
 import { fetchUsers } from '../store/slices/usersSlice';
+import { isSaleCollaborator } from '../utils/permissions';
 import {
   Badge,
   Button,
@@ -109,7 +110,10 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.roles.some((r) => r === 0 || r === 1) ?? false;
   const showTotalCustomers = user?.roles.some((r) => r === 0 || r === 1 || r === 2) ?? false;
-  const showFinance = user?.roles.some((r) => r === 0 || r === 1 || r === 2 || r === 5) ?? false;
+  // CTV sale không xem thu chi (kể cả khi kiêm Sale)
+  const showFinance =
+    (user?.roles.some((r) => r === 0 || r === 1 || r === 2 || r === 5) ?? false) &&
+    !isSaleCollaborator(user);
 
   const dispatch = useAppDispatch();
   const { stats } = useAppSelector((s) => s.dashboard);
