@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarClock,
   Check,
@@ -24,7 +24,13 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchSales } from '../store/slices/usersSlice';
 import { useAuth } from '../context/AuthContext';
-import type { Customer, CustomerStatus, CustomerStatusCounts, SchoolRef } from '../types';
+import type {
+  Customer,
+  CustomerSaleRef,
+  CustomerStatus,
+  CustomerStatusCounts,
+  SchoolRef,
+} from '../types';
 import {
   CUSTOMER_STATUSES,
   CUSTOMER_STATUS_LABELS,
@@ -39,6 +45,7 @@ import {
   Badge,
   badgeVariants,
   Button,
+  Combobox,
   ConfirmDialog,
   DataTable,
   Dialog,
@@ -86,6 +93,9 @@ const CustomersPage = () => {
   const [statusFilter, setStatusFilter] = useState<CustomerStatus | ''>('');
   const [mine, setMine] = useState(false);
   const [schoolFilter, setSchoolFilter] = useState<SchoolRef | null>(null);
+  /** Creator user id, '' = all. */
+  const [creatorFilter, setCreatorFilter] = useState('');
+  const [creators, setCreators] = useState<CustomerSaleRef[]>([]);
   const [counts, setCounts] = useState<CustomerStatusCounts | null>(null);
   /** Mobile "Tải thêm lớp": pages appended after the current redux page. */
   const [extra, setExtra] = useState<Customer[]>([]);
@@ -108,6 +118,7 @@ const CustomersPage = () => {
     if (statusFilter) params.status = statusFilter;
     if (mine) params.assignedSale = 'me';
     if (schoolFilter) params.schoolId = schoolFilter._id;
+    if (creatorFilter) params.createdBy = creatorFilter;
     return params;
   };
 
@@ -116,6 +127,7 @@ const CustomersPage = () => {
     if (selectedSeasonId) params.season = selectedSeasonId;
     if (mine) params.assignedSale = 'me';
     if (schoolFilter) params.schoolId = schoolFilter._id;
+    if (creatorFilter) params.createdBy = creatorFilter;
     customerService
       .getStatusCounts(params)
       .then(setCounts)
@@ -137,7 +149,7 @@ const CustomersPage = () => {
     const request = dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
     return () => request.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine, schoolFilter]);
+  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine, schoolFilter, creatorFilter]);
 
   const resetExtra = () => {
     loadMoreToken.current += 1;
@@ -157,6 +169,7 @@ const CustomersPage = () => {
     statusFilter,
     mine,
     schoolFilter,
+    creatorFilter,
     selectedSeasonId,
     page,
     pageSize,
@@ -170,11 +183,32 @@ const CustomersPage = () => {
   useEffect(() => {
     loadCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSeasonId, mine, schoolFilter]);
+  }, [selectedSeasonId, mine, schoolFilter, creatorFilter]);
+
+  useEffect(() => {
+    customerService
+      .getCreators()
+      .then(setCreators)
+      .catch(() => setCreators([]));
+  }, []);
+
+  const creatorOptions = useMemo(
+    () => [
+      { value: '', label: 'Tất cả người tạo' },
+      ...creators.map((u) => ({ value: u._id, label: u.name || u.username })),
+    ],
+    [creators],
+  );
+  const creatorName = creatorOptions.find((o) => o.value === creatorFilter)?.label;
 
   const changeSchoolFilter = (school: SchoolRef | null) => {
     setPage(1);
     setSchoolFilter(school);
+  };
+
+  const changeCreatorFilter = (id: string) => {
+    setPage(1);
+    setCreatorFilter(id);
   };
 
   const changeStatusFilter = (st: CustomerStatus | '') => {
@@ -282,7 +316,7 @@ const CustomersPage = () => {
         'Lớp',
         'Trường',
         'Trạng thái',
-        'Sale phụ trách',
+        'Người tạo',
         'Người liên hệ',
         'Số điện thoại',
         'Địa chỉ',
@@ -304,7 +338,7 @@ const CustomersPage = () => {
           c.className,
           getSchoolName(c),
           CUSTOMER_STATUS_LABELS[getCustomerStatus(c)],
-          getUserRefName(c.assignedSale) ?? '',
+          getUserRefName(c.createdBy) ?? '',
           c.contactName ?? '',
           c.contactPhone ?? '',
           c.contactAddress ?? '',
@@ -407,12 +441,12 @@ const CustomersPage = () => {
             onClick={() => setFilterOpen(true)}
           >
             <SlidersHorizontal />
-            {(statusFilter || mine || schoolFilter) && (
+            {(statusFilter || mine || schoolFilter || creatorFilter) && (
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             )}
           </Button>
         </div>
-        {(statusFilter || mine || schoolFilter) && (
+        {(statusFilter || mine || schoolFilter || creatorFilter) && (
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
             {statusFilter && (
               <button
@@ -440,6 +474,18 @@ const CustomersPage = () => {
               >
                 <School className="h-[15px] w-[15px] shrink-0 text-muted-foreground" />
                 <span className="truncate">{schoolFilter.name}</span>
+                <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </button>
+            )}
+            {creatorFilter && (
+              <button
+                type="button"
+                onClick={() => changeCreatorFilter('')}
+                aria-label={`Bỏ lọc người tạo ${creatorName ?? ''}`}
+                className="inline-flex h-[34px] max-w-[240px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
+              >
+                <UserRound className="h-[15px] w-[15px] shrink-0 text-muted-foreground" />
+                <span className="truncate">{creatorName ?? 'Người tạo'}</span>
                 <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </button>
             )}
@@ -506,6 +552,14 @@ const CustomersPage = () => {
           value={schoolFilter}
           onChange={changeSchoolFilter}
           className="h-[38px] w-[220px] rounded-[10px] border-border bg-card shadow-none"
+        />
+        <Combobox
+          options={creatorOptions}
+          value={creatorFilter}
+          onChange={changeCreatorFilter}
+          placeholder="Tất cả người tạo"
+          searchPlaceholder="Tìm người tạo…"
+          className="h-[38px] w-[200px] rounded-[10px] border-border bg-card shadow-none"
         />
         <Button
           type="button"
@@ -586,10 +640,10 @@ const CustomersPage = () => {
                   ),
                 },
                 {
-                  key: 'assignedSale',
-                  header: 'Sale phụ trách',
+                  key: 'createdBy',
+                  header: 'Người tạo',
                   render: (c) => {
-                    const name = getUserRefName(c.assignedSale);
+                    const name = getUserRefName(c.createdBy);
                     return name ? (
                       <span className="whitespace-nowrap text-foreground">{name}</span>
                     ) : (
@@ -698,7 +752,7 @@ const CustomersPage = () => {
               const female = c.totalFemale ?? 0;
               const sum = male + female;
               const code = classCode(c.className);
-              const sale = getUserRefName(c.assignedSale);
+              const creator = getUserRefName(c.createdBy);
               return (
                 <div
                   key={c._id}
@@ -727,8 +781,8 @@ const CustomersPage = () => {
                       )}
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1">
                         <StatusBadge customer={c} />
-                        {sale && (
-                          <span className="text-xs text-muted-foreground">Sale: {sale}</span>
+                        {creator && (
+                          <span className="text-xs text-muted-foreground">Tạo bởi: {creator}</span>
                         )}
                         {c.expectedShootDate && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground tabular">
@@ -922,6 +976,18 @@ const CustomersPage = () => {
             className="h-[42px] rounded-[10px] bg-card shadow-none"
           />
           <div className="h-px bg-border" />
+          <span className="block text-[11px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
+            Người tạo
+          </span>
+          <Combobox
+            options={creatorOptions}
+            value={creatorFilter}
+            onChange={changeCreatorFilter}
+            placeholder="Tất cả người tạo"
+            searchPlaceholder="Tìm người tạo…"
+            className="h-[42px] rounded-[10px] bg-card shadow-none"
+          />
+          <div className="h-px bg-border" />
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/15 text-primary-700 dark:text-primary">
               <UserCheck className="h-[17px] w-[17px]" />
@@ -959,12 +1025,13 @@ const CustomersPage = () => {
               type="button"
               variant="outline"
               className="h-[42px]"
-              disabled={!statusFilter && !mine && !schoolFilter}
+              disabled={!statusFilter && !mine && !schoolFilter && !creatorFilter}
               onClick={() => {
                 setPage(1);
                 setStatusFilter('');
                 setMine(false);
                 setSchoolFilter(null);
+                setCreatorFilter('');
               }}
             >
               <RotateCcw />

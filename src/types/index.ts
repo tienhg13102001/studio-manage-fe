@@ -71,6 +71,8 @@ export interface Customer {
   /** Pipeline status — missing on old data, treat as `new` (use `getCustomerStatus`). */
   status?: CustomerStatus;
   assignedSale?: string | CustomerSaleRef | null;
+  /** Người tạo lớp — populated `{ _id, name, username }` in responses. */
+  createdBy?: string | CustomerSaleRef | null;
   source?: string;
   lostReason?: string;
   statusChangedAt?: string;

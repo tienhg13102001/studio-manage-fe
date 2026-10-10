@@ -4,6 +4,7 @@ import type {
   ChangeCustomerStatusBody,
   Customer,
   CustomerActivity,
+  CustomerSaleRef,
   CustomerStatusCounts,
   PaginatedApiResponse,
   PaginatedResponse,
@@ -37,6 +38,8 @@ export const customerService = {
     api
       .get<ApiResponse<CustomerStatusCounts>>('/customers/status-counts', { params })
       .then((r) => r.data.data),
+  getCreators: () =>
+    api.get<ApiResponse<CustomerSaleRef[]>>('/customers/creators').then((r) => r.data.data),
   getActivities: (id: string) =>
     api
       .get<ApiResponse<CustomerActivity[]>>(`/customers/${id}/activities`)
