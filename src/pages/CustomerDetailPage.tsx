@@ -787,6 +787,15 @@ const CustomerDetailPage = () => {
                 </p>
                 <StatusBadge status={status} className="mt-2 md:hidden" />
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto hidden shrink-0 md:inline-flex"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pencil /> Sửa
+              </Button>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
               <Fact icon={<User className="h-3.5 w-3.5" />} label="Liên hệ">
