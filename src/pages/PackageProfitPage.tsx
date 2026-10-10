@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Camera,
   Car,
   Package as PackageIcon,
+  Receipt,
   Plus,
   Printer,
   RotateCcw,
@@ -11,13 +12,21 @@ import {
   Trash2,
   TrendingDown,
   TrendingUp,
+  Video,
   X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { packageService } from '../services/packageService';
 import { profitScenarioService } from '../services/profitScenarioService';
-import type { Package, ProfitScenario, ProfitScenarioInput } from '../types';
-import { calcProfit, formatPercent, formatVnd, suggestCrewCount } from '../utils/packageProfit';
+import type { Package, ProfitCostItem, ProfitScenario, ProfitScenarioInput } from '../types';
+import {
+  calcProfit,
+  costItemAmount,
+  type CostBasis,
+  formatPercent,
+  formatVnd,
+  suggestCrewCount,
+} from '../utils/packageProfit';
 import { cn } from '@/lib/utils';
 import {
   Button,
@@ -41,10 +50,25 @@ const EMPTY_FORM: Form = {
   students: 0,
   crewCount: 0,
   crewRate: 0,
-  printCostPerStudent: 0,
-  costumeCost: 0,
+  videoCrewCount: 0,
+  videoCrewRate: 0,
+  printItems: [{ label: 'Ảnh in', unitPrice: 0, quantity: 1, unit: 'student' }],
+  costumeItems: [],
+  travelItems: [
+    { label: 'Đi lại', unitPrice: 0, quantity: 1, unit: 'class' },
+    { label: 'Ăn uống', unitPrice: 0, quantity: 1, unit: 'crew' },
+  ],
   otherCosts: [{ label: '', amount: 0 }],
 };
+
+const emptyItem = (unit: ProfitCostItem['unit'] = 'student'): ProfitCostItem => ({
+  label: '',
+  unitPrice: 0,
+  quantity: 1,
+  unit,
+});
+
+const isFilledItem = (it: ProfitCostItem) => !!it.label.trim() || it.unitPrice > 0;
 
 const getApiErrorMessage = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
@@ -55,8 +79,20 @@ const fromScenario = (s: ProfitScenario): Form => ({
   students: s.students,
   crewCount: s.crewCount,
   crewRate: s.crewRate,
-  printCostPerStudent: s.printCostPerStudent,
-  costumeCost: s.costumeCost,
+  videoCrewCount: s.videoCrewCount ?? 0,
+  videoCrewRate: s.videoCrewRate ?? 0,
+  // Kịch bản cũ lưu 1 con số → chuyển thành 1 dòng
+  printItems: s.printItems?.length
+    ? s.printItems
+    : s.printCostPerStudent
+      ? [{ label: 'In ấn', unitPrice: s.printCostPerStudent, quantity: 1, unit: 'student' }]
+      : [],
+  travelItems: s.travelItems ?? [],
+  costumeItems: s.costumeItems?.length
+    ? s.costumeItems
+    : s.costumeCost
+      ? [{ label: 'Trang phục', unitPrice: s.costumeCost, quantity: 1, unit: 'class' }]
+      : [],
   otherCosts: s.otherCosts.length ? s.otherCosts : [{ label: '', amount: 0 }],
 });
 
@@ -150,10 +186,148 @@ const SectionCard = ({
   </section>
 );
 
+const UNIT_LABELS: Record<ProfitCostItem['unit'], string> = {
+  student: '/hs',
+  crew: '/người',
+  class: '/lớp',
+};
+
+/** Bảng dòng chi phí: tên · đơn giá × SL · /hs, /người (ekip) hoặc /lớp · thành tiền. */
+const CostItemsEditor = ({
+  items,
+  basis,
+  units = ['student', 'class'],
+  onChange,
+  addLabel,
+  namePlaceholder,
+  emptyText,
+}: {
+  items: ProfitCostItem[];
+  basis: CostBasis;
+  units?: ProfitCostItem['unit'][];
+  onChange: (items: ProfitCostItem[]) => void;
+  addLabel: string;
+  namePlaceholder: string;
+  emptyText?: string;
+}) => {
+  // Cột desktop: tên co giãn, nút đơn vị rộng theo số lựa chọn
+  const cols = {
+    '--cols': `minmax(0,1fr) 124px 60px ${units.length * 52}px 108px 32px`,
+  } as CSSProperties;
+  const patch = (i: number, p: Partial<ProfitCostItem>) =>
+    onChange(items.map((it, idx) => (idx === i ? { ...it, ...p } : it)));
+  return (
+    <div className="space-y-2.5" style={cols}>
+      {items.length === 0 && emptyText && (
+        <p className="text-[13px] text-muted-foreground">{emptyText}</p>
+      )}
+      {items.length > 0 && (
+        <div className="hidden gap-2 [grid-template-columns:var(--cols)] px-0.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+          <span>Hạng mục</span>
+          <span>Đơn giá</span>
+          <span>SL</span>
+          <span>Tính theo</span>
+          <span className="text-right">Thành tiền</span>
+          <span />
+        </div>
+      )}
+      {items.map((it, i) => (
+        <div
+          key={i}
+          className="grid grid-cols-[minmax(0,1fr)_68px_32px] items-center gap-2 rounded-[10px] border p-2.5 lg:gap-2 lg:[grid-template-columns:var(--cols)] lg:border-0 lg:p-0"
+        >
+          <Input
+            className="col-span-2 h-10 min-w-0 lg:col-span-1"
+            placeholder={namePlaceholder}
+            aria-label="Hạng mục"
+            value={it.label}
+            onChange={(e) => patch(i, { label: e.target.value })}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 text-muted-foreground lg:order-last"
+            aria-label="Xoá dòng"
+            onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="col-span-3 grid grid-cols-[minmax(0,1fr)_64px_auto] items-center gap-2 lg:contents">
+            <AmountInput
+              aria-label="Đơn giá"
+              value={it.unitPrice}
+              onChange={(v) => patch(i, { unitPrice: v })}
+              suffix="đ"
+            />
+            <AmountInput
+              aria-label="Số lượng"
+              value={it.quantity}
+              onChange={(v) => patch(i, { quantity: v })}
+            />
+            <div
+              role="radiogroup"
+              aria-label="Tính theo"
+              className={cn(
+                'flex h-10 rounded-[10px] bg-muted p-0.5 text-[12.5px] font-semibold',
+                // 3 lựa chọn: mobile xuống dòng riêng để ô đơn giá không bị bóp
+                units.length > 2 && 'col-span-3 lg:col-span-1',
+              )}
+            >
+              {units.map((unit) => (
+                <button
+                  key={unit}
+                  type="button"
+                  role="radio"
+                  aria-checked={it.unit === unit}
+                  onClick={() => patch(i, { unit })}
+                  className={cn(
+                    'flex-1 rounded-[8px] px-2.5 transition-colors',
+                    it.unit === unit
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {UNIT_LABELS[unit]}
+                </button>
+              ))}
+            </div>
+            <p className="col-span-3 flex items-baseline justify-between gap-2 text-[13px] lg:col-span-1 lg:block lg:text-right">
+              <span className="text-xs text-muted-foreground tabular lg:hidden">
+                {formatVnd(it.unitPrice)} × {it.quantity}
+                {it.unit === 'student'
+                  ? ` × ${basis.students} hs`
+                  : it.unit === 'crew'
+                    ? ` × ${basis.crew} người`
+                    : ''}
+              </span>
+              <span className="font-semibold text-foreground tabular">
+                {formatVnd(costItemAmount(it, basis))}
+              </span>
+            </p>
+          </div>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 px-0.5 py-1.5 text-[13px] font-semibold text-primary-700 hover:underline dark:text-primary"
+        onClick={() => onChange([...items, emptyItem()])}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {addLabel}
+      </button>
+    </div>
+  );
+};
+
 const COST_TONES = {
   crew: { bar: 'bg-blue-500', icon: 'bg-blue-500/15 text-blue-700 dark:text-blue-300' },
+  video: {
+    bar: 'bg-fuchsia-500',
+    icon: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300',
+  },
   print: { bar: 'bg-violet-500', icon: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
   costume: { bar: 'bg-pink-500', icon: 'bg-pink-500/15 text-pink-700 dark:text-pink-300' },
+  travel: { bar: 'bg-amber-500', icon: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
   other: { bar: 'bg-teal-500', icon: 'bg-teal-500/15 text-teal-700 dark:text-teal-300' },
 };
 
@@ -187,6 +361,7 @@ const PackageProfitPage = () => {
   const crewCount = crewAuto && suggestedCrew != null ? suggestedCrew : form.crewCount;
   const result = calcProfit({ ...form, crewCount });
   const active = scenarios.find((s) => s._id === activeId) ?? null;
+  const showVideo = !!pkg?.hasMv || form.videoCrewCount > 0;
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -206,6 +381,19 @@ const PackageProfitPage = () => {
       package: p?._id ?? null,
       pricePerMember: p?.pricePerMember ?? f.pricePerMember,
       crewCount: 0,
+      videoCrewCount: p ? (p.hasMv ? 1 : 0) : f.videoCrewCount,
+      // Trang phục theo gói — giữ đơn giá đã nhập cho loại trùng tên
+      costumeItems: p
+        ? (p.costumes ?? [])
+            .filter((c) => typeof c === 'object' && c?.name)
+            .map(
+              (c) =>
+                f.costumeItems.find((it) => it.label === c.name) ?? {
+                  ...emptyItem(),
+                  label: c.name,
+                },
+            )
+        : f.costumeItems,
     }));
     setCrewAuto(true);
   };
@@ -242,6 +430,9 @@ const PackageProfitPage = () => {
       ...form,
       crewCount,
       name: name.trim(),
+      printItems: form.printItems.filter(isFilledItem),
+      costumeItems: form.costumeItems.filter(isFilledItem),
+      travelItems: form.travelItems.filter(isFilledItem),
       otherCosts: form.otherCosts.filter((c) => c.label.trim() || c.amount),
     };
     if (!payload.name) {
@@ -281,10 +472,21 @@ const PackageProfitPage = () => {
 
   const costs = [
     { key: 'crew', label: `Ekip (${crewCount} thợ)`, value: result.crew },
+    ...(showVideo
+      ? [
+          {
+            key: 'video' as const,
+            label: `Thợ quay MV (${form.videoCrewCount})`,
+            value: result.video,
+          },
+        ]
+      : []),
     { key: 'print', label: 'In ấn', value: result.print },
     { key: 'costume', label: 'Trang phục', value: result.costume },
-    { key: 'other', label: 'Đi lại, ăn uống & khác', value: result.other },
-  ] as const;
+    { key: 'travel', label: 'Đi lại & ăn uống', value: result.travel },
+    { key: 'other', label: 'Khác', value: result.other },
+  ] satisfies { key: keyof typeof COST_TONES; label: string; value: number }[];
+  const basis = { students: form.students, crew: crewCount + form.videoCrewCount };
   const losing = result.profit < 0;
   const marginTone =
     result.margin == null
@@ -425,7 +627,7 @@ const PackageProfitPage = () => {
         </p>
       ) : (
         scenarios.map((s) => {
-          const r = calcProfit(s);
+          const r = calcProfit(fromScenario(s));
           const low = r.profit < 0 || (r.margin != null && r.margin < 0.2);
           return (
             <div
@@ -543,10 +745,10 @@ const PackageProfitPage = () => {
           </SectionCard>
 
           <SectionCard
-            title="Ekip chụp"
+            title={showVideo ? 'Ekip chụp & quay' : 'Ekip chụp'}
             icon={<Camera />}
             tone={COST_TONES.crew.icon}
-            subtotal={result.crew}
+            subtotal={result.crew + result.video}
           >
             <div className="grid grid-cols-2 gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
               <Field label="Số thợ" htmlFor="pp-crew">
@@ -586,23 +788,60 @@ const PackageProfitPage = () => {
                 )}
               </p>
             )}
+            {showVideo && (
+              <div className="space-y-3 border-t pt-3.5">
+                <p className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
+                  <span
+                    className={cn(
+                      'flex h-6 w-6 items-center justify-center rounded-md [&_svg]:size-3.5',
+                      COST_TONES.video.icon,
+                    )}
+                  >
+                    <Video />
+                  </span>
+                  Thợ quay MV kỷ yếu
+                  {pkg?.hasMv && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      · gói có quay MV
+                    </span>
+                  )}
+                </p>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <Field label="Số thợ quay" htmlFor="pp-video">
+                    <AmountInput
+                      id="pp-video"
+                      value={form.videoCrewCount}
+                      onChange={(v) => set('videoCrewCount', v)}
+                      suffix="người"
+                    />
+                  </Field>
+                  <Field label="Tiền công / thợ quay" htmlFor="pp-video-rate">
+                    <AmountInput
+                      id="pp-video-rate"
+                      value={form.videoCrewRate}
+                      onChange={(v) => set('videoCrewRate', v)}
+                      suffix="đ"
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
           </SectionCard>
 
-          <div className="grid gap-3.5 md:grid-cols-2 md:gap-4">
+          <div className="space-y-3.5 md:space-y-4">
             <SectionCard
               title="In ấn"
               icon={<Printer />}
               tone={COST_TONES.print.icon}
               subtotal={result.print}
             >
-              <Field label="Chi phí in / học sinh" htmlFor="pp-print">
-                <AmountInput
-                  id="pp-print"
-                  value={form.printCostPerStudent}
-                  onChange={(v) => set('printCostPerStudent', v)}
-                  suffix="đ"
-                />
-              </Field>
+              <CostItemsEditor
+                items={form.printItems}
+                basis={basis}
+                onChange={(v) => set('printItems', v)}
+                addLabel="Thêm mục in"
+                namePlaceholder="VD: Ảnh in 20×30, Album…"
+              />
             </SectionCard>
             <SectionCard
               title="Trang phục & đạo cụ"
@@ -610,20 +849,44 @@ const PackageProfitPage = () => {
               tone={COST_TONES.costume.icon}
               subtotal={result.costume}
             >
-              <Field label="Chi phí / lớp" htmlFor="pp-costume">
-                <AmountInput
-                  id="pp-costume"
-                  value={form.costumeCost}
-                  onChange={(v) => set('costumeCost', v)}
-                  suffix="đ"
-                />
-              </Field>
+              <CostItemsEditor
+                items={form.costumeItems}
+                basis={basis}
+                onChange={(v) => set('costumeItems', v)}
+                addLabel="Thêm trang phục"
+                namePlaceholder="VD: Áo dài, Vest…"
+                emptyText={
+                  pkg
+                    ? 'Gói này chưa gắn loại trang phục — thêm tay bên dưới.'
+                    : 'Chọn gói để tự liệt kê các loại trang phục của gói.'
+                }
+              />
             </SectionCard>
           </div>
 
           <SectionCard
-            title="Đi lại, ăn uống & khác"
+            title="Đi lại & ăn uống"
             icon={<Car />}
+            tone={COST_TONES.travel.icon}
+            subtotal={result.travel}
+          >
+            <CostItemsEditor
+              items={form.travelItems}
+              basis={basis}
+              units={['class', 'crew', 'student']}
+              onChange={(v) => set('travelItems', v)}
+              addLabel="Thêm khoản đi lại / ăn uống"
+              namePlaceholder="VD: Xăng xe, Ăn trưa ekip…"
+            />
+            <p className="text-xs text-muted-foreground">
+              /người = nhân theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
+              {form.videoCrewCount ? ` + ${form.videoCrewCount} thợ quay` : ''}).
+            </p>
+          </SectionCard>
+
+          <SectionCard
+            title="Chi phí khác"
+            icon={<Receipt />}
             tone={COST_TONES.other.icon}
             subtotal={result.other}
             className="space-y-2.5"

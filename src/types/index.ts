@@ -312,14 +312,29 @@ export interface ProfitScenarioInput {
   students: number;
   crewCount: number;
   crewRate: number;
-  printCostPerStudent: number;
-  costumeCost: number;
+  /** Thợ quay MV (gói có hasMv). */
+  videoCrewCount: number;
+  videoCrewRate: number;
+  printItems: ProfitCostItem[];
+  costumeItems: ProfitCostItem[];
+  travelItems: ProfitCostItem[];
   otherCosts: { label: string; amount: number }[];
+}
+
+/** Một dòng chi phí: đơn giá × SL (× sĩ số nếu `student`, × số người ekip nếu `crew`). */
+export interface ProfitCostItem {
+  label: string;
+  unitPrice: number;
+  quantity: number;
+  unit: 'student' | 'class' | 'crew';
 }
 
 export interface ProfitScenario extends Omit<ProfitScenarioInput, 'package'> {
   _id: string;
-  package: Pick<Package, '_id' | 'name' | 'pricePerMember' | 'studentsPerCrew'> | null;
+  package: Pick<Package, '_id' | 'name' | 'pricePerMember' | 'studentsPerCrew' | 'hasMv'> | null;
+  /** Trường cũ (trước khi tách dòng) — chỉ để đọc kịch bản đã lưu. */
+  printCostPerStudent?: number;
+  costumeCost?: number;
   createdBy?: CustomerSaleRef | null;
   createdAt?: string;
   updatedAt?: string;

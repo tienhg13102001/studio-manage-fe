@@ -1,10 +1,12 @@
-import type { ProfitScenarioInput } from '../types';
+import type { ProfitCostItem, ProfitScenarioInput } from '../types';
 
 export interface ProfitBreakdown {
   revenue: number;
   crew: number;
+  video: number;
   print: number;
   costume: number;
+  travel: number;
   other: number;
   totalCost: number;
   profit: number;
@@ -16,19 +18,39 @@ export interface ProfitBreakdown {
 
 type Costs = Omit<ProfitScenarioInput, 'name' | 'package'>;
 
+/** Hệ số nhân theo đơn vị: sĩ số (/hs), số người ekip (/người) hoặc 1 (/lớp). */
+export interface CostBasis {
+  students: number;
+  crew: number;
+}
+
+/** Thành tiền một dòng: đơn giá × SL × hệ số đơn vị. */
+export const costItemAmount = (item: ProfitCostItem, basis: CostBasis) =>
+  (item.unitPrice || 0) *
+  (item.quantity || 0) *
+  (item.unit === 'student' ? basis.students : item.unit === 'crew' ? basis.crew : 1);
+
+const sumItems = (items: ProfitCostItem[] = [], basis: CostBasis) =>
+  items.reduce((sum, it) => sum + costItemAmount(it, basis), 0);
+
 export const calcProfit = (s: Costs): ProfitBreakdown => {
   const revenue = s.pricePerMember * s.students;
   const crew = s.crewCount * s.crewRate;
-  const print = s.printCostPerStudent * s.students;
-  const costume = s.costumeCost;
+  const video = s.videoCrewCount * s.videoCrewRate;
+  const basis = { students: s.students, crew: s.crewCount + s.videoCrewCount };
+  const print = sumItems(s.printItems, basis);
+  const costume = sumItems(s.costumeItems, basis);
+  const travel = sumItems(s.travelItems, basis);
   const other = s.otherCosts.reduce((sum, c) => sum + (c.amount || 0), 0);
-  const totalCost = crew + print + costume + other;
+  const totalCost = crew + video + print + costume + travel + other;
   const profit = revenue - totalCost;
   return {
     revenue,
     crew,
+    video,
     print,
     costume,
+    travel,
     other,
     totalCost,
     profit,
