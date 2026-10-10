@@ -281,6 +281,28 @@ export interface Package {
   createdAt?: string;
 }
 
+/** Kịch bản "Tính lãi gói" (Công cụ). */
+export interface ProfitScenarioInput {
+  name: string;
+  /** Package id (`null` = nhập giá tay). */
+  package: string | null;
+  pricePerMember: number;
+  students: number;
+  crewCount: number;
+  crewRate: number;
+  printCostPerStudent: number;
+  costumeCost: number;
+  otherCosts: { label: string; amount: number }[];
+}
+
+export interface ProfitScenario extends Omit<ProfitScenarioInput, 'package'> {
+  _id: string;
+  package: Pick<Package, '_id' | 'name' | 'pricePerMember' | 'studentsPerCrew'> | null;
+  createdBy?: CustomerSaleRef | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ExtraService {
   name: string;
   quantity: number;

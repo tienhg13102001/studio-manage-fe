@@ -1,8 +1,10 @@
 import type { ComponentType } from 'react';
 import {
   Banknote,
+  Calculator,
   Calendar,
   ClipboardList,
+  HandCoins,
   LayoutDashboard,
   MessageSquare,
   Package,
@@ -29,6 +31,7 @@ import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
 import FeedbackPage from '../pages/FeedbackPage';
 import SeasonPage from '@/pages/SeasonPage';
+import PackageProfitPage from '../pages/PackageProfitPage';
 
 export type NavIcon = ComponentType<{ className?: string }>;
 
@@ -166,6 +169,23 @@ export const adminItems: NavItem[] = [
         iconClassName: 'text-orange-300',
         allowedRoles: [0, 1, 2, 4],
         component: PackagesPage,
+      },
+    ],
+  },
+  {
+    to: '/tools',
+    label: 'Công cụ',
+    icon: Calculator,
+    iconClassName: 'text-emerald-300',
+    allowedRoles: [0, 1],
+    children: [
+      {
+        to: '/package-profit',
+        label: 'Tính lãi gói',
+        icon: HandCoins,
+        iconClassName: 'text-emerald-300',
+        allowedRoles: [0, 1],
+        component: PackageProfitPage,
       },
     ],
   },
