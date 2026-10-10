@@ -22,7 +22,6 @@ import type { Package, ProfitCostItem, ProfitScenario, ProfitScenarioInput } fro
 import {
   calcProfit,
   costItemAmount,
-  costItemQuantity,
   type CostBasis,
   formatPercent,
   formatVnd,
@@ -105,7 +104,6 @@ const AmountInput = ({
   suffix,
   className,
   'aria-label': ariaLabel,
-  disabled,
 }: {
   id?: string;
   value: number;
@@ -113,15 +111,13 @@ const AmountInput = ({
   suffix?: string;
   className?: string;
   'aria-label'?: string;
-  disabled?: boolean;
 }) => (
   <div className={cn('relative', className)}>
     <Input
       id={id}
       inputMode="numeric"
       aria-label={ariaLabel}
-      disabled={disabled}
-      className={cn('h-10 tabular disabled:bg-muted disabled:opacity-100', suffix && 'pr-12')}
+      className={cn('h-10 tabular', suffix && 'pr-12')}
       value={value ? new Intl.NumberFormat('vi-VN').format(value) : ''}
       placeholder="0"
       onChange={(e) => onChange(Number(e.target.value.replace(/\D/g, '').slice(0, 13)) || 0)}
@@ -191,9 +187,9 @@ const SectionCard = ({
 );
 
 const UNIT_LABELS: Record<ProfitCostItem['unit'], string> = {
-  student: 'Sĩ số',
-  crew: 'Ekip',
-  class: 'Tự nhập',
+  student: '/hs',
+  crew: '/người',
+  class: '/lớp',
 };
 
 /** Bảng dòng chi phí: tên · đơn giá × SL · /hs, /người (ekip) hoặc /lớp · thành tiền. */
@@ -216,7 +212,7 @@ const CostItemsEditor = ({
 }) => {
   // Cột desktop: tên co giãn, nút đơn vị rộng theo số lựa chọn
   const cols = {
-    '--cols': `minmax(0,1fr) 116px 60px ${units.length * 70}px 104px 32px`,
+    '--cols': `minmax(0,1fr) 124px 60px ${units.length * 52}px 108px 32px`,
   } as CSSProperties;
   const patch = (i: number, p: Partial<ProfitCostItem>) =>
     onChange(items.map((it, idx) => (idx === i ? { ...it, ...p } : it)));
@@ -230,7 +226,7 @@ const CostItemsEditor = ({
           <span>Hạng mục</span>
           <span>Đơn giá</span>
           <span>SL</span>
-          <span>SL theo</span>
+          <span>Tính theo</span>
           <span className="text-right">Thành tiền</span>
           <span />
         </div>
@@ -265,17 +261,16 @@ const CostItemsEditor = ({
             />
             <AmountInput
               aria-label="Số lượng"
-              value={costItemQuantity(it, basis)}
-              disabled={it.unit !== 'class'}
+              value={it.quantity}
               onChange={(v) => patch(i, { quantity: v })}
             />
             <div
               role="radiogroup"
-              aria-label="Số lượng theo"
+              aria-label="Tính theo"
               className={cn(
                 'flex h-10 rounded-[10px] bg-muted p-0.5 text-[12.5px] font-semibold',
-                // Mobile: xuống dòng riêng để ô đơn giá không bị bóp
-                'col-span-3 lg:col-span-1',
+                // 3 lựa chọn: mobile xuống dòng riêng để ô đơn giá không bị bóp
+                units.length > 2 && 'col-span-3 lg:col-span-1',
               )}
             >
               {units.map((unit) => (
@@ -284,15 +279,9 @@ const CostItemsEditor = ({
                   type="button"
                   role="radio"
                   aria-checked={it.unit === unit}
-                  onClick={() =>
-                    // Chuyển sang tự nhập: giữ nguyên SL đang hiển thị
-                    patch(
-                      i,
-                      unit === 'class' ? { unit, quantity: costItemQuantity(it, basis) } : { unit },
-                    )
-                  }
+                  onClick={() => patch(i, { unit })}
                   className={cn(
-                    'flex-1 whitespace-nowrap rounded-[8px] px-2 transition-colors',
+                    'flex-1 rounded-[8px] px-2.5 transition-colors',
                     it.unit === unit
                       ? 'bg-card text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground',
@@ -304,8 +293,12 @@ const CostItemsEditor = ({
             </div>
             <p className="col-span-3 flex items-baseline justify-between gap-2 text-[13px] lg:col-span-1 lg:block lg:text-right">
               <span className="text-xs text-muted-foreground tabular lg:hidden">
-                {formatVnd(it.unitPrice)} × {costItemQuantity(it, basis)}
-                {it.unit === 'student' ? ' hs' : it.unit === 'crew' ? ' người' : ''}
+                {formatVnd(it.unitPrice)} × {it.quantity}
+                {it.unit === 'student'
+                  ? ` × ${basis.students} hs`
+                  : it.unit === 'crew'
+                    ? ` × ${basis.crew} người`
+                    : ''}
               </span>
               <span className="font-semibold text-foreground tabular">
                 {formatVnd(costItemAmount(it, basis))}
@@ -886,7 +879,7 @@ const PackageProfitPage = () => {
               namePlaceholder="VD: Xăng xe, Ăn trưa ekip…"
             />
             <p className="text-xs text-muted-foreground">
-              Ekip = SL tự lấy theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
+              /người = nhân theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
               {form.videoCrewCount ? ` + ${form.videoCrewCount} thợ quay` : ''}).
             </p>
           </SectionCard>
