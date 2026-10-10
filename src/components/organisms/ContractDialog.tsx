@@ -308,6 +308,8 @@ const ContractForm = (props: ContractFormProps) => {
       videoCrewCount: pkg.hasMv ? 1 : 0,
       // null → hợp đồng để trống "………" ở Tiền cọc & Đợt 2 (tự cập nhật khi ghi nhận cọc)
       depositAmount,
+      // Ngày cọc in ở {{depositDate}} — trống khi chưa cọc
+      depositDate: depositAmount !== null ? (deposit?.date ?? null) : null,
       customer: { ...customer, school: getSchoolName(customer) },
     };
     let json: {
@@ -352,6 +354,7 @@ const ContractForm = (props: ContractFormProps) => {
         videoCrewCount: pkg.hasMv ? 1 : 0,
         depositAmount: printedDeposit,
         depositSyncedAt: printedDeposit !== null ? new Date().toISOString() : null,
+        depositDate: printedDeposit !== null ? (deposit?.date ?? null) : null,
       });
       setSaved(true);
       onSaved?.(updated);

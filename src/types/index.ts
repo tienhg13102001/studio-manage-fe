@@ -110,6 +110,8 @@ export interface CustomerContract {
   /** Deposit printed on the contract; `null` = left blank "………". */
   depositAmount?: number | null;
   depositSyncedAt?: string | null;
+  /** Ngày cọc đang in trên hợp đồng; null = để trống. */
+  depositDate?: string | null;
   createdAt?: string | null;
   createdBy?: string | null;
 }
