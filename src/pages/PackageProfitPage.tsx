@@ -55,7 +55,7 @@ const EMPTY_FORM: Form = {
   printItems: [{ label: 'Ảnh in', unitPrice: 0, quantity: 1, unit: 'student' }],
   costumeItems: [],
   travelItems: [
-    { label: 'Đi lại', unitPrice: 0, quantity: 1, unit: 'class' },
+    { label: 'Đi lại', unitPrice: 0, quantity: 1, unit: 'crew' },
     { label: 'Ăn uống', unitPrice: 0, quantity: 1, unit: 'crew' },
   ],
   otherCosts: [{ label: '', amount: 0 }],
@@ -87,7 +87,8 @@ const fromScenario = (s: ProfitScenario): Form => ({
     : s.printCostPerStudent
       ? [{ label: 'In ấn', unitPrice: s.printCostPerStudent, quantity: 1, unit: 'student' }]
       : [],
-  travelItems: s.travelItems ?? [],
+  // Đi lại & ăn uống luôn tính theo người ekip
+  travelItems: (s.travelItems ?? []).map((it) => ({ ...it, unit: 'crew' })),
   costumeItems: s.costumeItems?.length
     ? s.costumeItems
     : s.costumeCost
@@ -212,7 +213,7 @@ const CostItemsEditor = ({
 }) => {
   // Cột desktop: tên co giãn, nút đơn vị rộng theo số lựa chọn
   const cols = {
-    '--cols': `minmax(0,1fr) 124px 60px ${units.length * 52}px 108px 32px`,
+    '--cols': `minmax(0,1fr) 124px 60px ${units.length > 1 ? units.length * 52 : 64}px 108px 32px`,
   } as CSSProperties;
   const patch = (i: number, p: Partial<ProfitCostItem>) =>
     onChange(items.map((it, idx) => (idx === i ? { ...it, ...p } : it)));
@@ -264,33 +265,39 @@ const CostItemsEditor = ({
               value={it.quantity}
               onChange={(v) => patch(i, { quantity: v })}
             />
-            <div
-              role="radiogroup"
-              aria-label="Tính theo"
-              className={cn(
-                'flex h-10 rounded-[10px] bg-muted p-0.5 text-[12.5px] font-semibold',
-                // 3 lựa chọn: mobile xuống dòng riêng để ô đơn giá không bị bóp
-                units.length > 2 && 'col-span-3 lg:col-span-1',
-              )}
-            >
-              {units.map((unit) => (
-                <button
-                  key={unit}
-                  type="button"
-                  role="radio"
-                  aria-checked={it.unit === unit}
-                  onClick={() => patch(i, { unit })}
-                  className={cn(
-                    'flex-1 rounded-[8px] px-2.5 transition-colors',
-                    it.unit === unit
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {UNIT_LABELS[unit]}
-                </button>
-              ))}
-            </div>
+            {units.length === 1 ? (
+              <span className="flex h-10 items-center rounded-[10px] bg-muted px-3 text-[12.5px] font-semibold text-muted-foreground">
+                {UNIT_LABELS[units[0]]}
+              </span>
+            ) : (
+              <div
+                role="radiogroup"
+                aria-label="Tính theo"
+                className={cn(
+                  'flex h-10 rounded-[10px] bg-muted p-0.5 text-[12.5px] font-semibold',
+                  // 3 lựa chọn: mobile xuống dòng riêng để ô đơn giá không bị bóp
+                  units.length > 2 && 'col-span-3 lg:col-span-1',
+                )}
+              >
+                {units.map((unit) => (
+                  <button
+                    key={unit}
+                    type="button"
+                    role="radio"
+                    aria-checked={it.unit === unit}
+                    onClick={() => patch(i, { unit })}
+                    className={cn(
+                      'flex-1 rounded-[8px] px-2.5 transition-colors',
+                      it.unit === unit
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {UNIT_LABELS[unit]}
+                  </button>
+                ))}
+              </div>
+            )}
             <p className="col-span-3 flex items-baseline justify-between gap-2 text-[13px] lg:col-span-1 lg:block lg:text-right">
               <span className="text-xs text-muted-foreground tabular lg:hidden">
                 {formatVnd(it.unitPrice)} × {it.quantity}
@@ -310,7 +317,7 @@ const CostItemsEditor = ({
       <button
         type="button"
         className="inline-flex items-center gap-1.5 px-0.5 py-1.5 text-[13px] font-semibold text-primary-700 hover:underline dark:text-primary"
-        onClick={() => onChange([...items, emptyItem()])}
+        onClick={() => onChange([...items, emptyItem(units[0])])}
       >
         <Plus className="h-3.5 w-3.5" />
         {addLabel}
@@ -873,13 +880,13 @@ const PackageProfitPage = () => {
             <CostItemsEditor
               items={form.travelItems}
               basis={basis}
-              units={['class', 'crew', 'student']}
+              units={['crew']}
               onChange={(v) => set('travelItems', v)}
               addLabel="Thêm khoản đi lại / ăn uống"
               namePlaceholder="VD: Xăng xe, Ăn trưa ekip…"
             />
             <p className="text-xs text-muted-foreground">
-              /người = nhân theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
+              Mỗi khoản nhân theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
               {form.videoCrewCount ? ` + ${form.videoCrewCount} thợ quay` : ''}).
             </p>
           </SectionCard>
