@@ -18,17 +18,19 @@ export interface ProfitBreakdown {
 
 type Costs = Omit<ProfitScenarioInput, 'name' | 'package'>;
 
-/** Hệ số nhân theo đơn vị: sĩ số (/hs), số người ekip (/người) hoặc 1 (/lớp). */
+/** Số lượng tự động: theo sĩ số (`student`) hoặc số người ekip (`crew`). */
 export interface CostBasis {
   students: number;
   crew: number;
 }
 
-/** Thành tiền một dòng: đơn giá × SL × hệ số đơn vị. */
+/** SL thực tế: sĩ số / số người ekip, hoặc số nhập tay (`class`). */
+export const costItemQuantity = (item: ProfitCostItem, basis: CostBasis) =>
+  item.unit === 'student' ? basis.students : item.unit === 'crew' ? basis.crew : item.quantity || 0;
+
+/** Thành tiền một dòng: đơn giá × SL. */
 export const costItemAmount = (item: ProfitCostItem, basis: CostBasis) =>
-  (item.unitPrice || 0) *
-  (item.quantity || 0) *
-  (item.unit === 'student' ? basis.students : item.unit === 'crew' ? basis.crew : 1);
+  (item.unitPrice || 0) * costItemQuantity(item, basis);
 
 const sumItems = (items: ProfitCostItem[] = [], basis: CostBasis) =>
   items.reduce((sum, it) => sum + costItemAmount(it, basis), 0);

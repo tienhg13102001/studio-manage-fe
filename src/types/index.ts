@@ -321,7 +321,7 @@ export interface ProfitScenarioInput {
   otherCosts: { label: string; amount: number }[];
 }
 
-/** Một dòng chi phí: đơn giá × SL (× sĩ số nếu `student`, × số người ekip nếu `crew`). */
+/** Một dòng chi phí: đơn giá × SL — SL = sĩ số (`student`), số người ekip (`crew`) hoặc nhập tay (`class`). */
 export interface ProfitCostItem {
   label: string;
   unitPrice: number;
