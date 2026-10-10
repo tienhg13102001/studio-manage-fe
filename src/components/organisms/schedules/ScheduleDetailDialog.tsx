@@ -21,6 +21,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { getSchoolName, type ScheduleResponse } from '../../../types';
+import { neededVideoCount } from '../../../utils/crewCount';
 import { formatDate } from '../../../utils/format';
 import {
   SCHEDULE_CANCELLED_LABEL,
@@ -132,6 +133,16 @@ const ScheduleDetailDialog = ({
               ? `${externalLead.photographer.name} · Thợ ngoài (${externalLead.confirmation === 'confirmed' ? 'đã xác nhận' : externalLead.confirmation === 'declined' ? 'từ chối' : 'chờ xác nhận'})`
               : null);
           const bookedByName = detail.bookedBy?.name ?? detail.bookedBy?.username ?? null;
+          const externalVideo = (detail.externalCrew ?? []).find(
+            (entry) => entry.role === 'video' && entry.photographer,
+          );
+          const videoName =
+            detail.videographer?.name ??
+            detail.videographer?.username ??
+            (externalVideo?.photographer
+              ? `${externalVideo.photographer.name} · Thợ ngoài (${externalVideo.confirmation === 'confirmed' ? 'đã xác nhận' : externalVideo.confirmation === 'declined' ? 'từ chối' : 'chờ xác nhận'})`
+              : null);
+          const showVideo = !!videoName || neededVideoCount(customer, pkg) > 0;
           const supportList = detail.supportPhotographers
             .map((u) => u.name ?? u.username)
             .filter(Boolean) as string[];
@@ -232,6 +243,7 @@ const ScheduleDetailDialog = ({
                     {[
                       { role: 'Sale', name: bookedByName },
                       { role: 'Thợ chính', name: leadName },
+                      ...(showVideo ? [{ role: 'Thợ quay', name: videoName }] : []),
                     ].map(({ role, name }) => (
                       <div
                         key={role}

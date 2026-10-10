@@ -80,7 +80,7 @@ const QuickStatusBody = ({
     const blocked = moveBlockReason(
       {
         isAdmin: role === 'admin',
-        isPhotographer: !!userRoles?.includes(3),
+        isPhotographer: !!userRoles?.includes(3) || !!userRoles?.includes(6),
         userId,
         onCrew,
       },

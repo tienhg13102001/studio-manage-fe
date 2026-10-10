@@ -5,6 +5,7 @@ import type { User } from '../../types';
 interface UsersState {
   list: User[];
   photographers: User[];
+  videographers: User[];
   sales: User[];
   loading: boolean;
   error: string | null;
@@ -13,6 +14,7 @@ interface UsersState {
 const initialState: UsersState = {
   list: [],
   photographers: [],
+  videographers: [],
   sales: [],
   loading: false,
   error: null,
@@ -22,6 +24,10 @@ export const fetchUsers = createAsyncThunk('users/fetchAll', () => userService.g
 
 export const fetchPhotographers = createAsyncThunk('users/fetchPhotographers', () =>
   userService.getPhotographers(),
+);
+
+export const fetchVideographers = createAsyncThunk('users/fetchVideographers', () =>
+  userService.getVideographers(),
 );
 
 export const fetchSales = createAsyncThunk('users/fetchSales', () => userService.getSales());
@@ -46,6 +52,9 @@ const usersSlice = createSlice({
       })
       .addCase(fetchPhotographers.fulfilled, (state, action) => {
         state.photographers = action.payload;
+      })
+      .addCase(fetchVideographers.fulfilled, (state, action) => {
+        state.videographers = action.payload;
       })
       .addCase(fetchSales.fulfilled, (state, action) => {
         state.sales = action.payload;

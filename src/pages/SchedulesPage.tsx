@@ -311,7 +311,10 @@ const SchedulesPage = () => {
   const issues = useMemo(() => {
     const active = schedules.filter((s) => !isScheduleCancelled(s));
     return {
-      short: active.filter((s) => crewStats(s).missing > 0).length,
+      short: active.filter((s) => {
+        const stats = crewStats(s);
+        return stats.missing > 0 || stats.videoMissing > 0;
+      }).length,
       conflict: active.filter((s) => (s.conflicts?.length ?? 0) > 0).length,
     };
   }, [schedules]);
@@ -349,11 +352,17 @@ const SchedulesPage = () => {
             .filter((entry) => entry.role === 'support' && entry.photographer)
             .map((entry) => `${entry.photographer!.name} · Ngoài`),
         ],
+        videoName:
+          personName(s.videographer) ||
+          (s.externalCrew ?? [])
+            .filter((entry) => entry.role === 'video' && entry.photographer)
+            .map((entry) => `${entry.photographer!.name} · Ngoài`)[0],
         driveFolderUrl: s.customer?.driveFolderUrl ?? undefined,
         studentCount: s.customer?.total,
         crew: [
           ...(s.leadPhotographer ? [{ name: personName(s.leadPhotographer), lead: true }] : []),
           ...s.supportPhotographers.map((u) => ({ name: personName(u) })),
+          ...(s.videographer ? [{ name: personName(s.videographer) }] : []),
           ...(s.externalCrew ?? [])
             .filter((entry) => entry.photographer)
             .map((entry) => ({

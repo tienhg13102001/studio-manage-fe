@@ -35,6 +35,8 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { scheduleService } from '../../../services/scheduleService';
+import { useAppDispatch, useAppSelector } from '../../../store';
+import { fetchVideographers } from '../../../store/slices/usersSlice';
 import type {
   CostumeResponse,
   Customer,
@@ -48,6 +50,7 @@ import type {
   User,
 } from '../../../types';
 import { ROLE_LABELS } from '../../../types';
+import { neededVideoCount } from '../../../utils/crewCount';
 import { classLabel } from '../../../utils/format';
 import { CREW_EDITOR_HINT } from '../../../utils/permissions';
 import { isScheduleCancelled } from '../../../utils/scheduleConstants';
@@ -337,6 +340,7 @@ interface ScheduleFormValues {
   endTime?: string;
   location?: string;
   leadPhotographer?: string;
+  videographer?: string;
   bookedBy?: string;
   notes?: string;
   season?: string | null;
@@ -394,6 +398,8 @@ const ScheduleFormDialog = ({
   onToggleCancel,
   canEditCrew,
 }: ScheduleFormDialogProps) => {
+  const dispatch = useAppDispatch();
+  const videographers = useAppSelector((s) => s.users.videographers);
   const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [supportIds, setSupportIds] = useState<string[]>([]);
   const [externalCrew, setExternalCrew] = useState<ExternalCrewAssignment[]>([]);
@@ -425,6 +431,15 @@ const ScheduleFormDialog = ({
 
   const selectedPackageId = watch('package');
   const externalLead = externalCrew.find((entry) => entry.role === 'lead');
+  const externalVideo = externalCrew.find((entry) => entry.role === 'video');
+  /** Active videographers plus the one already on `editing` (may have been deactivated). */
+  const videoOptions = useMemo(() => {
+    const list: Pick<User, '_id' | 'name' | 'username'>[] = [...videographers];
+    if (editing?.videographer && !list.some((u) => u._id === editing.videographer!._id)) {
+      list.push(editing.videographer);
+    }
+    return list;
+  }, [videographers, editing]);
   const availableExternal = useMemo(() => {
     const map = new Map<string, ExternalPhotographer>();
     for (const person of externalPhotographers) {
@@ -446,6 +461,10 @@ const ScheduleFormDialog = ({
     () => allCostumes.filter((c) => c.type && packageTypeIds.has(c.type._id)),
     [allCostumes, packageTypeIds],
   );
+
+  useEffect(() => {
+    if (open) dispatch(fetchVideographers());
+  }, [open, dispatch]);
 
   useEffect(() => {
     if (!open) return;
@@ -472,6 +491,7 @@ const ScheduleFormDialog = ({
         location: editing.location,
         notes: editing.notes,
         leadPhotographer: editing.leadPhotographer?._id ?? '',
+        videographer: editing.videographer?._id ?? '',
         bookedBy: editing.bookedBy?._id ?? '',
         extraServices: (editing.extraServices ?? []).map((es) => ({
           name: es.name,
@@ -508,6 +528,8 @@ const ScheduleFormDialog = ({
       ...data,
       costumes: selectedCostumes,
       leadPhotographer: data.leadPhotographer || null,
+      // Omitted (kept server-side) for non crew editors so an update never drops it
+      videographer: canEditCrew ? data.videographer || null : undefined,
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
       ...(canEditCrew ? { externalCrew } : {}),
@@ -780,6 +802,10 @@ const ScheduleFormDialog = ({
                               prev.filter((entry) => entry.role !== 'lead'),
                             );
                             setSupportIds((prev) => prev.filter((id) => id !== value));
+                            // Một người không vừa chụp vừa quay
+                            if (value && value === getValues('videographer')) {
+                              setValue('videographer', '');
+                            }
                             field.onChange(value || '');
                           }
                         }}
@@ -794,7 +820,10 @@ const ScheduleFormDialog = ({
                   <FormField label="Thợ phụ">
                     <MultiSelect
                       options={photographers
-                        .filter((u) => u._id !== watch('leadPhotographer'))
+                        .filter(
+                          (u) =>
+                            u._id !== watch('leadPhotographer') && u._id !== watch('videographer'),
+                        )
                         .map((u) => ({
                           value: u._id,
                           label: `${u.username}${u.name ? ` (${u.name})` : ''}`,
@@ -806,6 +835,71 @@ const ScheduleFormDialog = ({
                       maxBadges={8}
                       disabled={!canEditCrew}
                       className="min-h-10 rounded-[10px]"
+                    />
+                  </FormField>
+                )}
+                {(neededVideoCount(
+                  customers.find((c) => c._id === watch('customer')) ?? editing?.customer,
+                  selectedPackage,
+                ) > 0 ||
+                  !!watch('videographer') ||
+                  !!externalVideo) && (
+                  <FormField label="Thợ quay MV">
+                    <Controller
+                      name="videographer"
+                      control={control}
+                      render={({ field }) => (
+                        <Combobox
+                          options={[
+                            ...videoOptions
+                              .filter(
+                                (u) =>
+                                  u._id !== watch('leadPhotographer') &&
+                                  !supportIds.includes(u._id),
+                              )
+                              .map((u) => ({
+                                value: u._id,
+                                label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[6]}`,
+                              })),
+                            ...availableExternal.map((person) => ({
+                              value: `external:${person._id}`,
+                              label: `${person.name} – Thợ ngoài`,
+                            })),
+                          ]}
+                          value={
+                            externalVideo
+                              ? `external:${externalVideo.photographer}`
+                              : (field.value ?? '')
+                          }
+                          onChange={(value) => {
+                            if (value.startsWith('external:')) {
+                              const id = value.slice('external:'.length);
+                              setExternalCrew((prev) => [
+                                ...prev.filter(
+                                  (entry) => entry.role !== 'video' && entry.photographer !== id,
+                                ),
+                                {
+                                  photographer: id,
+                                  role: 'video',
+                                  confirmation:
+                                    prev.find((entry) => entry.photographer === id)?.confirmation ??
+                                    'pending',
+                                },
+                              ]);
+                              field.onChange('');
+                            } else {
+                              setExternalCrew((prev) =>
+                                prev.filter((entry) => entry.role !== 'video'),
+                              );
+                              setSupportIds((prev) => prev.filter((id) => id !== value));
+                              field.onChange(value || '');
+                            }
+                          }}
+                          placeholder="-- Không chỉ định --"
+                          disabled={!canEditCrew}
+                          className={formFieldCls}
+                        />
+                      )}
                     />
                   </FormField>
                 )}
@@ -824,14 +918,18 @@ const ScheduleFormDialog = ({
                   </div>
                   <MultiSelect
                     options={availableExternal
-                      .filter((person) => person._id !== externalLead?.photographer)
+                      .filter(
+                        (person) =>
+                          person._id !== externalLead?.photographer &&
+                          person._id !== externalVideo?.photographer,
+                      )
                       .map((person) => ({ value: person._id, label: person.name }))}
                     value={externalCrew
                       .filter((entry) => entry.role === 'support')
                       .map((entry) => entry.photographer)}
                     onChange={(ids) =>
                       setExternalCrew((prev) => [
-                        ...prev.filter((entry) => entry.role === 'lead'),
+                        ...prev.filter((entry) => entry.role !== 'support'),
                         ...ids.map(
                           (id): ExternalCrewAssignment => ({
                             photographer: id,
@@ -857,7 +955,12 @@ const ScheduleFormDialog = ({
                           <span className="truncate">
                             {availableExternal.find((person) => person._id === entry.photographer)
                               ?.name ?? 'Thợ ngoài'}{' '}
-                            · {entry.role === 'lead' ? 'Chính' : 'Phụ'}
+                            ·{' '}
+                            {entry.role === 'lead'
+                              ? 'Chính'
+                              : entry.role === 'video'
+                                ? 'Quay MV'
+                                : 'Phụ'}
                           </span>
                           <select
                             value={entry.confirmation}

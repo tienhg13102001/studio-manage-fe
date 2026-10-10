@@ -35,6 +35,7 @@ import {
   User,
   UserCheck,
   Users,
+  Video,
   Wallet,
   XCircle,
 } from 'lucide-react';
@@ -685,10 +686,12 @@ const CustomerDetailPage = () => {
   const saleName = getUserRefName(customer.assignedSale);
   const isAssigned = !!userId && assignedId === userId;
   const isClassPhotographer =
-    roles.includes(3) &&
+    (roles.includes(3) || roles.includes(6)) &&
     schedules.some(
       (s) =>
-        s.leadPhotographer?._id === userId || s.supportPhotographers.some((u) => u._id === userId),
+        s.leadPhotographer?._id === userId ||
+        s.supportPhotographers.some((u) => u._id === userId) ||
+        s.videographer?._id === userId,
     );
   const orderIdx = CUSTOMER_STATUS_ORDER.indexOf(status as (typeof CUSTOMER_STATUS_ORDER)[number]);
   const nextStatus: CustomerStatus | null =
@@ -1210,6 +1213,18 @@ const CustomerDetailPage = () => {
                       {s.supportPhotographers.length +
                         (s.externalCrew ?? []).filter((entry) => entry.role === 'support').length}
                       )
+                    </span>
+                  )}
+                  {(s.videographer ||
+                    (s.externalCrew ?? []).some(
+                      (entry) => entry.role === 'video' && entry.photographer,
+                    )) && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 text-xs">
+                      <Video className="h-3 w-3 text-primary" />
+                      {s.videographer?.name ??
+                        s.videographer?.username ??
+                        (s.externalCrew ?? []).find((entry) => entry.role === 'video')?.photographer
+                          ?.name}
                     </span>
                   )}
                 </span>

@@ -30,6 +30,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
   3: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
   4: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
   5: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  6: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300',
 };
 
 const ROLE_TILE: Record<UserRole, string> = {
@@ -39,6 +40,7 @@ const ROLE_TILE: Record<UserRole, string> = {
   3: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
   4: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
   5: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  6: 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300',
 };
 
 const AVATAR_COLORS = [
@@ -270,7 +272,7 @@ const UsersPage = () => {
       />
 
       {/* Role summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-3 mb-5">
         {(Object.entries(ROLE_LABELS) as [string, string][]).map(([val, label]) => {
           const r = Number(val) as UserRole;
           const count = users.filter((u) => (u.roles ?? []).includes(r)).length;

@@ -18,6 +18,7 @@ import {
   Plus,
   Sparkles,
   Users,
+  Video,
   Wallet,
   X,
 } from 'lucide-react';
@@ -304,6 +305,7 @@ const ContractForm = (props: ContractFormProps) => {
       crewCount,
       crewCountSystem: system,
       crewCountReason,
+      videoCrewCount: pkg.hasMv ? 1 : 0,
       // null → hợp đồng để trống "………" ở Tiền cọc & Đợt 2 (tự cập nhật khi ghi nhận cọc)
       depositAmount,
       customer: { ...customer, school: getSchoolName(customer) },
@@ -347,6 +349,7 @@ const ContractForm = (props: ContractFormProps) => {
         extraServices,
         crewCount: Number.isInteger(crewCount) ? crewCount : null,
         crewCountSystem: system,
+        videoCrewCount: pkg.hasMv ? 1 : 0,
         depositAmount: printedDeposit,
         depositSyncedAt: printedDeposit !== null ? new Date().toISOString() : null,
       });
@@ -727,6 +730,19 @@ const ContractForm = (props: ContractFormProps) => {
                 ) : null}
               </FormField>
             </div>
+            {selectedPackage?.hasMv && (
+              <div className="flex items-start gap-2.5 rounded-[10px] bg-primary/10 px-3.5 py-3 text-[13px]">
+                <Video className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <div className="font-semibold text-primary-700 dark:text-primary">
+                    Thợ quay MV: 1 thợ
+                  </div>
+                  <p className="mt-0.5 text-muted-foreground">
+                    Gói có quay MV kỷ yếu — mỗi lớp 1 thợ quay, in vào hợp đồng
+                  </p>
+                </div>
+              </div>
+            )}
             {crewAdjusted && (
               <FormField
                 label="Lý do điều chỉnh số thợ"

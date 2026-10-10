@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AlarmClock, Check, Info, Plus, Search, Users, X } from 'lucide-react';
+import { AlarmClock, Check, Info, Plus, Search, Users, Video, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import {
@@ -21,6 +21,8 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { scheduleService } from '../../../services/scheduleService';
+import { useAppDispatch, useAppSelector } from '../../../store';
+import { fetchVideographers } from '../../../store/slices/usersSlice';
 import { externalPhotographerService } from '../../../services/externalPhotographerService';
 import {
   getSchoolName,
@@ -31,7 +33,7 @@ import {
   type ScheduleResponse,
   type User,
 } from '../../../types';
-import { neededCrewCount } from '../../../utils/crewCount';
+import { neededCrewCount, neededVideoCount } from '../../../utils/crewCount';
 import { CrewAvatar } from './CrewAvatar';
 import {
   SHEET_CONTENT_CLS,
@@ -43,6 +45,7 @@ import {
 } from './scheduleHelpers';
 
 const NO_LEAD = '__none__';
+const NO_VIDEO = '__none__';
 const EXTERNAL_PREFIX = 'external:';
 const CONFIRMATION_LABELS: Record<ExternalCrewConfirmation, string> = {
   pending: 'Chờ xác nhận',
@@ -79,7 +82,10 @@ const CrewEditorBody = ({
   onSaved,
   inDialog,
 }: BodyProps) => {
+  const dispatch = useAppDispatch();
+  const videographers = useAppSelector((s) => s.users.videographers);
   const [lead, setLead] = useState(schedule.leadPhotographer?._id ?? '');
+  const [videographer, setVideographer] = useState(schedule.videographer?._id ?? '');
   const [supports, setSupports] = useState(() => schedule.supportPhotographers.map((u) => u._id));
   const [externalCrew, setExternalCrew] = useState<ExternalCrewAssignment[]>(() =>
     (schedule.externalCrew ?? [])
@@ -98,6 +104,10 @@ const CrewEditorBody = ({
   const [quickPhone, setQuickPhone] = useState('');
   const [quickFee, setQuickFee] = useState('');
   const [creatingExternal, setCreatingExternal] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchVideographers());
+  }, [dispatch]);
 
   useEffect(() => {
     let alive = true;
@@ -120,6 +130,16 @@ const CrewEditorBody = ({
     return [...map.values()];
   }, [photographers, schedule.leadPhotographer, schedule.supportPhotographers]);
 
+  /** Active videographers plus the current one (who may have been deactivated since). */
+  const videoPeople = useMemo(() => {
+    const map = new Map<string, Pick<User, '_id' | 'name' | 'username'>>();
+    for (const u of videographers) map.set(u._id, u);
+    if (schedule.videographer && !map.has(schedule.videographer._id)) {
+      map.set(schedule.videographer._id, schedule.videographer);
+    }
+    return [...map.values()];
+  }, [videographers, schedule.videographer]);
+
   const externalPeople = useMemo(() => {
     const map = new Map<string, ExternalPhotographer>();
     for (const person of externalPhotographers) map.set(person._id, person);
@@ -137,7 +157,7 @@ const CrewEditorBody = ({
   const busyByUser = useMemo(() => {
     const map = new Map<string, BusySchedule[]>();
     for (const b of busy ?? []) {
-      for (const id of [b.leadPhotographer, ...b.supportPhotographers]) {
+      for (const id of [b.leadPhotographer, ...b.supportPhotographers, b.videographer]) {
         if (!id) continue;
         map.set(id, [...(map.get(id) ?? []), b]);
       }
@@ -173,11 +193,21 @@ const CrewEditorBody = ({
   const contractCrew = schedule.customer?.contract?.crewCount ?? null;
   const needed = neededCrewCount(schedule.customer, pkg?.studentsPerCrew);
   const externalLead = externalCrew.find((entry) => entry.role === 'lead');
+  const externalVideo = externalCrew.find((entry) => entry.role === 'video');
   const assigned =
     (lead ? 1 : 0) +
     supports.filter((id) => id !== lead).length +
-    externalCrew.filter((entry) => entry.confirmation !== 'declined').length;
-  const missing = needed ? Math.max(needed - assigned, 0) : 0;
+    externalCrew.filter((entry) => entry.role !== 'video' && entry.confirmation !== 'declined')
+      .length;
+  const videoNeeded = neededVideoCount(schedule.customer, pkg);
+  const videoAssigned =
+    videographer || (externalVideo && externalVideo.confirmation !== 'declined') ? 1 : 0;
+  const missing =
+    (needed ? Math.max(needed - assigned, 0) : 0) + Math.max(videoNeeded - videoAssigned, 0);
+  const showVideo =
+    videoNeeded > 0 ||
+    !!schedule.videographer ||
+    (schedule.externalCrew ?? []).some((entry) => entry.role === 'video');
 
   const pickLead = (id: string) => {
     if (id.startsWith(EXTERNAL_PREFIX)) {
@@ -196,6 +226,31 @@ const CrewEditorBody = ({
       setLead(id);
       setSupports((prev) => prev.filter((x) => x !== id));
       setExternalCrew((prev) => prev.filter((entry) => entry.role !== 'lead'));
+      if (id && id === videographer) setVideographer('');
+    }
+  };
+
+  /** At most one videographer: internal `videographer` OR one external 'video' entry. */
+  const pickVideo = (id: string) => {
+    if (id.startsWith(EXTERNAL_PREFIX)) {
+      const externalId = id.slice(EXTERNAL_PREFIX.length);
+      setVideographer('');
+      setExternalCrew((prev) => [
+        ...prev.filter((entry) => entry.role !== 'video' && entry.photographer !== externalId),
+        {
+          photographer: externalId,
+          role: 'video',
+          confirmation:
+            prev.find((entry) => entry.photographer === externalId)?.confirmation ?? 'pending',
+        },
+      ]);
+    } else {
+      setVideographer(id);
+      setExternalCrew((prev) => prev.filter((entry) => entry.role !== 'video'));
+      if (id) {
+        setSupports((prev) => prev.filter((x) => x !== id));
+        if (id === lead) setLead('');
+      }
     }
   };
 
@@ -258,6 +313,7 @@ const CrewEditorBody = ({
         leadPhotographer: lead || null,
         supportPhotographers: supports.filter((id) => id !== lead),
         externalCrew,
+        videographer: videographer || null,
       });
       toast.success('Đã cập nhật ekip.');
       onSaved();
@@ -301,6 +357,13 @@ const CrewEditorBody = ({
   const externalLeadPerson = externalPeople.find(
     (person) => person._id === externalLead?.photographer,
   );
+  const videoUser = videoPeople.find((u) => u._id === videographer);
+  const externalVideoPerson = externalPeople.find(
+    (person) => person._id === externalVideo?.photographer,
+  );
+  const videoName = videoUser ? personName(videoUser) : (externalVideoPerson?.name ?? '');
+  const totalNeeded = (needed ?? 0) + videoNeeded;
+  const totalAssigned = assigned + videoAssigned;
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -329,13 +392,20 @@ const CrewEditorBody = ({
       </div>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
-        {needed !== null && (
+        {(needed !== null || videoNeeded > 0) && (
           <div className="flex items-center gap-3 rounded-[12px] border bg-muted/50 px-3 py-2.5">
             <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-foreground">Cần {needed} thợ</div>
+              <div className="text-sm font-semibold text-foreground">
+                {[
+                  needed !== null && `Cần ${needed} thợ${videoNeeded > 0 ? ' chụp' : ''}`,
+                  videoNeeded > 0 && `${needed !== null ? '' : 'Cần '}${videoNeeded} thợ quay`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
               <div className="truncate text-xs text-muted-foreground">
-                {contractCrew != null
+                {contractCrew != null || needed === null
                   ? 'Theo hợp đồng'
                   : `${total ?? 0} HS · ${pkg?.studentsPerCrew} HS/thợ`}
                 {pkg?.name ? ` (Gói ${pkg.name})` : ''}
@@ -353,7 +423,7 @@ const CrewEditorBody = ({
                 `Thiếu ${missing}`
               ) : (
                 <>
-                  <Check className="h-3 w-3" /> Đã chọn {assigned}/{needed}
+                  <Check className="h-3 w-3" /> Đã chọn {totalAssigned}/{totalNeeded}
                 </>
               )}
             </span>
@@ -454,6 +524,102 @@ const CrewEditorBody = ({
           )}
         </div>
 
+        {showVideo && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between text-[13px]">
+              <span className="font-semibold text-muted-foreground">Thợ quay MV</span>
+              <span className="text-xs text-muted-foreground">
+                {videoNeeded > 0 ? 'Gói có quay MV · chọn 1' : 'Chọn 1'}
+              </span>
+            </div>
+            <Select
+              value={
+                externalVideo
+                  ? `${EXTERNAL_PREFIX}${externalVideo.photographer}`
+                  : videographer || NO_VIDEO
+              }
+              onValueChange={(v) => pickVideo(v === NO_VIDEO ? '' : v)}
+            >
+              <SelectTrigger className="h-11 rounded-[10px] bg-card shadow-none data-[state=open]:border-primary">
+                {videoName ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Video className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="truncate font-semibold text-foreground">{videoName}</span>
+                    {externalVideoPerson && !videoUser && (
+                      <span className="text-xs text-sky-600 dark:text-sky-300">Ngoài</span>
+                    )}
+                    <span className="ml-auto mr-1 shrink-0 text-xs font-semibold">
+                      {busy === null ? null : (
+                          videoUser
+                            ? busyByUser.get(videoUser._id)?.length
+                            : busyByExternal.get(externalVideoPerson!._id)?.length
+                        ) ? (
+                        <span className="text-amber-700 dark:text-amber-300">Bận</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          Rảnh
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Chưa chọn thợ quay</span>
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_VIDEO}>
+                  <span className="text-muted-foreground">Không chỉ định</span>
+                </SelectItem>
+                {videoPeople.map((u) => (
+                  <SelectItem key={u._id} value={u._id}>
+                    <span className="flex flex-col">
+                      <span className="font-medium">{personName(u)}</span>
+                      <span className="text-xs">{availability(u._id)}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+                {externalPeople.map((person) => (
+                  <SelectItem
+                    key={`${EXTERNAL_PREFIX}${person._id}`}
+                    value={`${EXTERNAL_PREFIX}${person._id}`}
+                  >
+                    <span className="flex flex-col">
+                      <span className="font-medium">{person.name} · Thợ ngoài</span>
+                      <span className="text-xs text-muted-foreground">
+                        {externalAvailability(person._id)}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {externalVideo && (
+              <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                Xác nhận
+                <select
+                  value={externalVideo.confirmation}
+                  onChange={(event) =>
+                    setExternalConfirmation(
+                      externalVideo.photographer,
+                      event.target.value as ExternalCrewConfirmation,
+                    )
+                  }
+                  className="rounded-md border bg-card px-2 py-1 text-foreground"
+                >
+                  {Object.entries(CONFIRMATION_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+
         <div>
           <div className="mb-1.5 flex items-center justify-between text-[13px]">
             <span className="font-semibold text-muted-foreground">Thợ phụ</span>
@@ -478,14 +644,15 @@ const CrewEditorBody = ({
             )}
             {filtered.map((u) => {
               const isLead = u._id === lead;
-              const checked = !isLead && supports.includes(u._id);
+              const isVideo = u._id === videographer;
+              const checked = !isLead && !isVideo && supports.includes(u._id);
               const name = personName(u);
               return (
                 <label
                   key={u._id}
                   className={cn(
                     'flex items-center gap-3 rounded-[10px] px-2.5 py-2 transition-colors',
-                    isLead
+                    isLead || isVideo
                       ? 'cursor-not-allowed opacity-50'
                       : checked
                         ? 'cursor-pointer bg-primary-100/70 dark:bg-primary/10'
@@ -496,7 +663,7 @@ const CrewEditorBody = ({
                     type="checkbox"
                     className="sr-only"
                     checked={checked}
-                    disabled={isLead}
+                    disabled={isLead || isVideo}
                     onChange={(e) => toggleSupport(u._id, e.target.checked)}
                   />
                   <span
@@ -515,8 +682,10 @@ const CrewEditorBody = ({
                       {name}
                     </span>
                     <span className="block truncate text-xs">
-                      {isLead ? (
-                        <span className="text-muted-foreground">Đang là thợ chính</span>
+                      {isLead || isVideo ? (
+                        <span className="text-muted-foreground">
+                          {isLead ? 'Đang là thợ chính' : 'Đang là thợ quay'}
+                        </span>
                       ) : (
                         availability(u._id)
                       )}
@@ -602,19 +771,20 @@ const CrewEditorBody = ({
               {filteredExternal.map((person) => {
                 const assignment = externalCrew.find((entry) => entry.photographer === person._id);
                 const isLead = assignment?.role === 'lead';
+                const isVideo = assignment?.role === 'video';
                 const checked = assignment?.role === 'support';
                 return (
                   <div key={person._id} className="rounded-[10px] px-2.5 py-2 hover:bg-muted/60">
                     <label
                       className={cn(
                         'flex cursor-pointer items-center gap-3',
-                        isLead && 'cursor-not-allowed opacity-50',
+                        (isLead || isVideo) && 'cursor-not-allowed opacity-50',
                       )}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
-                        disabled={isLead}
+                        disabled={isLead || isVideo}
                         onChange={(event) =>
                           toggleExternalSupport(person._id, event.target.checked)
                         }
@@ -635,7 +805,11 @@ const CrewEditorBody = ({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{person.name}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {isLead ? 'Đang là thợ chính' : externalAvailability(person._id)}
+                          {isLead
+                            ? 'Đang là thợ chính'
+                            : isVideo
+                              ? 'Đang là thợ quay'
+                              : externalAvailability(person._id)}
                           {person.phone ? ` · ${person.phone}` : ''}
                           {person.defaultFee != null
                             ? ` · ${person.defaultFee.toLocaleString('vi-VN')}₫`

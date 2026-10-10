@@ -53,7 +53,7 @@ export const navItems: NavItem[] = [
     label: 'Dashboard',
     icon: LayoutDashboard,
     iconClassName: 'text-blue-400',
-    allowedRoles: [0, 1, 2, 3, 4],
+    allowedRoles: [0, 1, 2, 3, 4, 6],
     component: DashboardPage,
     index: true,
   },

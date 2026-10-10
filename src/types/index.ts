@@ -1,5 +1,5 @@
-// 0: Superadmin | 1: Admin | 2: Sale | 3: Thợ chụp ảnh | 4: Cộng tác viên sale | 5: Kế toán
-export type UserRole = 0 | 1 | 2 | 3 | 4 | 5;
+// 0: Superadmin | 1: Admin | 2: Sale | 3: Thợ chụp ảnh | 4: Cộng tác viên sale | 5: Kế toán | 6: Thợ quay phim
+export type UserRole = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   0: 'Superadmin',
@@ -8,6 +8,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   3: 'Thợ chụp ảnh',
   4: 'Cộng tác viên sale',
   5: 'Kế toán',
+  6: 'Thợ quay phim',
 };
 
 export interface User {
@@ -34,7 +35,8 @@ export type ExternalCrewConfirmation = 'pending' | 'confirmed' | 'declined';
 
 export interface ExternalCrewAssignment {
   photographer: string;
-  role: 'lead' | 'support';
+  /** 'video' = thợ quay MV (không tính là thợ chụp). */
+  role: 'lead' | 'support' | 'video';
   confirmation: ExternalCrewConfirmation;
 }
 
@@ -103,6 +105,8 @@ export interface CustomerContract {
   extraServices?: ExtraService[];
   crewCount?: number | null;
   crewCountSystem?: number | null;
+  /** Số thợ quay MV in vào hợp đồng (gói có MV = 1). */
+  videoCrewCount?: number | null;
   /** Deposit printed on the contract; `null` = left blank "………". */
   depositAmount?: number | null;
   depositSyncedAt?: string | null;
@@ -278,6 +282,8 @@ export interface Package {
   studentsPerCrew?: number;
   description?: string;
   isPopular?: boolean;
+  /** Gói có quay MV kỷ yếu (1 thợ quay/lớp). */
+  hasMv?: boolean;
   createdAt?: string;
 }
 
@@ -330,6 +336,8 @@ export interface Schedule {
   leadPhotographer: string | null;
   supportPhotographers: string[];
   externalCrew: ExternalCrewAssignment[];
+  /** Thợ quay MV nội bộ (role 6). */
+  videographer?: string | null;
   bookedBy: string | null;
   /** Only a cancel flag — the displayed status is the shoot status derived from `customer.status`. */
   status: ScheduleStatus;
@@ -348,6 +356,7 @@ export interface ScheduleResponse extends Omit<
   | 'leadPhotographer'
   | 'supportPhotographers'
   | 'externalCrew'
+  | 'videographer'
   | 'bookedBy'
 > {
   customer: Customer;
@@ -356,6 +365,7 @@ export interface ScheduleResponse extends Omit<
   leadPhotographer: User | null;
   supportPhotographers: User[];
   externalCrew: ExternalCrewMember[];
+  videographer?: Pick<User, '_id' | 'name' | 'username'> | null;
   bookedBy: User | null;
   /** Only on GET /schedules: crew members who also have another active schedule that day. */
   conflicts?: ScheduleConflict[];
@@ -379,6 +389,7 @@ export interface BusySchedule {
   leadPhotographer: string | null;
   supportPhotographers: string[];
   externalCrew: ExternalCrewAssignment[];
+  videographer?: string | null;
 }
 
 export interface Category {

@@ -10,6 +10,7 @@ import {
   Trash2,
   User as UserIcon,
   Users as UsersIcon,
+  Video,
 } from 'lucide-react';
 import { getInitial } from './schedules/scheduleHelpers';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,8 @@ export interface CalendarScheduleItem {
   packageName?: string;
   packagePrice?: number;
   supportNames?: string[];
+  /** Thợ quay MV (nội bộ hoặc thợ ngoài). */
+  videoName?: string;
   driveFolderUrl?: string;
   studentCount?: number;
   /** Crew initials on the event chip (lead first, ringed). */
@@ -497,6 +500,14 @@ const ScheduleCalendar = ({
               <UsersIcon className="h-3.5 w-3.5" /> {s.crew ? 'Thợ phụ' : 'Support'}
             </dt>
             <dd className="min-w-0 text-foreground">{s.supportNames.join(', ')}</dd>
+          </div>
+        )}
+        {s.videoName && (
+          <div className="flex gap-3">
+            <dt className="flex w-24 shrink-0 items-center gap-2 text-muted-foreground">
+              <Video className="h-3.5 w-3.5" /> Thợ quay
+            </dt>
+            <dd className="min-w-0 text-foreground">{s.videoName}</dd>
           </div>
         )}
         {s.driveFolderUrl && (

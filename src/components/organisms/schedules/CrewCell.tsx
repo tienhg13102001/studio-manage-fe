@@ -1,4 +1,4 @@
-import { CalendarClock, UserPen, UserPlus, Users, UserX } from 'lucide-react';
+import { CalendarClock, UserPen, UserPlus, Users, UserX, Video } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type { ExternalPhotographer, ScheduleResponse, User } from '../../../types';
@@ -18,7 +18,7 @@ export const CrewFlags = ({
   schedule: ScheduleResponse;
   className?: string;
 }) => {
-  const { needed, assigned, missing } = crewStats(schedule);
+  const { needed, assigned, missing, videoMissing } = crewStats(schedule);
   const cancelled = isScheduleCancelled(schedule);
   const names = conflictNames(schedule);
   const pending = (schedule.externalCrew ?? []).filter(
@@ -37,6 +37,11 @@ export const CrewFlags = ({
       ) : (
         <span className={cn(flagCls, 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300')}>
           <Users /> {assigned}/{needed} thợ
+        </span>
+      )}
+      {!cancelled && videoMissing > 0 && (
+        <span className={cn(flagCls, 'bg-rose-500/10 text-rose-700 dark:text-rose-300')}>
+          <Video /> Thiếu thợ quay
         </span>
       )}
       {!cancelled && names.length > 0 && (
@@ -116,7 +121,11 @@ const CrewCell = ({
         confirmation: entry.confirmation,
       })),
   ].filter((person) => person.name);
-  const hasCrew = !!leadName || supports.length > 0;
+  const externalVideo = (schedule.externalCrew ?? []).find(
+    (entry) => entry.role === 'video' && entry.photographer,
+  );
+  const videoName = personName(schedule.videographer) || externalVideo?.photographer?.name || '';
+  const hasCrew = !!leadName || supports.length > 0 || !!videoName;
   const card = variant === 'card';
 
   const editButton = editable ? (
@@ -178,6 +187,18 @@ const CrewCell = ({
               tooltip={`${person.name} · ${person.external ? `Thợ ngoài · ${person.confirmation === 'confirmed' ? 'Đã xác nhận' : person.confirmation === 'declined' ? 'Từ chối' : 'Chờ xác nhận'}` : 'Thợ phụ'}`}
             />
           ))}
+        </span>
+      )}
+      {videoName && (
+        <span
+          title={`Thợ quay MV${externalVideo && !schedule.videographer ? ' · Thợ ngoài' : ''}`}
+          className="inline-flex max-w-[180px] items-center gap-1 text-[13px] text-foreground/80"
+        >
+          <Video className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span className="truncate">{videoName}</span>
+          {externalVideo && !schedule.videographer && (
+            <span className="text-xs text-sky-600 dark:text-sky-300">Ngoài</span>
+          )}
         </span>
       )}
     </div>

@@ -15,9 +15,10 @@ export interface UpcomingSchedule {
     status?: CustomerStatus;
   };
   leadPhotographer?: { _id: string; name?: string; username: string };
+  videographer?: { _id: string; name?: string; username: string } | null;
   externalCrew?: Array<{
     photographer: { _id: string; name: string } | null;
-    role: 'lead' | 'support';
+    role: 'lead' | 'support' | 'video';
     confirmation: 'pending' | 'confirmed' | 'declined';
   }>;
 }

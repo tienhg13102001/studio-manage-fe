@@ -4,7 +4,7 @@ import {
   type ScheduleResponse,
   type User,
 } from '../../../types';
-import { neededCrewCount } from '../../../utils/crewCount';
+import { neededCrewCount, neededVideoCount } from '../../../utils/crewCount';
 import type { ShootStatus } from '../../../utils/scheduleConstants';
 
 export const personName = (u: Pick<User, 'name' | 'username'> | null | undefined) =>
@@ -72,6 +72,12 @@ export interface CrewStats {
   assigned: number;
   /** Positive when short of photographers. */
   missing: number;
+  /** Videographers needed (MV package → 1). */
+  videoNeeded: number;
+  /** Internal videographer or a non-declined external 'video' entry. */
+  videoAssigned: number;
+  /** Positive when short of a videographer. */
+  videoMissing: number;
 }
 
 export const crewStats = (s: ScheduleResponse): CrewStats => {
@@ -80,9 +86,22 @@ export const crewStats = (s: ScheduleResponse): CrewStats => {
     (s.leadPhotographer ? 1 : 0) +
     s.supportPhotographers.length +
     (s.externalCrew ?? []).filter(
-      (entry) => entry.photographer && entry.confirmation !== 'declined',
+      (entry) => entry.photographer && entry.role !== 'video' && entry.confirmation !== 'declined',
     ).length;
-  return { needed, assigned, missing: needed ? Math.max(needed - assigned, 0) : 0 };
+  const videoNeeded = neededVideoCount(s.customer, s.package);
+  const videoAssigned =
+    (s.videographer ? 1 : 0) +
+    (s.externalCrew ?? []).filter(
+      (entry) => entry.photographer && entry.role === 'video' && entry.confirmation !== 'declined',
+    ).length;
+  return {
+    needed,
+    assigned,
+    missing: needed ? Math.max(needed - assigned, 0) : 0,
+    videoNeeded,
+    videoAssigned,
+    videoMissing: Math.max(videoNeeded - videoAssigned, 0),
+  };
 };
 
 /** Names of the double-booked crew members, de-duplicated. */
@@ -92,7 +111,9 @@ export const conflictNames = (s: ScheduleResponse) => [
 
 export const isOnCrew = (s: ScheduleResponse, userId: string | undefined) =>
   !!userId &&
-  (s.leadPhotographer?._id === userId || s.supportPhotographers.some((u) => u._id === userId));
+  (s.leadPhotographer?._id === userId ||
+    s.supportPhotographers.some((u) => u._id === userId) ||
+    s.videographer?._id === userId);
 
 /** Class status sent when picking a shoot status in the quick status picker. */
 export const SHOOT_STATUS_TARGET: Record<ShootStatus, CustomerStatus> = {
@@ -106,7 +127,7 @@ export type StatusPickerRole = 'admin' | 'photographer' | 'staff';
 export const statusPickerRole = (roles: number[] | undefined): StatusPickerRole => {
   const r = roles ?? [];
   if (r.includes(0) || r.includes(1)) return 'admin';
-  if (r.includes(3) && !r.includes(2) && !r.includes(4)) return 'photographer';
+  if ((r.includes(3) || r.includes(6)) && !r.includes(2) && !r.includes(4)) return 'photographer';
   return 'staff';
 };
 

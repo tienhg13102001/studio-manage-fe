@@ -30,3 +30,11 @@ export const neededCrewCount = (
   studentsPerCrew: number | null | undefined,
 ): number | null =>
   customer?.contract?.crewCount ?? calcCrewCount(customer?.total, studentsPerCrew);
+
+/**
+ * Số thợ quay MV cần cho lớp: ưu tiên số trong hợp đồng, không có thì gói có MV → 1 thợ.
+ */
+export const neededVideoCount = (
+  customer: { contract?: { videoCrewCount?: number | null } | null } | null | undefined,
+  pkg: { hasMv?: boolean } | null | undefined,
+): number => customer?.contract?.videoCrewCount ?? (pkg?.hasMv ? 1 : 0);

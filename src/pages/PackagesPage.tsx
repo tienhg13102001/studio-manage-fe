@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, Pencil, Plus, Timer, Trash2, Users, Wand2 } from 'lucide-react';
+import { Clock, Pencil, Plus, Timer, Trash2, Users, Video, Wand2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { packageService } from '../services/packageService';
@@ -52,6 +52,7 @@ interface PackageFormValues {
   studentsPerCrew?: number;
   description?: string;
   isPopular?: boolean;
+  hasMv?: boolean;
 }
 
 const PackagesPage = () => {
@@ -79,7 +80,7 @@ const PackagesPage = () => {
   const openCreate = () => {
     setEditing(null);
     setSelectedCostumes([]);
-    reset({ editingScope: 'full' });
+    reset({ editingScope: 'full', isPopular: false, hasMv: false });
     setModalOpen(true);
   };
 
@@ -98,6 +99,7 @@ const PackagesPage = () => {
       studentsPerCrew: pkg.studentsPerCrew,
       description: pkg.description,
       isPopular: pkg.isPopular ?? false,
+      hasMv: pkg.hasMv ?? false,
     });
     setModalOpen(true);
   };
@@ -166,6 +168,12 @@ const PackagesPage = () => {
                 value: pkg.studentsPerCrew != null ? `${pkg.studentsPerCrew} hs/thợ` : null,
               },
               {
+                icon: Video,
+                label: 'Quay MV kỷ yếu',
+                value: pkg.hasMv ? '1 thợ quay' : null,
+                highlight: true,
+              },
+              {
                 icon: Wand2,
                 label: 'Chỉnh sửa',
                 value: pkg.editingScope ? editingScopeLabel[pkg.editingScope] : null,
@@ -232,13 +240,15 @@ const PackagesPage = () => {
 
                 {attrs.length > 0 && (
                   <div className="mt-4 space-y-2.5 border-t pt-4">
-                    {attrs.map(({ icon: Icon, label, value }) => (
+                    {attrs.map(({ icon: Icon, label, value, highlight }) => (
                       <div key={label} className="flex items-center justify-between gap-3 text-sm">
                         <span className="inline-flex items-center gap-2.5 text-muted-foreground">
-                          <Icon className="h-4 w-4" />
+                          <Icon className={cn('h-4 w-4', highlight && 'text-primary')} />
                           {label}
                         </span>
-                        <span className="font-semibold">{value}</span>
+                        <span className={cn('font-semibold', highlight && 'text-primary')}>
+                          {value}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -385,6 +395,23 @@ const PackagesPage = () => {
                     <Label className="cursor-pointer">
                       Đánh dấu là gói <strong>phổ biến</strong> (hiển thị nổi bật trên trang giới
                       thiệu)
+                    </Label>
+                  </label>
+                )}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Controller
+                name="hasMv"
+                control={control}
+                render={({ field }) => (
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <Checkbox
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(!!v)}
+                    />
+                    <Label className="cursor-pointer">
+                      Có <strong>quay MV kỷ yếu</strong> (1 thợ quay/lớp)
                     </Label>
                   </label>
                 )}
