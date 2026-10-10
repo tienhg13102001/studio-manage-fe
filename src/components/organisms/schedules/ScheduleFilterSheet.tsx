@@ -12,7 +12,7 @@ import {
   type ComboboxOption,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import type { User } from '../../../types';
+import type { ExternalPhotographer, User } from '../../../types';
 import {
   SCHEDULE_CANCELLED,
   SCHEDULE_CANCELLED_LABEL,
@@ -38,6 +38,7 @@ interface ScheduleFilterSheetProps {
   counts: Record<StatusCountKey, number>;
   customerOptions: ComboboxOption[];
   photographers: User[];
+  externalPhotographers: ExternalPhotographer[];
   total: number;
   loading: boolean;
 }
@@ -56,6 +57,7 @@ const ScheduleFilterSheet = ({
   counts,
   customerOptions,
   photographers,
+  externalPhotographers,
   total,
   loading,
 }: ScheduleFilterSheetProps) => {
@@ -191,6 +193,28 @@ const ScheduleFilterSheet = ({
               >
                 <CrewAvatar name={name} size={22} className="ring-0" />
                 {name}
+              </button>
+            );
+          })}
+          {externalPhotographers.map((person) => {
+            const value = `external:${person._id}`;
+            const on = !filters.mine && filters.photographer === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onChange({ photographer: on ? '' : value, mine: false })}
+                aria-pressed={on}
+                className={cn(
+                  plainChip,
+                  'py-[3px] pl-[3px]',
+                  on
+                    ? 'border-primary bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary'
+                    : 'border-transparent bg-muted text-muted-foreground',
+                )}
+              >
+                <CrewAvatar name={person.name} size={22} className="ring-0" />
+                {person.name} · Ngoài
               </button>
             );
           })}

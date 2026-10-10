@@ -15,6 +15,11 @@ export interface UpcomingSchedule {
     status?: CustomerStatus;
   };
   leadPhotographer?: { _id: string; name?: string; username: string };
+  externalCrew?: Array<{
+    photographer: { _id: string; name: string } | null;
+    role: 'lead' | 'support';
+    confirmation: 'pending' | 'confirmed' | 'declined';
+  }>;
 }
 
 export interface DashboardStats {

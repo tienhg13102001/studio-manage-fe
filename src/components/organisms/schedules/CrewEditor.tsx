@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AlarmClock, Check, Info, Search, Users, X } from 'lucide-react';
+import { AlarmClock, Check, Info, Plus, Search, Users, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import {
   Button,
   Dialog,
@@ -20,7 +21,16 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { scheduleService } from '../../../services/scheduleService';
-import { getSchoolName, type BusySchedule, type ScheduleResponse, type User } from '../../../types';
+import { externalPhotographerService } from '../../../services/externalPhotographerService';
+import {
+  getSchoolName,
+  type BusySchedule,
+  type ExternalCrewAssignment,
+  type ExternalCrewConfirmation,
+  type ExternalPhotographer,
+  type ScheduleResponse,
+  type User,
+} from '../../../types';
 import { calcCrewCount } from '../../../utils/crewCount';
 import { CrewAvatar } from './CrewAvatar';
 import {
@@ -33,10 +43,18 @@ import {
 } from './scheduleHelpers';
 
 const NO_LEAD = '__none__';
+const EXTERNAL_PREFIX = 'external:';
+const CONFIRMATION_LABELS: Record<ExternalCrewConfirmation, string> = {
+  pending: 'Chờ xác nhận',
+  confirmed: 'Đã xác nhận',
+  declined: 'Từ chối',
+};
 
 interface BodyProps {
   schedule: ScheduleResponse;
   photographers: User[];
+  externalPhotographers: ExternalPhotographer[];
+  onExternalCreated: (person: ExternalPhotographer) => void;
   onClose: () => void;
   onSaved: () => void;
   /** Rendered inside a Dialog (title/description use Dialog primitives). */
@@ -52,12 +70,34 @@ const busyLabel = (list: BusySchedule[] | undefined) => {
   }`;
 };
 
-const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }: BodyProps) => {
+const CrewEditorBody = ({
+  schedule,
+  photographers,
+  externalPhotographers,
+  onExternalCreated,
+  onClose,
+  onSaved,
+  inDialog,
+}: BodyProps) => {
   const [lead, setLead] = useState(schedule.leadPhotographer?._id ?? '');
   const [supports, setSupports] = useState(() => schedule.supportPhotographers.map((u) => u._id));
+  const [externalCrew, setExternalCrew] = useState<ExternalCrewAssignment[]>(() =>
+    (schedule.externalCrew ?? [])
+      .filter((entry) => entry.photographer)
+      .map((entry) => ({
+        photographer: entry.photographer!._id,
+        role: entry.role,
+        confirmation: entry.confirmation,
+      })),
+  );
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState<BusySchedule[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickFee, setQuickFee] = useState('');
+  const [creatingExternal, setCreatingExternal] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -80,6 +120,20 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
     return [...map.values()];
   }, [photographers, schedule.leadPhotographer, schedule.supportPhotographers]);
 
+  const externalPeople = useMemo(() => {
+    const map = new Map<string, ExternalPhotographer>();
+    for (const person of externalPhotographers) map.set(person._id, person);
+    for (const entry of schedule.externalCrew ?? []) {
+      if (entry.photographer && !map.has(entry.photographer._id)) {
+        map.set(entry.photographer._id, { ...entry.photographer });
+      }
+    }
+    return [...map.values()].filter(
+      (person) =>
+        person.isActive || externalCrew.some((entry) => entry.photographer === person._id),
+    );
+  }, [externalPhotographers, schedule.externalCrew, externalCrew]);
+
   const busyByUser = useMemo(() => {
     const map = new Map<string, BusySchedule[]>();
     for (const b of busy ?? []) {
@@ -91,25 +145,110 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
     return map;
   }, [busy]);
 
+  const busyByExternal = useMemo(() => {
+    const map = new Map<string, BusySchedule[]>();
+    for (const row of busy ?? []) {
+      for (const entry of row.externalCrew ?? []) {
+        if (entry.confirmation === 'declined') continue;
+        map.set(entry.photographer, [...(map.get(entry.photographer) ?? []), row]);
+      }
+    }
+    return map;
+  }, [busy]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return people;
     return people.filter((u) => `${u.name ?? ''} ${u.username}`.toLowerCase().includes(q));
   }, [people, search]);
+  const filteredExternal = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return externalPeople.filter(
+      (person) => !q || `${person.name} ${person.phone ?? ''}`.toLowerCase().includes(q),
+    );
+  }, [externalPeople, search]);
 
   const pkg = schedule.package;
   const total = schedule.customer?.total;
   const needed = calcCrewCount(total, pkg?.studentsPerCrew);
-  const assigned = (lead ? 1 : 0) + supports.filter((id) => id !== lead).length;
+  const externalLead = externalCrew.find((entry) => entry.role === 'lead');
+  const assigned =
+    (lead ? 1 : 0) +
+    supports.filter((id) => id !== lead).length +
+    externalCrew.filter((entry) => entry.confirmation !== 'declined').length;
   const missing = needed ? Math.max(needed - assigned, 0) : 0;
 
   const pickLead = (id: string) => {
-    setLead(id);
-    setSupports((prev) => prev.filter((x) => x !== id));
+    if (id.startsWith(EXTERNAL_PREFIX)) {
+      const externalId = id.slice(EXTERNAL_PREFIX.length);
+      setLead('');
+      setExternalCrew((prev) => [
+        ...prev.filter((entry) => entry.role !== 'lead' && entry.photographer !== externalId),
+        {
+          photographer: externalId,
+          role: 'lead',
+          confirmation:
+            prev.find((entry) => entry.photographer === externalId)?.confirmation ?? 'pending',
+        },
+      ]);
+    } else {
+      setLead(id);
+      setSupports((prev) => prev.filter((x) => x !== id));
+      setExternalCrew((prev) => prev.filter((entry) => entry.role !== 'lead'));
+    }
   };
 
   const toggleSupport = (id: string, on: boolean) =>
     setSupports((prev) => (on ? [...prev, id] : prev.filter((x) => x !== id)));
+
+  const toggleExternalSupport = (id: string, on: boolean) =>
+    setExternalCrew((prev) =>
+      on
+        ? [...prev, { photographer: id, role: 'support', confirmation: 'pending' }]
+        : prev.filter((entry) => entry.photographer !== id),
+    );
+
+  const setExternalConfirmation = (id: string, confirmation: ExternalCrewConfirmation) =>
+    setExternalCrew((prev) =>
+      prev.map((entry) => (entry.photographer === id ? { ...entry, confirmation } : entry)),
+    );
+
+  const createExternal = async () => {
+    const name = quickName.trim();
+    const fee = quickFee.trim() === '' ? null : Number(quickFee);
+    if (!name) {
+      toast.error('Vui lòng nhập tên thợ ngoài.');
+      return;
+    }
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0)) {
+      toast.error('Chi phí phải là số không âm.');
+      return;
+    }
+    setCreatingExternal(true);
+    try {
+      const person = await externalPhotographerService.create({
+        name,
+        phone: quickPhone.trim(),
+        defaultFee: fee,
+        isActive: true,
+      });
+      onExternalCreated(person);
+      setExternalCrew((prev) => [
+        ...prev,
+        { photographer: person._id, role: 'support', confirmation: 'pending' },
+      ]);
+      setSearch('');
+      setQuickName('');
+      setQuickPhone('');
+      setQuickFee('');
+      setQuickAddOpen(false);
+      toast.success('Đã thêm thợ ngoài. Bấm Lưu để phân công vào lịch.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Không thêm được thợ ngoài.'));
+    } finally {
+      setCreatingExternal(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -117,6 +256,7 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
       await scheduleService.update(schedule._id, {
         leadPhotographer: lead || null,
         supportPhotographers: supports.filter((id) => id !== lead),
+        externalCrew,
       });
       toast.success('Đã cập nhật ekip.');
       onSaved();
@@ -140,6 +280,10 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
       <span className="text-muted-foreground">Rảnh cả ngày</span>
     );
   };
+  const externalAvailability = (id: string) => {
+    if (busy === null) return 'Đang kiểm tra lịch…';
+    return busyLabel(busyByExternal.get(id)) ?? 'Rảnh cả ngày';
+  };
 
   const subtitle = [
     schedule.customer?.className,
@@ -153,6 +297,9 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
   const Title = inDialog ? DialogTitle : 'div';
   const Desc = inDialog ? DialogDescription : 'div';
   const leadUser = people.find((u) => u._id === lead);
+  const externalLeadPerson = externalPeople.find(
+    (person) => person._id === externalLead?.photographer,
+  );
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -215,16 +362,32 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
             <span className="font-semibold text-muted-foreground">Thợ chính</span>
             <span className="text-xs text-muted-foreground">Chọn 1</span>
           </div>
-          <Select value={lead || NO_LEAD} onValueChange={(v) => pickLead(v === NO_LEAD ? '' : v)}>
+          <Select
+            value={
+              externalLead ? `${EXTERNAL_PREFIX}${externalLead.photographer}` : lead || NO_LEAD
+            }
+            onValueChange={(v) => pickLead(v === NO_LEAD ? '' : v)}
+          >
             <SelectTrigger className="h-11 rounded-[10px] bg-card shadow-none data-[state=open]:border-primary">
-              {leadUser ? (
+              {leadUser || externalLeadPerson ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
-                  <CrewAvatar name={personName(leadUser)} size={24} lead />
+                  <CrewAvatar
+                    name={leadUser ? personName(leadUser) : externalLeadPerson!.name}
+                    size={24}
+                    lead
+                  />
                   <span className="truncate font-semibold text-foreground">
-                    {personName(leadUser)}
+                    {leadUser ? personName(leadUser) : externalLeadPerson!.name}
                   </span>
+                  {externalLeadPerson && (
+                    <span className="text-xs text-sky-600 dark:text-sky-300">Ngoài</span>
+                  )}
                   <span className="ml-auto mr-1 shrink-0 text-xs font-semibold">
-                    {busy === null ? null : busyByUser.get(lead)?.length ? (
+                    {busy === null ? null : (
+                        externalLeadPerson
+                          ? busyByExternal.get(externalLeadPerson._id)?.length
+                          : busyByUser.get(lead)?.length
+                      ) ? (
                       <span className="text-amber-700 dark:text-amber-300">Bận</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -250,8 +413,42 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
                   </span>
                 </SelectItem>
               ))}
+              {externalPeople.map((person) => (
+                <SelectItem
+                  key={`${EXTERNAL_PREFIX}${person._id}`}
+                  value={`${EXTERNAL_PREFIX}${person._id}`}
+                >
+                  <span className="flex flex-col">
+                    <span className="font-medium">{person.name} · Thợ ngoài</span>
+                    <span className="text-xs text-muted-foreground">
+                      {externalAvailability(person._id)}
+                    </span>
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {externalLead && (
+            <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              Xác nhận
+              <select
+                value={externalLead.confirmation}
+                onChange={(event) =>
+                  setExternalConfirmation(
+                    externalLead.photographer,
+                    event.target.value as ExternalCrewConfirmation,
+                  )
+                }
+                className="rounded-md border bg-card px-2 py-1 text-foreground"
+              >
+                {Object.entries(CONFIRMATION_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         <div>
@@ -327,12 +524,157 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
             })}
           </div>
         </div>
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px]">
+            <span className="font-semibold text-muted-foreground">Thợ ngoài hỗ trợ</span>
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setQuickAddOpen((open) => !open)}
+                className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary-700 hover:underline dark:text-primary"
+              >
+                <Plus className="h-3.5 w-3.5" /> Thêm nhanh
+              </button>
+              <Link
+                to="/manage/external-photographers"
+                className="text-xs text-muted-foreground hover:underline"
+                onClick={onClose}
+              >
+                Quản lý
+              </Link>
+            </span>
+          </div>
+          {quickAddOpen && (
+            <div className="mb-2 space-y-2 rounded-[10px] border bg-muted/40 p-2.5">
+              <Input
+                value={quickName}
+                onChange={(event) => setQuickName(event.target.value)}
+                placeholder="Tên thợ ngoài *"
+                aria-label="Tên thợ ngoài"
+                autoFocus
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  value={quickPhone}
+                  onChange={(event) => setQuickPhone(event.target.value)}
+                  type="tel"
+                  placeholder="Số điện thoại"
+                  aria-label="Số điện thoại thợ ngoài"
+                />
+                <Input
+                  value={quickFee}
+                  onChange={(event) => setQuickFee(event.target.value)}
+                  type="number"
+                  min={0}
+                  placeholder="Chi phí/buổi"
+                  aria-label="Chi phí mặc định mỗi buổi"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setQuickAddOpen(false)}
+                >
+                  Huỷ
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={createExternal}
+                  disabled={creatingExternal}
+                >
+                  {creatingExternal ? <Spinner size="sm" /> : <Plus className="h-3.5 w-3.5" />}
+                  Thêm & chọn
+                </Button>
+              </div>
+            </div>
+          )}
+          {filteredExternal.length === 0 ? (
+            <p className="py-2 text-sm text-muted-foreground">Chưa có thợ ngoài phù hợp.</p>
+          ) : (
+            <div className="space-y-1">
+              {filteredExternal.map((person) => {
+                const assignment = externalCrew.find((entry) => entry.photographer === person._id);
+                const isLead = assignment?.role === 'lead';
+                const checked = assignment?.role === 'support';
+                return (
+                  <div key={person._id} className="rounded-[10px] px-2.5 py-2 hover:bg-muted/60">
+                    <label
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3',
+                        isLead && 'cursor-not-allowed opacity-50',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={isLead}
+                        onChange={(event) =>
+                          toggleExternalSupport(person._id, event.target.checked)
+                        }
+                        className="peer sr-only"
+                      />
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring',
+                          checked
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border bg-card',
+                        )}
+                      >
+                        {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                      <CrewAvatar name={person.name} size={28} className="ring-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{person.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {isLead ? 'Đang là thợ chính' : externalAvailability(person._id)}
+                          {person.phone ? ` · ${person.phone}` : ''}
+                          {person.defaultFee != null
+                            ? ` · ${person.defaultFee.toLocaleString('vi-VN')}₫`
+                            : ''}
+                        </span>
+                      </span>
+                    </label>
+                    {assignment?.role === 'support' && (
+                      <label className="ml-7 mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                        Xác nhận
+                        <select
+                          value={assignment.confirmation}
+                          onChange={(event) =>
+                            setExternalConfirmation(
+                              person._id,
+                              event.target.value as ExternalCrewConfirmation,
+                            )
+                          }
+                          className="rounded-md border bg-card px-2 py-1 text-foreground"
+                        >
+                          {Object.entries(CONFIRMATION_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t bg-muted/40 px-4 py-3">
         <span className="mr-auto inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           <Info className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Lưu sẽ báo cho thợ được thêm</span>
+          <span className="truncate">
+            Thợ nội bộ được báo qua Telegram; liên hệ thợ ngoài trực tiếp
+          </span>
         </span>
         <Button type="button" variant="outline" onClick={onClose}>
           Huỷ
@@ -348,6 +690,8 @@ const CrewEditorBody = ({ schedule, photographers, onClose, onSaved, inDialog }:
 interface CrewEditorProps {
   schedule: ScheduleResponse | null;
   photographers: User[];
+  externalPhotographers: ExternalPhotographer[];
+  onExternalCreated: (person: ExternalPhotographer) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
@@ -363,6 +707,8 @@ interface CrewEditorProps {
 const CrewEditor = ({
   schedule,
   photographers,
+  externalPhotographers,
+  onExternalCreated,
   open,
   onOpenChange,
   onSaved,
@@ -385,6 +731,8 @@ const CrewEditor = ({
             <CrewEditorBody
               schedule={schedule}
               photographers={photographers}
+              externalPhotographers={externalPhotographers}
+              onExternalCreated={onExternalCreated}
               onClose={close}
               onSaved={onSaved}
               inDialog={false}
@@ -417,6 +765,8 @@ const CrewEditor = ({
             <CrewEditorBody
               schedule={schedule}
               photographers={photographers}
+              externalPhotographers={externalPhotographers}
+              onExternalCreated={onExternalCreated}
               onClose={close}
               onSaved={onSaved}
               inDialog

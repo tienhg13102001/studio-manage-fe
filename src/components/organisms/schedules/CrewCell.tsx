@@ -1,7 +1,7 @@
 import { CalendarClock, UserPen, UserPlus, Users, UserX } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import type { ScheduleResponse, User } from '../../../types';
+import type { ExternalPhotographer, ScheduleResponse, User } from '../../../types';
 import { isScheduleCancelled } from '../../../utils/scheduleConstants';
 import { CrewAvatar, LeadChip } from './CrewAvatar';
 import CrewEditor from './CrewEditor';
@@ -21,6 +21,9 @@ export const CrewFlags = ({
   const { needed, assigned, missing } = crewStats(schedule);
   const cancelled = isScheduleCancelled(schedule);
   const names = conflictNames(schedule);
+  const pending = (schedule.externalCrew ?? []).filter(
+    (entry) => entry.photographer && entry.confirmation === 'pending',
+  ).length;
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
       {cancelled || needed === null ? (
@@ -59,6 +62,11 @@ export const CrewFlags = ({
           </TooltipContent>
         </Tooltip>
       )}
+      {!cancelled && pending > 0 && (
+        <span className={cn(flagCls, 'bg-sky-500/10 text-sky-700 dark:text-sky-300')}>
+          {pending} thợ ngoài chờ xác nhận
+        </span>
+      )}
     </div>
   );
 };
@@ -71,6 +79,8 @@ interface CrewCellProps {
   crewOpen: boolean;
   onCrewOpenChange: (open: boolean) => void;
   photographers: User[];
+  externalPhotographers: ExternalPhotographer[];
+  onExternalCreated: (person: ExternalPhotographer) => void;
   isDesktop: boolean;
   onSaved: () => void;
 }
@@ -83,13 +93,29 @@ const CrewCell = ({
   crewOpen,
   onCrewOpenChange,
   photographers,
+  externalPhotographers,
+  onExternalCreated,
   isDesktop,
   onSaved,
 }: CrewCellProps) => {
   const cancelled = isScheduleCancelled(schedule);
   const editable = canEdit && !cancelled;
-  const leadName = personName(schedule.leadPhotographer);
-  const supports = schedule.supportPhotographers.map(personName).filter(Boolean);
+  const externalLead = (schedule.externalCrew ?? []).find((entry) => entry.role === 'lead');
+  const leadName = personName(schedule.leadPhotographer) || externalLead?.photographer?.name || '';
+  const supports = [
+    ...schedule.supportPhotographers.map((person) => ({
+      name: personName(person),
+      external: false,
+      confirmation: '',
+    })),
+    ...(schedule.externalCrew ?? [])
+      .filter((entry) => entry.role === 'support' && entry.photographer)
+      .map((entry) => ({
+        name: entry.photographer!.name,
+        external: true,
+        confirmation: entry.confirmation,
+      })),
+  ].filter((person) => person.name);
   const hasCrew = !!leadName || supports.length > 0;
   const card = variant === 'card';
 
@@ -129,18 +155,28 @@ const CrewCell = ({
         card ? 'gap-x-2.5 gap-y-1.5' : 'gap-1.5',
       )}
     >
-      {leadName && <LeadChip name={leadName} className="max-w-[150px]" />}
+      {leadName && <LeadChip name={leadName} external={!!externalLead} className="max-w-[180px]" />}
       {card ? (
-        supports.map((n, i) => (
+        supports.map((person, i) => (
           <span key={i} className="inline-flex items-center gap-1.5 text-[13px] text-foreground/80">
-            <CrewAvatar name={n} size={22} className="ring-0" />
-            {n}
+            <CrewAvatar name={person.name} size={22} className="ring-0" />
+            {person.name}
+            {person.external && (
+              <span className="text-xs text-sky-600 dark:text-sky-300">
+                Ngoài{person.confirmation === 'declined' ? ' · Từ chối' : ''}
+              </span>
+            )}
           </span>
         ))
       ) : (
         <span className="inline-flex -space-x-1">
-          {supports.map((n, i) => (
-            <CrewAvatar key={i} name={n} size={24} tooltip={`${n} · Thợ phụ`} />
+          {supports.map((person, i) => (
+            <CrewAvatar
+              key={i}
+              name={person.name}
+              size={24}
+              tooltip={`${person.name} · ${person.external ? `Thợ ngoài · ${person.confirmation === 'confirmed' ? 'Đã xác nhận' : person.confirmation === 'declined' ? 'Từ chối' : 'Chờ xác nhận'}` : 'Thợ phụ'}`}
+            />
           ))}
         </span>
       )}
@@ -153,6 +189,8 @@ const CrewCell = ({
     <CrewEditor
       schedule={schedule}
       photographers={photographers}
+      externalPhotographers={externalPhotographers}
+      onExternalCreated={onExternalCreated}
       open={crewOpen}
       onOpenChange={onCrewOpenChange}
       onSaved={onSaved}

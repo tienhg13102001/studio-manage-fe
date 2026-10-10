@@ -1193,10 +1193,23 @@ const CustomerDetailPage = () => {
               header: 'Ekip',
               render: (s) => (
                 <span className="text-muted-foreground">
-                  {s.leadPhotographer?.username ?? '—'}
-                  {s.supportPhotographers.length > 0 && (
+                  {s.leadPhotographer?.name ??
+                    s.leadPhotographer?.username ??
+                    (s.externalCrew ?? []).find((entry) => entry.role === 'lead')?.photographer
+                      ?.name ??
+                    '—'}
+                  {!s.leadPhotographer &&
+                    (s.externalCrew ?? []).some((entry) => entry.role === 'lead') && (
+                      <span className="ml-1 text-xs text-sky-600 dark:text-sky-300">Ngoài</span>
+                    )}
+                  {s.supportPhotographers.length +
+                    (s.externalCrew ?? []).filter((entry) => entry.role === 'support').length >
+                    0 && (
                     <span className="ml-1 text-xs text-muted-foreground/70">
-                      (+{s.supportPhotographers.length})
+                      (+
+                      {s.supportPhotographers.length +
+                        (s.externalCrew ?? []).filter((entry) => entry.role === 'support').length}
+                      )
                     </span>
                   )}
                 </span>

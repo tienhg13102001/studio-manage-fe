@@ -64,12 +64,13 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { canEditCrew } from '../utils/permissions';
 import { costumeService } from '../services/costumeService';
 import { scheduleService } from '../services/scheduleService';
+import { externalPhotographerService } from '../services/externalPhotographerService';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchPackages } from '../store/slices/packagesSlice';
 import { fetchSchedules } from '../store/slices/schedulesSlice';
 import { fetchPhotographers, fetchSales } from '../store/slices/usersSlice';
-import type { CostumeResponse, ScheduleResponse } from '../types';
+import type { CostumeResponse, ExternalPhotographer, ScheduleResponse } from '../types';
 import { getSchoolName } from '../types';
 import {
   SCHEDULE_CANCELLED,
@@ -129,6 +130,7 @@ const SchedulesPage = () => {
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [filterOpen, setFilterOpen] = useState(false);
   const [allCostumes, setAllCostumes] = useState<CostumeResponse[]>([]);
+  const [externalPhotographers, setExternalPhotographers] = useState<ExternalPhotographer[]>([]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formSession, setFormSession] = useState(0);
@@ -176,6 +178,13 @@ const SchedulesPage = () => {
     fetchList();
   };
 
+  const onExternalCreated = (person: ExternalPhotographer) => {
+    setExternalPhotographers((current) => [
+      ...current.filter((item) => item._id !== person._id),
+      person,
+    ]);
+  };
+
   useEffect(() => {
     const request = fetchList();
     return () => request.abort();
@@ -201,6 +210,14 @@ const SchedulesPage = () => {
     dispatch(fetchSales());
     costumeService.getAll().then(setAllCostumes);
   }, [dispatch, selectedSeasonId]);
+
+  useEffect(() => {
+    (crewEditor ? externalPhotographerService.getAll() : externalPhotographerService.getChoices())
+      .then(setExternalPhotographers)
+      .catch(() => {
+        toast.error('Không tải được danh sách thợ ngoài.');
+      });
+  }, [crewEditor]);
 
   const changeFilters = (patch: Partial<ScheduleFilters>) => {
     setPage(1);
@@ -319,16 +336,30 @@ const SchedulesPage = () => {
         cancelled: isScheduleCancelled(s),
         notes: s.notes,
         className: s.customer?.className ?? '—',
-        leadName: personName(s.leadPhotographer) || undefined,
+        leadName:
+          personName(s.leadPhotographer) ||
+          (s.externalCrew ?? []).find((entry) => entry.role === 'lead')?.photographer?.name ||
+          undefined,
         school: getSchoolName(s.customer),
         packageName: s.package?.name,
         packagePrice: s.package?.pricePerMember,
-        supportNames: s.supportPhotographers.map(personName).filter(Boolean),
+        supportNames: [
+          ...s.supportPhotographers.map(personName).filter(Boolean),
+          ...(s.externalCrew ?? [])
+            .filter((entry) => entry.role === 'support' && entry.photographer)
+            .map((entry) => `${entry.photographer!.name} · Ngoài`),
+        ],
         driveFolderUrl: s.customer?.driveFolderUrl ?? undefined,
         studentCount: s.customer?.total,
         crew: [
           ...(s.leadPhotographer ? [{ name: personName(s.leadPhotographer), lead: true }] : []),
           ...s.supportPhotographers.map((u) => ({ name: personName(u) })),
+          ...(s.externalCrew ?? [])
+            .filter((entry) => entry.photographer)
+            .map((entry) => ({
+              name: `${entry.photographer!.name} · Ngoài`,
+              lead: entry.role === 'lead',
+            })),
         ],
       })),
     [schedules],
@@ -367,6 +398,8 @@ const SchedulesPage = () => {
       crewOpen={viewMode === 'table' && crewEdit?._id === s._id}
       onCrewOpenChange={(o) => setCrewEdit(o ? s : null)}
       photographers={photographers}
+      externalPhotographers={externalPhotographers}
+      onExternalCreated={onExternalCreated}
       isDesktop={isDesktop}
       onSaved={reload}
     />
@@ -564,8 +597,10 @@ const SchedulesPage = () => {
                 <span className="truncate">
                   Thợ chụp:{' '}
                   {filters.photographer && !filters.mine
-                    ? personName(photographers.find((u) => u._id === filters.photographer)) ||
-                      'Đã chọn'
+                    ? filters.photographer.startsWith('external:')
+                      ? `${externalPhotographers.find((person) => person._id === filters.photographer.slice('external:'.length))?.name ?? 'Đã chọn'} · Ngoài`
+                      : personName(photographers.find((u) => u._id === filters.photographer)) ||
+                        'Đã chọn'
                     : 'Tất cả'}
                 </span>
               </div>
@@ -575,6 +610,11 @@ const SchedulesPage = () => {
               {photographers.map((u) => (
                 <SelectItem key={u._id} value={u._id}>
                   {personName(u)}
+                </SelectItem>
+              ))}
+              {externalPhotographers.map((person) => (
+                <SelectItem key={`external:${person._id}`} value={`external:${person._id}`}>
+                  {person.name} · Thợ ngoài
                 </SelectItem>
               ))}
             </SelectContent>
@@ -802,6 +842,8 @@ const SchedulesPage = () => {
         <CrewEditor
           schedule={crewEdit}
           photographers={photographers}
+          externalPhotographers={externalPhotographers}
+          onExternalCreated={onExternalCreated}
           open={!!crewEdit}
           onOpenChange={(o) => !o && setCrewEdit(null)}
           onSaved={reload}
@@ -818,6 +860,7 @@ const SchedulesPage = () => {
         counts={counts}
         customerOptions={customerOptions}
         photographers={photographers}
+        externalPhotographers={externalPhotographers}
         total={total}
         loading={loading}
       />
@@ -832,6 +875,7 @@ const SchedulesPage = () => {
         customers={customers}
         packages={packages}
         photographers={photographers}
+        externalPhotographers={externalPhotographers}
         salesUsers={salesUsers}
         seasons={seasons}
         selectedSeasonId={selectedSeasonId}

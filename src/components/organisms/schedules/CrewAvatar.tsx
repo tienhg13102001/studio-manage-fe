@@ -38,7 +38,15 @@ export const CrewAvatar = ({ name, size = 26, lead, tooltip, className }: CrewAv
 };
 
 /** "(N) Ngọc [Chính]" chip for the lead photographer. */
-export const LeadChip = ({ name, className }: { name: string; className?: string }) => (
+export const LeadChip = ({
+  name,
+  className,
+  external = false,
+}: {
+  name: string;
+  className?: string;
+  external?: boolean;
+}) => (
   <span
     className={cn(
       'inline-flex min-w-0 items-center gap-1.5 rounded-full border bg-card py-0.5 pl-0.5 pr-1.5 text-[13px] font-semibold text-foreground',
@@ -50,5 +58,6 @@ export const LeadChip = ({ name, className }: { name: string; className?: string
     <span className="shrink-0 rounded-[5px] bg-primary-100 px-1.5 py-px text-[10.5px] font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
       Chính
     </span>
+    {external && <span className="shrink-0 text-[10px] text-sky-600 dark:text-sky-300">Ngoài</span>}
   </span>
 );

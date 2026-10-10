@@ -124,12 +124,25 @@ const ScheduleDetailDialog = ({
         (() => {
           const customer = detail.customer;
           const pkg = detail.package;
+          const externalLead = (detail.externalCrew ?? []).find((entry) => entry.role === 'lead');
           const leadName =
-            detail.leadPhotographer?.name ?? detail.leadPhotographer?.username ?? null;
+            detail.leadPhotographer?.name ??
+            detail.leadPhotographer?.username ??
+            (externalLead?.photographer
+              ? `${externalLead.photographer.name} · Thợ ngoài (${externalLead.confirmation === 'confirmed' ? 'đã xác nhận' : externalLead.confirmation === 'declined' ? 'từ chối' : 'chờ xác nhận'})`
+              : null);
           const bookedByName = detail.bookedBy?.name ?? detail.bookedBy?.username ?? null;
           const supportList = detail.supportPhotographers
             .map((u) => u.name ?? u.username)
             .filter(Boolean) as string[];
+          supportList.push(
+            ...(detail.externalCrew ?? [])
+              .filter((entry) => entry.role === 'support' && entry.photographer)
+              .map(
+                (entry) =>
+                  `${entry.photographer!.name} · Ngoài (${entry.confirmation === 'confirmed' ? 'đã xác nhận' : entry.confirmation === 'declined' ? 'từ chối' : 'chờ xác nhận'})`,
+              ),
+          );
           const servicesTotal = (detail.extraServices ?? []).reduce(
             (sum, es) => sum + es.amount,
             0,

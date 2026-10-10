@@ -76,7 +76,12 @@ export interface CrewStats {
 
 export const crewStats = (s: ScheduleResponse): CrewStats => {
   const needed = calcCrewCount(s.customer?.total, s.package?.studentsPerCrew);
-  const assigned = (s.leadPhotographer ? 1 : 0) + s.supportPhotographers.length;
+  const assigned =
+    (s.leadPhotographer ? 1 : 0) +
+    s.supportPhotographers.length +
+    (s.externalCrew ?? []).filter(
+      (entry) => entry.photographer && entry.confirmation !== 'declined',
+    ).length;
   return { needed, assigned, missing: needed ? Math.max(needed - assigned, 0) : 0 };
 };
 

@@ -20,6 +20,28 @@ export interface User {
   createdAt?: string;
 }
 
+/** External collaborator: never receives a system login. */
+export interface ExternalPhotographer {
+  _id: string;
+  name: string;
+  phone?: string;
+  defaultFee?: number | null;
+  notes?: string;
+  isActive: boolean;
+}
+
+export type ExternalCrewConfirmation = 'pending' | 'confirmed' | 'declined';
+
+export interface ExternalCrewAssignment {
+  photographer: string;
+  role: 'lead' | 'support';
+  confirmation: ExternalCrewConfirmation;
+}
+
+export interface ExternalCrewMember extends Omit<ExternalCrewAssignment, 'photographer'> {
+  photographer: Pick<ExternalPhotographer, '_id' | 'name' | 'isActive'> | null;
+}
+
 /** School as populated on a class (`customer.schoolId`). */
 export interface SchoolRef {
   _id: string;
@@ -283,6 +305,7 @@ export interface Schedule {
   location?: string;
   leadPhotographer: string | null;
   supportPhotographers: string[];
+  externalCrew: ExternalCrewAssignment[];
   bookedBy: string | null;
   /** Only a cancel flag — the displayed status is the shoot status derived from `customer.status`. */
   status: ScheduleStatus;
@@ -295,13 +318,20 @@ export interface Schedule {
 /** Populated Schedule returned by GET endpoints (backend uses `.populate`). */
 export interface ScheduleResponse extends Omit<
   Schedule,
-  'customer' | 'package' | 'costumes' | 'leadPhotographer' | 'supportPhotographers' | 'bookedBy'
+  | 'customer'
+  | 'package'
+  | 'costumes'
+  | 'leadPhotographer'
+  | 'supportPhotographers'
+  | 'externalCrew'
+  | 'bookedBy'
 > {
   customer: Customer;
   package: Package | null;
   costumes: Costume[];
   leadPhotographer: User | null;
   supportPhotographers: User[];
+  externalCrew: ExternalCrewMember[];
   bookedBy: User | null;
   /** Only on GET /schedules: crew members who also have another active schedule that day. */
   conflicts?: ScheduleConflict[];
@@ -309,7 +339,7 @@ export interface ScheduleResponse extends Omit<
 
 /** A crew member double-booked on the same shoot day (GET /schedules). */
 export interface ScheduleConflict {
-  user: { _id: string; name: string };
+  user: { _id: string; name: string; external?: boolean };
   schedule: { _id: string; className: string; startTime?: string; endTime?: string };
 }
 
@@ -324,6 +354,7 @@ export interface BusySchedule {
   endTime?: string;
   leadPhotographer: string | null;
   supportPhotographers: string[];
+  externalCrew: ExternalCrewAssignment[];
 }
 
 export interface Category {
@@ -382,6 +413,7 @@ export interface TransactionSummaryRow {
 export interface TransactionTotals {
   income: number;
   expense: number;
+  pendingRefund: number;
   incomeCount: number;
   expenseCount: number;
 }

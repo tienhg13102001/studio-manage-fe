@@ -87,10 +87,13 @@ const ScheduleItem = ({ s }: { s: UpcomingSchedule }) => {
               {s.location}
             </span>
           )}
-          {s.leadPhotographer && (
+          {(s.leadPhotographer || s.externalCrew?.some((entry) => entry.role === 'lead')) && (
             <span className="inline-flex items-center gap-1">
               <UserIcon className="h-3 w-3" />
-              {s.leadPhotographer.name ?? s.leadPhotographer.username}
+              {s.leadPhotographer?.name ??
+                s.leadPhotographer?.username ??
+                s.externalCrew?.find((entry) => entry.role === 'lead')?.photographer?.name}
+              {!s.leadPhotographer && ' · Ngoài'}
             </span>
           )}
         </div>
@@ -152,7 +155,7 @@ const DashboardPage = () => {
         className: s.customer?.className ?? '—',
         leadName: s.leadPhotographer
           ? (s.leadPhotographer.name ?? s.leadPhotographer.username)
-          : undefined,
+          : s.externalCrew?.find((entry) => entry.role === 'lead')?.photographer?.name,
       })),
     [stats?.upcomingSchedules],
   );

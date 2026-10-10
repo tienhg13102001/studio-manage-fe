@@ -196,7 +196,7 @@ const TransactionTable = ({
         </div>
       )}
     </div>
-    <div className="flex h-11 shrink-0 items-center gap-4 border-t bg-muted/40 px-4 text-[13px]">
+    <div className="flex min-h-11 shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t bg-muted/40 px-4 py-1 text-[13px]">
       <span className="whitespace-nowrap text-muted-foreground">
         Theo bộ lọc:{' '}
         <span className={cn('font-semibold tabular', INCOME_TEXT)}>
@@ -204,7 +204,11 @@ const TransactionTable = ({
         </span>
         <span className="mx-1.5">·</span>
         <span className={cn('font-semibold tabular', EXPENSE_TEXT)}>
-          Chi −{money(totals?.expense ?? 0)}
+          Tổng chi −{money(totals?.expense ?? 0)}
+        </span>
+        <span className="mx-1.5">·</span>
+        <span className="font-semibold text-amber-600 tabular dark:text-amber-400">
+          Chi chưa hoàn −{money(totals?.pendingRefund ?? 0)}
         </span>
       </span>
       <Pagination
@@ -214,7 +218,7 @@ const TransactionTable = ({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         pageSizeOptions={[20, 50, 100]}
-        className="ml-auto flex-1 border-t-0 px-0 py-0 sm:justify-end sm:gap-4"
+        className="ml-auto border-t-0 px-0 py-0 sm:justify-end sm:gap-4"
       />
     </div>
   </div>

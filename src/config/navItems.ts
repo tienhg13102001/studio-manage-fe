@@ -12,6 +12,7 @@ import {
   Shirt,
   Tags,
   Users,
+  UserRoundPlus,
   Wrench,
 } from 'lucide-react';
 import type { UserRole } from '../types';
@@ -23,6 +24,7 @@ import FinancePage from '../pages/FinancePage';
 import CategoriesPage from '../pages/CategoriesPage';
 import CostumesPage from '../pages/CostumesPage';
 import UsersPage from '../pages/UsersPage';
+import ExternalPhotographersPage from '../pages/ExternalPhotographersPage';
 import CustomerSizePage from '../pages/CustomerSizePage';
 import PackagesPage from '../pages/PackagesPage';
 import FeedbackPage from '../pages/FeedbackPage';
@@ -116,6 +118,13 @@ export const adminItems: NavItem[] = [
         iconClassName: 'text-blue-300',
         allowedRoles: [0, 1],
         component: UsersPage,
+      },
+      {
+        to: '/external-photographers',
+        label: 'Thợ ngoài',
+        icon: UserRoundPlus,
+        allowedRoles: [0, 1],
+        component: ExternalPhotographersPage,
       },
       {
         to: '/feedback',

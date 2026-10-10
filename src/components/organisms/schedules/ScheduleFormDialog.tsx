@@ -33,11 +33,15 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import { scheduleService } from '../../../services/scheduleService';
 import type {
   CostumeResponse,
   Customer,
   ExtraService,
+  ExternalCrewAssignment,
+  ExternalCrewConfirmation,
+  ExternalPhotographer,
   Package,
   ScheduleResponse,
   Season,
@@ -47,6 +51,7 @@ import { ROLE_LABELS } from '../../../types';
 import { classLabel } from '../../../utils/format';
 import { CREW_EDITOR_HINT } from '../../../utils/permissions';
 import { isScheduleCancelled } from '../../../utils/scheduleConstants';
+import { apiErrorMessage } from './scheduleHelpers';
 
 /** Soft tinted square icon tile. */
 const IconTile = ({ className, children }: { className?: string; children: React.ReactNode }) => (
@@ -358,6 +363,7 @@ interface ScheduleFormDialogProps {
   customers: Customer[];
   packages: Package[];
   photographers: User[];
+  externalPhotographers: ExternalPhotographer[];
   salesUsers: User[];
   seasons: Season[];
   selectedSeasonId: string;
@@ -379,6 +385,7 @@ const ScheduleFormDialog = ({
   customers,
   packages,
   photographers,
+  externalPhotographers,
   salesUsers,
   seasons,
   selectedSeasonId,
@@ -389,6 +396,7 @@ const ScheduleFormDialog = ({
 }: ScheduleFormDialogProps) => {
   const [selectedCostumes, setSelectedCostumes] = useState<string[]>([]);
   const [supportIds, setSupportIds] = useState<string[]>([]);
+  const [externalCrew, setExternalCrew] = useState<ExternalCrewAssignment[]>([]);
   const [costumeTouched, setCostumeTouched] = useState(false);
   /** Class passed in from CustomerDetailPage — may be missing from the (season-filtered, capped) list. */
   const [prefillCustomer, setPrefillCustomer] = useState<{ value: string; label: string } | null>(
@@ -416,6 +424,19 @@ const ScheduleFormDialog = ({
   });
 
   const selectedPackageId = watch('package');
+  const externalLead = externalCrew.find((entry) => entry.role === 'lead');
+  const availableExternal = useMemo(() => {
+    const map = new Map<string, ExternalPhotographer>();
+    for (const person of externalPhotographers) {
+      if (person.isActive) map.set(person._id, person);
+    }
+    for (const entry of editing?.externalCrew ?? []) {
+      if (entry.photographer && !map.has(entry.photographer._id)) {
+        map.set(entry.photographer._id, { ...entry.photographer });
+      }
+    }
+    return [...map.values()];
+  }, [externalPhotographers, editing]);
   const selectedPackage = packages.find((p) => p._id === selectedPackageId);
   const packageTypeIds = useMemo(
     () => new Set((selectedPackage?.costumes ?? []).map((ct) => ct._id)),
@@ -432,6 +453,15 @@ const ScheduleFormDialog = ({
     if (editing) {
       setPrefillCustomer(null);
       setSupportIds(editing.supportPhotographers.map((u) => u._id));
+      setExternalCrew(
+        (editing.externalCrew ?? [])
+          .filter((entry) => entry.photographer)
+          .map((entry) => ({
+            photographer: entry.photographer!._id,
+            role: entry.role,
+            confirmation: entry.confirmation,
+          })),
+      );
       setSelectedCostumes(editing.costumes?.map((c) => c._id) ?? []);
       reset({
         customer: editing.customer._id,
@@ -452,6 +482,7 @@ const ScheduleFormDialog = ({
       });
     } else {
       setSupportIds([]);
+      setExternalCrew([]);
       setSelectedCostumes([]);
       setPrefillCustomer(prefill?.label ? { value: prefill._id, label: prefill.label } : null);
       reset({
@@ -476,9 +507,10 @@ const ScheduleFormDialog = ({
     const payload = {
       ...data,
       costumes: selectedCostumes,
-      leadPhotographer: data.leadPhotographer || undefined,
+      leadPhotographer: data.leadPhotographer || null,
       bookedBy: data.bookedBy || undefined,
       supportPhotographers: supportIds,
+      ...(canEditCrew ? { externalCrew } : {}),
       extraServices: (data.extraServices ?? []).map((es): ExtraService => {
         const quantity = toSafeNumber(es.quantity);
         const unitPrice = toSafeNumber(es.unitPrice);
@@ -493,8 +525,8 @@ const ScheduleFormDialog = ({
       toast.success(editing ? 'Cập nhật lịch chụp thành công!' : 'Thêm lịch chụp thành công!');
       onOpenChange(false);
       onSaved(saved);
-    } catch {
-      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Không lưu được lịch chụp.'));
     }
   };
 
@@ -511,7 +543,17 @@ const ScheduleFormDialog = ({
       !sameIds(
         supportIds,
         editing.supportPhotographers.map((u) => u._id),
-      ));
+      ) ||
+      JSON.stringify(externalCrew) !==
+        JSON.stringify(
+          (editing.externalCrew ?? [])
+            .filter((entry) => entry.photographer)
+            .map((entry) => ({
+              photographer: entry.photographer!._id,
+              role: entry.role,
+              confirmation: entry.confirmation,
+            })),
+        ));
 
   const formFieldCls = 'h-10 rounded-[10px]';
 
@@ -702,12 +744,45 @@ const ScheduleFormDialog = ({
                     control={control}
                     render={({ field }) => (
                       <Combobox
-                        options={photographers.map((u) => ({
-                          value: u._id,
-                          label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
-                        }))}
-                        value={field.value ?? ''}
-                        onChange={(v) => field.onChange(v || undefined)}
+                        options={[
+                          ...photographers.map((u) => ({
+                            value: u._id,
+                            label: `${u.username}${u.name ? ` (${u.name})` : ''} – ${ROLE_LABELS[3]}`,
+                          })),
+                          ...availableExternal.map((person) => ({
+                            value: `external:${person._id}`,
+                            label: `${person.name} – Thợ ngoài`,
+                          })),
+                        ]}
+                        value={
+                          externalLead
+                            ? `external:${externalLead.photographer}`
+                            : (field.value ?? '')
+                        }
+                        onChange={(value) => {
+                          if (value.startsWith('external:')) {
+                            const id = value.slice('external:'.length);
+                            setExternalCrew((prev) => [
+                              ...prev.filter(
+                                (entry) => entry.role !== 'lead' && entry.photographer !== id,
+                              ),
+                              {
+                                photographer: id,
+                                role: 'lead',
+                                confirmation:
+                                  prev.find((entry) => entry.photographer === id)?.confirmation ??
+                                  'pending',
+                              },
+                            ]);
+                            field.onChange('');
+                          } else {
+                            setExternalCrew((prev) =>
+                              prev.filter((entry) => entry.role !== 'lead'),
+                            );
+                            setSupportIds((prev) => prev.filter((id) => id !== value));
+                            field.onChange(value || '');
+                          }
+                        }}
                         placeholder="-- Không chỉ định --"
                         disabled={!canEditCrew}
                         className={formFieldCls}
@@ -715,7 +790,7 @@ const ScheduleFormDialog = ({
                     )}
                   />
                 </FormField>
-                {watch('leadPhotographer') && (
+                {(watch('leadPhotographer') || externalLead) && (
                   <FormField label="Thợ phụ">
                     <MultiSelect
                       options={photographers
@@ -735,6 +810,85 @@ const ScheduleFormDialog = ({
                   </FormField>
                 )}
               </div>
+              {canEditCrew && (
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">Thợ ngoài hỗ trợ</span>
+                    <Link
+                      to="/manage/external-photographers"
+                      onClick={() => onOpenChange(false)}
+                      className="text-xs text-primary-700 hover:underline dark:text-primary"
+                    >
+                      Quản lý thợ ngoài
+                    </Link>
+                  </div>
+                  <MultiSelect
+                    options={availableExternal
+                      .filter((person) => person._id !== externalLead?.photographer)
+                      .map((person) => ({ value: person._id, label: person.name }))}
+                    value={externalCrew
+                      .filter((entry) => entry.role === 'support')
+                      .map((entry) => entry.photographer)}
+                    onChange={(ids) =>
+                      setExternalCrew((prev) => [
+                        ...prev.filter((entry) => entry.role === 'lead'),
+                        ...ids.map(
+                          (id): ExternalCrewAssignment => ({
+                            photographer: id,
+                            role: 'support',
+                            confirmation:
+                              prev.find((entry) => entry.photographer === id)?.confirmation ??
+                              'pending',
+                          }),
+                        ),
+                      ])
+                    }
+                    placeholder="-- Chọn thợ ngoài --"
+                    emptyText="Chưa có thợ ngoài đang hợp tác"
+                    maxBadges={8}
+                  />
+                  {externalCrew.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {externalCrew.map((entry) => (
+                        <label
+                          key={entry.photographer}
+                          className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+                        >
+                          <span className="truncate">
+                            {availableExternal.find((person) => person._id === entry.photographer)
+                              ?.name ?? 'Thợ ngoài'}{' '}
+                            · {entry.role === 'lead' ? 'Chính' : 'Phụ'}
+                          </span>
+                          <select
+                            value={entry.confirmation}
+                            onChange={(event) =>
+                              setExternalCrew((prev) =>
+                                prev.map((item) =>
+                                  item.photographer === entry.photographer
+                                    ? {
+                                        ...item,
+                                        confirmation: event.target
+                                          .value as ExternalCrewConfirmation,
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                            className="rounded-md border bg-card px-2 py-1 text-foreground"
+                          >
+                            <option value="pending">Chờ xác nhận</option>
+                            <option value="confirmed">Đã xác nhận</option>
+                            <option value="declined">Từ chối</option>
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Liên hệ thợ ngoài trực tiếp để xác nhận lịch.
+                  </p>
+                </div>
+              )}
               {!canEditCrew && (
                 <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Info className="h-3.5 w-3.5 shrink-0" /> {CREW_EDITOR_HINT}
