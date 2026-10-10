@@ -1,7 +1,13 @@
 import api from './api';
-import type { ApiResponse, ProfitScenario, ProfitScenarioInput } from '../types';
+import type { ApiResponse, ProfitClassOption, ProfitScenario, ProfitScenarioInput } from '../types';
 
 export const profitScenarioService = {
+  getClasses: (season?: string) =>
+    api
+      .get<ApiResponse<ProfitClassOption[]>>('/profit-scenarios/classes', {
+        params: season ? { season } : undefined,
+      })
+      .then((r) => r.data.data),
   getAll: () =>
     api.get<ApiResponse<ProfitScenario[]>>('/profit-scenarios').then((r) => r.data.data),
   create: (data: ProfitScenarioInput) =>

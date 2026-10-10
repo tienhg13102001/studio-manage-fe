@@ -308,6 +308,8 @@ export interface ProfitScenarioInput {
   name: string;
   /** Package id (`null` = nhập giá tay). */
   package: string | null;
+  /** Lịch chụp của lớp thật (tính lãi cho lớp đã có lịch). */
+  schedule: string | null;
   pricePerMember: number;
   students: number;
   crewCount: number;
@@ -321,6 +323,25 @@ export interface ProfitScenarioInput {
   otherCosts: { label: string; amount: number }[];
 }
 
+/** Lớp đã có lịch chụp — số liệu thật để tính lãi. */
+export interface ProfitClassOption {
+  scheduleId: string;
+  customerId: string;
+  className: string;
+  school: string;
+  shootDate: string;
+  package: string | null;
+  pricePerMember: number | null;
+  contractTotal: number | null;
+  students: number;
+  /** Số thợ chụp / thợ quay đã phân công trên lịch. */
+  crewAssigned: number;
+  videoAssigned: number;
+  /** Số thợ theo hợp đồng. */
+  crewCount: number | null;
+  videoCrewCount: number | null;
+}
+
 /** Một dòng chi phí: đơn giá × SL (× sĩ số nếu `student`, × số người ekip nếu `crew`). */
 export interface ProfitCostItem {
   label: string;
@@ -329,8 +350,13 @@ export interface ProfitCostItem {
   unit: 'student' | 'class' | 'crew';
 }
 
-export interface ProfitScenario extends Omit<ProfitScenarioInput, 'package'> {
+export interface ProfitScenario extends Omit<ProfitScenarioInput, 'package' | 'schedule'> {
   _id: string;
+  schedule?: {
+    _id: string;
+    shootDate: string;
+    customer?: { _id: string; className: string } | null;
+  } | null;
   package: Pick<Package, '_id' | 'name' | 'pricePerMember' | 'studentsPerCrew' | 'hasMv'> | null;
   /** Trường cũ (trước khi tách dòng) — chỉ để đọc kịch bản đã lưu. */
   printCostPerStudent?: number;

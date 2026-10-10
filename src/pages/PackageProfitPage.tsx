@@ -18,7 +18,15 @@ import {
 import { toast } from 'react-toastify';
 import { packageService } from '../services/packageService';
 import { profitScenarioService } from '../services/profitScenarioService';
-import type { Package, ProfitCostItem, ProfitScenario, ProfitScenarioInput } from '../types';
+import { useAppSelector } from '../store';
+import type {
+  Package,
+  ProfitClassOption,
+  ProfitCostItem,
+  ProfitScenario,
+  ProfitScenarioInput,
+} from '../types';
+import { formatDate } from '../utils/format';
 import {
   calcProfit,
   costItemAmount,
@@ -46,6 +54,7 @@ type Form = Omit<ProfitScenarioInput, 'name'>;
 
 const EMPTY_FORM: Form = {
   package: null,
+  schedule: null,
   pricePerMember: 0,
   students: 0,
   crewCount: 0,
@@ -70,11 +79,15 @@ const emptyItem = (unit: ProfitCostItem['unit'] = 'student'): ProfitCostItem => 
 
 const isFilledItem = (it: ProfitCostItem) => !!it.label.trim() || it.unitPrice > 0;
 
+const pick = <T extends object, K extends keyof T>(obj: T, keys: K[]) =>
+  Object.fromEntries(keys.map((k) => [k, obj[k]])) as Pick<T, K>;
+
 const getApiErrorMessage = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 
 const fromScenario = (s: ProfitScenario): Form => ({
   package: s.package?._id ?? null,
+  schedule: s.schedule?._id ?? null,
   pricePerMember: s.pricePerMember,
   students: s.students,
   crewCount: s.crewCount,
@@ -340,6 +353,10 @@ const COST_TONES = {
 
 const PackageProfitPage = () => {
   const [packages, setPackages] = useState<Package[]>([]);
+  const [classes, setClasses] = useState<ProfitClassOption[]>([]);
+  /** Kịch bản đã dùng làm mẫu đơn giá khi chọn lớp. */
+  const [templateName, setTemplateName] = useState<string | null>(null);
+  const { selectedSeasonId } = useAppSelector((st) => st.seasons);
   const [scenarios, setScenarios] = useState<ProfitScenario[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [form, setForm] = useState<Form>(EMPTY_FORM);
@@ -364,6 +381,7 @@ const PackageProfitPage = () => {
   }, []);
 
   const pkg = packages.find((p) => p._id === form.package) ?? null;
+  const cls = classes.find((c) => c.scheduleId === form.schedule) ?? null;
   const suggestedCrew = suggestCrewCount(form.students, pkg?.studentsPerCrew);
   const crewCount = crewAuto && suggestedCrew != null ? suggestedCrew : form.crewCount;
   const result = calcProfit({ ...form, crewCount });
@@ -373,6 +391,24 @@ const PackageProfitPage = () => {
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  useEffect(() => {
+    profitScenarioService
+      .getClasses(selectedSeasonId || undefined)
+      .then(setClasses)
+      .catch(() => setClasses([]));
+  }, [selectedSeasonId]);
+
+  const classOptions = useMemo(
+    () => [
+      { value: '', label: 'Không chọn lớp (tự nhập)' },
+      ...classes.map((c) => ({
+        value: c.scheduleId,
+        label: [c.className, c.school, formatDate(c.shootDate)].filter(Boolean).join(' · '),
+      })),
+    ],
+    [classes],
+  );
+
   const packageOptions = useMemo(
     () => [
       { value: '', label: 'Không chọn gói (nhập giá tay)' },
@@ -380,6 +416,20 @@ const PackageProfitPage = () => {
     ],
     [packages],
   );
+
+  /** Trang phục theo gói — giữ đơn giá đã nhập cho loại trùng tên. */
+  const costumesFor = (p: Package | undefined, prev: ProfitCostItem[]) =>
+    p
+      ? (p.costumes ?? [])
+          .filter((c) => typeof c === 'object' && c?.name)
+          .map(
+            (c) =>
+              prev.find((it) => it.label === c.name) ?? {
+                ...emptyItem(),
+                label: c.name,
+              },
+          )
+      : prev;
 
   const choosePackage = (id: string) => {
     const p = packages.find((x) => x._id === id);
@@ -389,20 +439,43 @@ const PackageProfitPage = () => {
       pricePerMember: p?.pricePerMember ?? f.pricePerMember,
       crewCount: 0,
       videoCrewCount: p ? (p.hasMv ? 1 : 0) : f.videoCrewCount,
-      // Trang phục theo gói — giữ đơn giá đã nhập cho loại trùng tên
-      costumeItems: p
-        ? (p.costumes ?? [])
-            .filter((c) => typeof c === 'object' && c?.name)
-            .map(
-              (c) =>
-                f.costumeItems.find((it) => it.label === c.name) ?? {
-                  ...emptyItem(),
-                  label: c.name,
-                },
-            )
-        : f.costumeItems,
+      costumeItems: costumesFor(p, f.costumeItems),
     }));
     setCrewAuto(true);
+  };
+
+  /** Chọn lớp đã có lịch: điền gói, giá, sĩ số, số thợ theo số liệu thật. */
+  const chooseClass = (id: string) => {
+    const c = classes.find((x) => x.scheduleId === id);
+    if (!c) {
+      set('schedule', null);
+      setTemplateName(null);
+      return;
+    }
+    const p = packages.find((x) => x._id === c.package);
+    // Ưu tiên số thợ đã phân công trên lịch, rồi tới hợp đồng
+    const crew = c.crewAssigned || c.crewCount || 0;
+    const video = c.videoAssigned || c.videoCrewCount || (p?.hasMv ? 1 : 0);
+    // Đơn giá chi phí lấy từ kịch bản gần nhất cùng gói (danh sách đã sắp mới nhất trước)
+    const tpl = p ? scenarios.find((x) => x.package?._id === p._id) : undefined;
+    setTemplateName(tpl?.name ?? null);
+    setForm((f) => ({
+      ...f,
+      ...(tpl && {
+        crewRate: tpl.crewRate,
+        videoCrewRate: tpl.videoCrewRate ?? 0,
+        ...pick(fromScenario(tpl), ['printItems', 'costumeItems', 'travelItems', 'otherCosts']),
+      }),
+      schedule: c.scheduleId,
+      package: p?._id ?? null,
+      pricePerMember: c.pricePerMember ?? p?.pricePerMember ?? f.pricePerMember,
+      students: c.students,
+      crewCount: crew,
+      videoCrewCount: video,
+      costumeItems: costumesFor(p, tpl ? fromScenario(tpl).costumeItems : f.costumeItems),
+    }));
+    setCrewAuto(!crew);
+    setActiveId(null);
   };
 
   const setOther = (i: number, patch: Partial<Form['otherCosts'][number]>) =>
@@ -413,12 +486,14 @@ const PackageProfitPage = () => {
 
   const reset = () => {
     setForm(EMPTY_FORM);
+    setTemplateName(null);
     setCrewAuto(true);
     setActiveId(null);
   };
 
   const load = (s: ProfitScenario) => {
     setForm(fromScenario(s));
+    setTemplateName(null);
     // Số thợ đã lưu khớp số tự tính → tiếp tục tự tính khi đổi sĩ số
     setCrewAuto(s.crewCount === suggestCrewCount(s.students, s.package?.studentsPerCrew));
     setActiveId(s._id);
@@ -427,7 +502,9 @@ const PackageProfitPage = () => {
   const openSave = () => {
     setName(
       active?.name ??
-        [pkg?.name, form.students ? `${form.students} hs` : ''].filter(Boolean).join(' · '),
+        [cls?.className, pkg?.name, form.students ? `${form.students} hs` : '']
+          .filter(Boolean)
+          .join(' · '),
     );
     setSaveOpen(true);
   };
@@ -653,6 +730,7 @@ const PackageProfitPage = () => {
                   {s.name}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground tabular">
+                  {s.schedule?.customer?.className && `Lớp ${s.schedule.customer.className} · `}
                   {s.students} hs · {formatVnd(s.pricePerMember)}/hs
                 </span>
               </button>
@@ -713,6 +791,36 @@ const PackageProfitPage = () => {
             tone="bg-primary/15 text-primary-700 dark:text-primary"
             subtotal={result.revenue}
           >
+            <Field
+              label="Lớp đã có lịch chụp"
+              hint={
+                cls && (
+                  <>
+                    Chụp {formatDate(cls.shootDate)} · đã phân công {cls.crewAssigned} thợ chụp
+                    {cls.videoAssigned ? `, ${cls.videoAssigned} thợ quay` : ''}
+                    {cls.crewCount != null && ` · HĐ ${cls.crewCount} thợ`}
+                    {templateName && ` · đơn giá theo kịch bản «${templateName}»`}
+                    {cls.contractTotal != null && cls.contractTotal !== result.revenue && (
+                      <>
+                        {' · '}
+                        <span className="font-semibold text-amber-700 dark:text-amber-300">
+                          Tổng HĐ {formatVnd(cls.contractTotal)}
+                        </span>
+                      </>
+                    )}
+                  </>
+                )
+              }
+            >
+              <Combobox
+                options={classOptions}
+                value={form.schedule ?? ''}
+                onChange={chooseClass}
+                placeholder="Chọn lớp để tính lãi…"
+                searchPlaceholder="Tìm lớp, trường…"
+                className="h-10 rounded-[10px] bg-card shadow-none"
+              />
+            </Field>
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_150px]">
               <Field
                 label="Gói chụp"
