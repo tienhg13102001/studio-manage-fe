@@ -15,6 +15,7 @@ import {
   Copy,
   ExternalLink,
   FilePlus,
+  FilePen,
   FileText,
   FolderOpen,
   FolderPlus,
@@ -64,6 +65,7 @@ import {
   getSchoolName,
 } from '../types';
 import { SCHEDULE_CANCELLED_LABEL, isScheduleCancelled } from '../utils/scheduleConstants';
+import { contractChanges } from '../utils/contractChanges';
 import {
   Badge,
   Button,
@@ -440,6 +442,7 @@ const ContractCard = ({
   onRegenerate,
   canSync,
   onSynced,
+  onUpdate,
 }: {
   customer: Customer;
   canCreate: boolean;
@@ -450,6 +453,8 @@ const ContractCard = ({
   onRegenerate: () => void;
   canSync: boolean;
   onSynced: (customer: Customer) => void;
+  /** "Cập nhật hợp đồng" — re-render the same doc; shown to class managers when the doc id is known. */
+  onUpdate: () => void;
 }) => {
   const [syncing, setSyncing] = useState(false);
   const contract = customer.contract;
@@ -472,6 +477,7 @@ const ContractCard = ({
   }
   // Legacy contracts (created before named ranges) have no doc id and never auto-sync.
   const legacy = !contract.docId;
+  const canUpdate = canSync && !legacy;
   const printed = contract.depositAmount ?? null;
   const deposit =
     customer.deposit?.amount && customer.deposit.amount > 0 ? customer.deposit.amount : null;
@@ -533,7 +539,7 @@ const ContractCard = ({
         )}
       </span>
       <OpenLink href={contract.url} />
-      {canRegenerate && (
+      {(canRegenerate || canUpdate) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -545,15 +551,28 @@ const ContractCard = ({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuItem onSelect={onRegenerate} className="items-start gap-2.5 py-2">
-              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="block font-medium">Tạo lại hợp đồng</span>
-                <span className="block text-xs text-muted-foreground">
-                  Chỉ admin · ghi đè file hiện tại
+            {canUpdate && (
+              <DropdownMenuItem onSelect={onUpdate} className="items-start gap-2.5 py-2">
+                <FilePen className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block font-medium">Cập nhật hợp đồng</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Điền lại theo thông tin lớp · giữ nguyên link
+                  </span>
                 </span>
-              </span>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            )}
+            {canRegenerate && (
+              <DropdownMenuItem onSelect={onRegenerate} className="items-start gap-2.5 py-2">
+                <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block font-medium">Tạo lại hợp đồng</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Chỉ admin · tạo file mới thay thế
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -572,8 +591,9 @@ const CustomerDetailPage = () => {
   const [activities, setActivities] = useState<CustomerActivity[]>([]);
   const [statusTarget, setStatusTarget] = useState<CustomerStatus | null>(null);
   // Contract dialog: closed / create / admin "Tạo lại"
-  const [contractMode, setContractMode] = useState<'create' | 'regenerate' | null>(null);
+  const [contractMode, setContractMode] = useState<'create' | 'regenerate' | 'update' | null>(null);
   const [regenerateConfirm, setRegenerateConfirm] = useState(false);
+  const [updateConfirm, setUpdateConfirm] = useState(false);
   const packages = useAppSelector((st) => st.packages.list);
   const [noteOpen, setNoteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -710,6 +730,7 @@ const CustomerDetailPage = () => {
   // Cancelled schedules don't count: the main schedule is the first non-cancelled one.
   const activeSchedules = schedules.filter((s) => !isScheduleCancelled(s));
   const mainSchedule = activeSchedules[0] ?? null;
+  const contractStale = customer ? contractChanges(customer, mainSchedule) : [];
   // Mirrors backend customerContractController: admin / kế toán / sale phụ trách lớp
   const canManageClass = isAdmin || roles.includes(5) || canNote;
   const canCreateContract = canManageClass && (isAdmin || CONTRACT_STATUSES.includes(status));
@@ -1008,9 +1029,28 @@ const CustomerDetailPage = () => {
                   onRegenerate={() => setRegenerateConfirm(true)}
                   canSync={canManageClass}
                   onSynced={patchCustomer}
+                  onUpdate={() => setUpdateConfirm(true)}
                 />
               </div>
             )}
+            {showLinks &&
+              canManageClass &&
+              customer.contract?.docId &&
+              contractStale.length > 0 && (
+                <div className="flex flex-col gap-2.5 rounded-[12px] border border-amber-500/40 bg-amber-500/10 px-3.5 py-2.5 text-sm sm:flex-row sm:items-center">
+                  <AlertTriangle className="hidden h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300 sm:block" />
+                  <span className="min-w-0 flex-1 text-amber-800 dark:text-amber-200">
+                    <span className="font-semibold">Hợp đồng chưa khớp thông tin lớp</span>
+                    <span className="text-amber-700/90 dark:text-amber-300/90">
+                      {' · '}
+                      {contractStale.join(', ')} đã thay đổi
+                    </span>
+                  </span>
+                  <Button size="sm" className="h-8 shrink-0" onClick={() => setUpdateConfirm(true)}>
+                    <RefreshCw /> Cập nhật hợp đồng
+                  </Button>
+                </div>
+              )}
 
             {(canAdvance || canLose || canNote || isAdmin) && (
               <div
@@ -1393,10 +1433,23 @@ const CustomerDetailPage = () => {
         packages={packages}
         seasonName={seasons.find((se) => se._id === customer.season)?.name}
         regenerate={contractMode === 'regenerate'}
+        update={contractMode === 'update'}
         onClose={() => setContractMode(null)}
         onSaved={(updated) => {
           setCustomer(updated);
           loadActivities();
+        }}
+      />
+
+      <ConfirmDialog
+        open={updateConfirm}
+        onOpenChange={setUpdateConfirm}
+        title="Cập nhật hợp đồng?"
+        message="File hợp đồng hiện tại (giữ nguyên link) sẽ được điền lại từ mẫu theo thông tin lớp mới nhất. Chỉnh sửa tay trong file sẽ bị thay thế — Google Docs vẫn lưu lịch sử phiên bản."
+        confirmLabel="Tiếp tục"
+        onConfirm={() => {
+          setUpdateConfirm(false);
+          setContractMode('update');
         }}
       />
 

@@ -148,6 +148,11 @@ interface ContractDialogProps {
   seasonName?: string;
   /** Admin "Tạo lại": overwrite the class's existing contract (prefilled from it). */
   regenerate?: boolean;
+  /**
+   * "Cập nhật hợp đồng": re-render the SAME Google Doc (keeps the link) from the current class
+   * info. Prefilled like `regenerate`, but date / location prefer the current schedule.
+   */
+  update?: boolean;
   onClose: () => void;
   /** Called with the updated class after the contract was saved on it. */
   onSaved?: (customer: Customer) => void;
@@ -163,28 +168,36 @@ const initialValues = ({
   schedule,
   packages,
   regenerate,
+  update,
 }: ContractFormProps): { values: ContractFormValues; dateSource: DateSource } => {
-  const prev = regenerate ? customer.contract : null;
+  const prev = regenerate || update ? customer.contract : null;
+  // Cập nhật: ngày / địa điểm lấy theo lịch chụp hiện tại trước, rồi mới tới hợp đồng cũ
+  const current = update ? schedule : null;
   const packageId = prev?.package ?? schedule?.package?._id ?? '';
   const pkg = packages.find((p) => p._id === packageId);
   const services = prev?.extraServices ?? schedule?.extraServices ?? [];
-  const dateSource: DateSource = prev?.shootDate
-    ? 'contract'
-    : schedule?.shootDate
-      ? 'schedule'
-      : customer.expectedShootDate
-        ? 'expected'
-        : null;
+  const dateSource: DateSource = current?.shootDate
+    ? 'schedule'
+    : prev?.shootDate
+      ? 'contract'
+      : schedule?.shootDate
+        ? 'schedule'
+        : customer.expectedShootDate
+          ? 'expected'
+          : null;
   return {
     dateSource,
     values: {
       package: pkg ? packageId : '',
       pricePerMember: prev?.pricePerMember ?? pkg?.pricePerMember ?? NaN,
-      shootDate: (prev?.shootDate ?? schedule?.shootDate ?? customer.expectedShootDate ?? '').slice(
-        0,
-        10,
-      ),
-      location: prev?.location ?? schedule?.location ?? '',
+      shootDate: (
+        current?.shootDate ??
+        prev?.shootDate ??
+        schedule?.shootDate ??
+        customer.expectedShootDate ??
+        ''
+      ).slice(0, 10),
+      location: (current?.location || prev?.location) ?? schedule?.location ?? '',
       total: customer.total ?? 0,
       totalMale: customer.totalMale ?? 0,
       totalFemale: customer.totalFemale ?? 0,
@@ -211,7 +224,7 @@ const DATE_SOURCE_HINT: Record<Exclude<DateSource, null>, string> = {
  * initialised synchronously from the class (+ main schedule / existing contract).
  */
 const ContractForm = (props: ContractFormProps) => {
-  const { customer, schedule, packages, regenerate, onClose, onSaved } = props;
+  const { customer, schedule, packages, regenerate, update, onClose, onSaved } = props;
   const [{ values: defaults, dateSource }] = useState(() => initialValues(props));
   // Link of the doc created in this session (shown even if saving it on the class failed)
   const [contractDocUrl, setContractDocUrl] = useState<string | null>(null);
@@ -310,6 +323,8 @@ const ContractForm = (props: ContractFormProps) => {
       depositAmount,
       // Ngày cọc in ở {{depositDate}} — trống khi chưa cọc
       depositDate: depositAmount !== null ? (deposit?.date ?? null) : null,
+      // Cập nhật: Apps Script nạp lại mẫu vào chính file này (giữ link)
+      ...(update && customer.contract?.docId ? { documentId: customer.contract.docId } : {}),
       customer: { ...customer, school: getSchoolName(customer) },
     };
     let json: {
@@ -355,6 +370,16 @@ const ContractForm = (props: ContractFormProps) => {
         depositAmount: printedDeposit,
         depositSyncedAt: printedDeposit !== null ? new Date().toISOString() : null,
         depositDate: printedDeposit !== null ? (deposit?.date ?? null) : null,
+        printed: {
+          className: customer.className,
+          school: getSchoolName(customer),
+          contactName: customer.contactName ?? '',
+          contactPhone: customer.contactPhone ?? '',
+          contactAddress: customer.contactAddress ?? '',
+          total: Number(formData.total) || 0,
+          totalMale: Number(formData.totalMale) || 0,
+          totalFemale: Number(formData.totalFemale) || 0,
+        },
       });
       setSaved(true);
       onSaved?.(updated);
@@ -893,7 +918,15 @@ const ContractForm = (props: ContractFormProps) => {
         </Button>
         <Button type="submit" disabled={isSubmitting || saved}>
           <FileText />{' '}
-          {isSubmitting ? 'Đang tạo...' : regenerate ? 'Tạo lại hợp đồng' : 'Tạo hợp đồng'}
+          {isSubmitting
+            ? update
+              ? 'Đang cập nhật...'
+              : 'Đang tạo...'
+            : update
+              ? 'Cập nhật hợp đồng'
+              : regenerate
+                ? 'Tạo lại hợp đồng'
+                : 'Tạo hợp đồng'}
         </Button>
       </div>
     </form>
@@ -913,7 +946,13 @@ const ContractDialog = ({ customer, ...rest }: ContractDialogProps) => (
           <FilePen />
         </IconTile>
         <div className="min-w-0 text-left">
-          <DialogTitle>{rest.regenerate ? 'Tạo lại hợp đồng' : 'Tạo hợp đồng'}</DialogTitle>
+          <DialogTitle>
+            {rest.update
+              ? 'Cập nhật hợp đồng'
+              : rest.regenerate
+                ? 'Tạo lại hợp đồng'
+                : 'Tạo hợp đồng'}
+          </DialogTitle>
           <DialogDescription className="mt-0.5 truncate text-[13px]">
             {[
               customer?.className ? `Lớp ${customer.className}` : '',

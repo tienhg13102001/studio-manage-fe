@@ -89,6 +89,18 @@ export interface Customer {
   createdAt?: string;
 }
 
+/** Class info printed on a contract (snapshot at create / update time). */
+export interface ContractPrinted {
+  className?: string;
+  school?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactAddress?: string;
+  total?: number;
+  totalMale?: number;
+  totalFemale?: number;
+}
+
 /** Contract of a class (created via the Apps Script, saved with PUT /customers/:id/contract). */
 export interface CustomerContract {
   url: string;
@@ -112,6 +124,8 @@ export interface CustomerContract {
   depositSyncedAt?: string | null;
   /** Ngày cọc đang in trên hợp đồng; null = để trống. */
   depositDate?: string | null;
+  /** Class info printed on the contract — compared with the class to detect a stale contract. */
+  printed?: ContractPrinted | null;
   createdAt?: string | null;
   createdBy?: string | null;
 }
