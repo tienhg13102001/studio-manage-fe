@@ -31,7 +31,7 @@ import {
   type ScheduleResponse,
   type User,
 } from '../../../types';
-import { calcCrewCount } from '../../../utils/crewCount';
+import { neededCrewCount } from '../../../utils/crewCount';
 import { CrewAvatar } from './CrewAvatar';
 import {
   SHEET_CONTENT_CLS,
@@ -170,7 +170,8 @@ const CrewEditorBody = ({
 
   const pkg = schedule.package;
   const total = schedule.customer?.total;
-  const needed = calcCrewCount(total, pkg?.studentsPerCrew);
+  const contractCrew = schedule.customer?.contract?.crewCount ?? null;
+  const needed = neededCrewCount(schedule.customer, pkg?.studentsPerCrew);
   const externalLead = externalCrew.find((entry) => entry.role === 'lead');
   const assigned =
     (lead ? 1 : 0) +
@@ -334,7 +335,9 @@ const CrewEditorBody = ({
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold text-foreground">Cần {needed} thợ</div>
               <div className="truncate text-xs text-muted-foreground">
-                {total ?? 0} HS · {pkg?.studentsPerCrew} HS/thợ
+                {contractCrew != null
+                  ? 'Theo hợp đồng'
+                  : `${total ?? 0} HS · ${pkg?.studentsPerCrew} HS/thợ`}
                 {pkg?.name ? ` (Gói ${pkg.name})` : ''}
               </div>
             </div>

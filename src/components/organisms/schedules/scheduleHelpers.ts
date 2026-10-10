@@ -4,7 +4,7 @@ import {
   type ScheduleResponse,
   type User,
 } from '../../../types';
-import { calcCrewCount } from '../../../utils/crewCount';
+import { neededCrewCount } from '../../../utils/crewCount';
 import type { ShootStatus } from '../../../utils/scheduleConstants';
 
 export const personName = (u: Pick<User, 'name' | 'username'> | null | undefined) =>
@@ -67,7 +67,7 @@ export const vnDayKey = (iso: string) =>
   new Date(new Date(iso).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 export interface CrewStats {
-  /** Photographers needed (null when the package has no `studentsPerCrew`). */
+  /** Photographers needed: contract crew count, else computed (null when the package has no `studentsPerCrew`). */
   needed: number | null;
   assigned: number;
   /** Positive when short of photographers. */
@@ -75,7 +75,7 @@ export interface CrewStats {
 }
 
 export const crewStats = (s: ScheduleResponse): CrewStats => {
-  const needed = calcCrewCount(s.customer?.total, s.package?.studentsPerCrew);
+  const needed = neededCrewCount(s.customer, s.package?.studentsPerCrew);
   const assigned =
     (s.leadPhotographer ? 1 : 0) +
     s.supportPhotographers.length +

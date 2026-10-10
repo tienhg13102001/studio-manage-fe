@@ -17,3 +17,16 @@ export const calcCrewCount = (
   if (n % k > k / 2) crew += 1;
   return Math.max(crew, 1);
 };
+
+/**
+ * Số thợ cần cho lớp: ưu tiên số thợ đã chốt trong hợp đồng (có thể khác số hệ thống tính),
+ * không có thì tự tính theo sĩ số và gói.
+ */
+export const neededCrewCount = (
+  customer:
+    | { total?: number | null; contract?: { crewCount?: number | null } | null }
+    | null
+    | undefined,
+  studentsPerCrew: number | null | undefined,
+): number | null =>
+  customer?.contract?.crewCount ?? calcCrewCount(customer?.total, studentsPerCrew);
