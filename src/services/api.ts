@@ -15,7 +15,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
+    // 401 của chính request đăng nhập = sai thông tin, để trang Đăng nhập tự báo lỗi
+    // (nếu chuyển hướng ở đây, form bị tải lại và người dùng không thấy thông báo).
+    const path = String(error.config?.url ?? '').split('?')[0];
+    const isLoginRequest = path === '/auth/login' || path.endsWith('/api/auth/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

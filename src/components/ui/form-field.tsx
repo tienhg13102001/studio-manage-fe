@@ -31,6 +31,10 @@ export const FormField = ({
     </Label>
     {children}
     {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-    {error && <p className="text-xs text-destructive">{error}</p>}
+    {error && (
+      <p id={htmlFor ? `${htmlFor}-error` : undefined} className="text-xs text-destructive">
+        {error}
+      </p>
+    )}
   </div>
 );
