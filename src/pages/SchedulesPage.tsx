@@ -4,7 +4,6 @@ import {
   Combobox,
   ConfirmDialog,
   DataTable,
-  DatePicker,
   PageHeader,
   SegmentedControl,
   Select,
@@ -36,6 +35,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ScheduleCalendar } from '../components/organisms';
+import DateRangeButton from '../components/organisms/finance/DateRangeButton';
 import CrewCell from '../components/organisms/schedules/CrewCell';
 import CrewEditor from '../components/organisms/schedules/CrewEditor';
 import QuickStatusPicker from '../components/organisms/schedules/QuickStatusPicker';
@@ -447,9 +447,23 @@ const SchedulesPage = () => {
             >
               {s.customer?.className ?? '—'}
             </span>
-            <span className="max-w-[220px] text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground 2xl:max-w-[220px]">
               {[school, total != null && `${total} HS`].filter(Boolean).join(' · ')}
             </span>
+            {s.package?.name && (
+              <span className="text-xs text-muted-foreground 2xl:hidden">
+                Gói {s.package.name}
+                {s.package.studentsPerCrew ? ` · ${s.package.studentsPerCrew} HS/thợ` : ''}
+              </span>
+            )}
+            {s.notes && (
+              <span
+                className="mt-1 line-clamp-1 max-w-[260px] text-xs italic text-foreground/70 2xl:hidden"
+                title={s.notes}
+              >
+                {s.notes}
+              </span>
+            )}
           </div>
         );
       },
@@ -457,6 +471,7 @@ const SchedulesPage = () => {
     {
       key: 'package',
       header: 'Gói',
+      className: 'max-2xl:hidden',
       render: (s) => (
         <div className="flex flex-col whitespace-nowrap">
           <span className="text-foreground/90">{s.package?.name ?? '—'}</span>
@@ -494,6 +509,7 @@ const SchedulesPage = () => {
     {
       key: 'notes',
       header: 'Ghi chú',
+      className: 'max-2xl:hidden',
       render: (s) =>
         s.notes ? (
           <span
@@ -664,18 +680,12 @@ const SchedulesPage = () => {
             </span>
             Lịch của tôi
           </button>
-          <DatePicker
-            value={filters.dateFrom}
-            onChange={(v) => changeFilters({ dateFrom: v ?? '' })}
-            placeholder="Từ ngày"
-            className={cn(filterControlCls, 'w-[160px]')}
-          />
-          <span className="text-muted-foreground">–</span>
-          <DatePicker
-            value={filters.dateTo}
-            onChange={(v) => changeFilters({ dateTo: v ?? '' })}
-            placeholder="Đến ngày"
-            className={cn(filterControlCls, 'w-[160px]')}
+          <DateRangeButton
+            from={filters.dateFrom}
+            to={filters.dateTo}
+            onChange={changeFilters}
+            placeholder="Mọi ngày trong mùa"
+            className="h-[38px] text-[13.5px]"
           />
           {hasFilters && (
             <Button variant="link" className="px-2" onClick={resetFilters}>

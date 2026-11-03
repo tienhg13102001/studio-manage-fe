@@ -6,7 +6,7 @@
 
 web
 
-Mobile web is the primary device (see Users); the app ships a bottom tab bar under `md` and a sidebar above it.
+Two primary contexts (confirmed 2026-11-03): phones for staff on the move, and desktop for admin and accounting at a desk. The app ships a bottom tab bar under `md` and a sidebar above it. Desktop must work well from laptop width (~1280px) up to external monitors (~1920px+).
 
 ## Users
 
@@ -17,7 +17,10 @@ Every internal role of Yume Studio uses the app, mostly on a phone:
 - **Thợ chụp ảnh** / **Thợ quay phim**: check which shoots they are assigned to, where and when.
 - **Kế toán**: record and review income and expenses.
 
-Typical scene: on the move (meeting a class, at a shoot location, between shoots), short sessions, one hand, checking or updating one thing.
+Typical scenes:
+
+- **On the move** (sale, thợ): meeting a class, at a shoot location, between shoots; short sessions, one hand, checking or updating one thing.
+- **At a desk** (admin, kế toán): longer sessions doing batch work: arranging the schedule and assigning crew, entering income and expenses, reviewing classes and season numbers. Mouse and keyboard, laptop or external monitor.
 
 ## Product Purpose
 
@@ -50,6 +53,6 @@ Internal operations app for Yume Studio, a yearbook (kỷ yếu) photo studio fo
 ## Product Principles
 
 1. The next shoot comes first: what is happening today and this week, where, and who is going outranks summary numbers.
-2. Phone-first: every task must be doable one-handed on a phone; desktop gets more density, not more features.
+2. Both contexts are first-class: every task must be doable one-handed on a phone, and desktop must make batch work fast (density, side-by-side context, keyboard), without becoming a different product.
 3. Show each role its own work; hide what a role cannot act on.
 4. Season is the frame for every number.

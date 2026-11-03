@@ -483,7 +483,10 @@ const CustomersPage = () => {
         Tất cả
         <span className="tabular">{allCount ?? '–'}</span>
       </FilterChip>
-      {CUSTOMER_STATUSES.map((st) => (
+      {/* Trạng thái 0 lớp thì ẩn để dải lọc gọn một hàng; trạng thái đang chọn luôn hiện. */}
+      {CUSTOMER_STATUSES.filter(
+        (st) => !counts || (counts[st] ?? 0) > 0 || statusFilter === st,
+      ).map((st) => (
         <FilterChip
           key={st}
           active={statusFilter === st}

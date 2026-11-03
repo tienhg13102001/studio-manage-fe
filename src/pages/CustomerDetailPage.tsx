@@ -868,7 +868,7 @@ const CustomerDetailPage = () => {
           role="tabpanel"
           id="panel-overview"
           aria-labelledby="tab-overview"
-          className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-5"
+          className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-5 2xl:grid-cols-[minmax(0,1fr)_380px]"
         >
           <div className="min-w-0 space-y-4 lg:space-y-5">
             <Card className="shadow-none">
@@ -969,7 +969,7 @@ const CustomerDetailPage = () => {
                 )}
 
                 {showLinks && (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
                     <DriveCard
                       customer={customer}
                       canCreate={canManageClass}
@@ -1077,7 +1077,7 @@ const CustomerDetailPage = () => {
                 <h3 className="mb-4 font-display text-lg font-bold tracking-tight">
                   Thông tin lớp
                 </h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 2xl:grid-cols-4">
                   <Fact icon={<User className="h-3.5 w-3.5" />} label="Liên hệ">
                     {customer.contactName}
                   </Fact>

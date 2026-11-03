@@ -31,7 +31,7 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[300px] space-y-3 rounded-lg p-3">
+      <PopoverContent align="start" className="w-[340px] space-y-3 rounded-lg p-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Từ ngày</span>
@@ -53,11 +53,11 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
           </div>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Để trống = theo mùa đang chọn</span>
+          <span>Để trống: theo mùa đang chọn</span>
           {(from || to) && (
             <button
               type="button"
-              className="font-semibold text-primary-700 hover:underline dark:text-primary"
+              className="font-semibold text-foreground underline decoration-foreground/30 underline-offset-4 hover:decoration-foreground"
               onClick={() => onChange({ dateFrom: '', dateTo: '' })}
             >
               Xoá

@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDashboardStats } from '../store/slices/dashboardSlice';
 import { fetchUsers } from '../store/slices/usersSlice';
 import { isSaleCollaborator } from '../utils/permissions';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { Button, Combobox, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +57,7 @@ const DashboardPage = () => {
   const { selectedSeasonId, list: seasons } = useAppSelector((s) => s.seasons);
 
   const [now] = useState(() => Date.now());
+  const isWide = useMediaQuery('(min-width: 1760px)');
   const [filterUserId, setFilterUserId] = useState('');
 
   const selectedSeason = useMemo(
@@ -82,6 +84,8 @@ const DashboardPage = () => {
   })();
 
   const showSchedules = stats?.showSchedules ?? false;
+  // Màn rộng (≥1760px): biểu đồ thu chi đứng cạnh lịch tuần thay vì trôi xuống dưới.
+  const chartBesideAgenda = isWide && showSchedules && showFinance;
 
   const header = (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -255,15 +259,21 @@ const DashboardPage = () => {
       {header}
 
       {showSchedules ? (
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
+        <div
+          className={cn(
+            'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-6',
+            chartBesideAgenda && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_320px]',
+          )}
+        >
           <WeekAgenda schedules={upcomingSchedules} canOpenCustomer={canOpenCustomer} />
+          {chartBesideAgenda && <FinanceChart daily={daily} />}
           <aside className="space-y-5 lg:sticky lg:top-0">{seasonPanel}</aside>
         </div>
       ) : (
         <div className="max-w-xl">{seasonPanel}</div>
       )}
 
-      {showFinance && <FinanceChart daily={daily} />}
+      {showFinance && !chartBesideAgenda && <FinanceChart daily={daily} />}
     </div>
   );
 };

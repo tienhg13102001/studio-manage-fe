@@ -73,6 +73,15 @@ Không gọi `toLocaleString('vi-VN')` trực tiếp trong trang mới; thêm h�
 - Trạng thái cần có ở mọi danh sách: đang tải, rỗng, lỗi, và không có quyền.
 - Lịch chụp: có cả dạng danh sách và dạng lịch tháng. Hôm nay = một vòng amber duy nhất. Trùng ekip vẽ bằng gạch chéo.
 
+### Desktop (admin/kế toán ngồi bàn, 1280 → 1920+)
+
+- Thiết kế cho cả laptop (~1280) lẫn màn rời (~1920). Kiểm tra mỗi trang ở 1280, 1600, 1920.
+- Thanh lọc desktop phải nằm gọn **một hàng ở 1280**. Khoảng ngày luôn là một nút `DateRangeButton`, không phải hai ô Từ/Đến.
+- Bảng ở dưới 1536px (`max-2xl:hidden`): cột phụ (Ghi chú, Gói, Địa chỉ) ẩn đi và gộp thành dòng phụ trong ô chính; từ `2xl` thì tách cột riêng.
+- Dải chip trạng thái: ẩn chip có 0 mục (chip đang chọn luôn hiện).
+- Trang chi tiết có cột phải: cột phải 320px ở `lg`, 380px ở `2xl`; lưới bên trái giảm cột thay vì cắt chữ.
+- Tổng quan ≥1760px: ba cột (lịch tuần · biểu đồ thu chi · mùa) để biểu đồ lên màn hình đầu; dưới mức đó biểu đồ nằm dưới.
+
 ## 7. Chuyển động
 
 150–200ms ease-out cho hover/mở menu; sheet trượt 300ms. Không hoạt ảnh trang trí. Tôn trọng `prefers-reduced-motion`.
