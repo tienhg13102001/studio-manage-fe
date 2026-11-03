@@ -18,6 +18,7 @@ import {
   Modal,
   MultiSelect,
   PageHeader,
+  RowActions,
   Select,
   SelectContent,
   SelectItem,
@@ -27,6 +28,7 @@ import {
   Textarea,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '../utils/format';
 
 const editingScopeLabel: Record<string, string> = {
   full: 'Toàn bộ',
@@ -136,11 +138,16 @@ const PackagesPage = () => {
   return (
     <div>
       <PageHeader
-        kicker="Settings"
         title="Gói chụp"
-        description="Cấu hình các gói chụp ảnh và thời lượng."
+        description={
+          loading && !packages.length
+            ? 'Đang tải gói chụp…'
+            : packages.length
+              ? `${packages.length} gói · giá tính theo mỗi thành viên.`
+              : 'Giá tính theo mỗi thành viên.'
+        }
         action={
-          <Button variant="gradient" onClick={openCreate}>
+          <Button onClick={openCreate} className="max-md:w-full">
             <Plus />
             Thêm gói
           </Button>
@@ -150,7 +157,7 @@ const PackagesPage = () => {
       {loading ? (
         <TableSkeleton cols={8} />
       ) : packages.length === 0 ? (
-        <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card py-10 text-center text-muted-foreground">
           Chưa có gói chụp nào
         </div>
       ) : (
@@ -188,48 +195,42 @@ const PackagesPage = () => {
               <div
                 key={pkg._id}
                 className={cn(
-                  'flex flex-col rounded-[14px] border bg-card p-5',
-                  pkg.isPopular && 'border-primary shadow-[0_6px_20px_rgba(245,158,11,0.15)]',
+                  'flex flex-col rounded-lg border bg-card p-5',
+                  pkg.isPopular && 'border-foreground ring-1 ring-foreground',
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <h3 className="font-display text-[16px] font-bold">{pkg.name}</h3>
+                    <h3 className="font-display text-lg font-bold">{pkg.name}</h3>
                     {pkg.isPopular && (
-                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                      <span className="rounded bg-foreground px-1.5 py-0.5 text-xs font-semibold text-background">
                         Phổ biến
                       </span>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-                      onClick={() => openEdit(pkg)}
-                      title="Sửa"
-                      aria-label="Sửa"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                      onClick={() => setConfirmId(pkg._id)}
-                      title="Xoá"
-                      aria-label="Xoá"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="-mr-2 -mt-1.5 shrink-0">
+                    <RowActions
+                      subject={`gói ${pkg.name}`}
+                      primary={{
+                        label: 'Sửa',
+                        icon: <Pencil className="h-4 w-4" />,
+                        onSelect: () => openEdit(pkg),
+                      }}
+                      actions={[
+                        {
+                          label: 'Xoá gói',
+                          icon: <Trash2 className="h-4 w-4" />,
+                          onSelect: () => setConfirmId(pkg._id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 
                 <div className="mt-5 flex items-baseline gap-2">
-                  <span className="font-display text-[32px] font-bold leading-none tracking-tight tabular">
-                    {pkg.pricePerMember.toLocaleString('vi-VN')}₫
+                  <span className="text-[30px] font-bold leading-none tracking-tight tabular">
+                    {formatCurrency(pkg.pricePerMember)}
                   </span>
                   <span className="text-sm text-muted-foreground">/ thành viên</span>
                 </div>
@@ -243,10 +244,16 @@ const PackagesPage = () => {
                     {attrs.map(({ icon: Icon, label, value, highlight }) => (
                       <div key={label} className="flex items-center justify-between gap-3 text-sm">
                         <span className="inline-flex items-center gap-2.5 text-muted-foreground">
-                          <Icon className={cn('h-4 w-4', highlight && 'text-primary')} />
+                          <Icon className="h-4 w-4" />
                           {label}
                         </span>
-                        <span className={cn('font-semibold', highlight && 'text-primary')}>
+                        <span
+                          className={cn(
+                            'font-semibold text-foreground',
+                            highlight &&
+                              'underline decoration-primary decoration-2 underline-offset-4',
+                          )}
+                        >
                           {value}
                         </span>
                       </div>
@@ -256,7 +263,7 @@ const PackagesPage = () => {
 
                 {pkg.costumes && pkg.costumes.length > 0 && (
                   <div className="mt-4">
-                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    <div className="mb-2 text-[13px] font-semibold text-muted-foreground">
                       Trang phục
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -264,7 +271,7 @@ const PackagesPage = () => {
                         <Badge
                           key={c._id}
                           variant="neutral"
-                          className="rounded-md px-2.5 font-medium"
+                          className="max-w-full whitespace-normal break-words rounded-md px-2.5 font-medium"
                         >
                           {c.name}
                         </Badge>
@@ -422,7 +429,7 @@ const PackagesPage = () => {
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
             </Button>
-            <Button type="submit" variant="gradient" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting}>
               Lưu
             </Button>
           </div>

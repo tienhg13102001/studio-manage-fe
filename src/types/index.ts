@@ -182,13 +182,15 @@ export const CUSTOMER_STATUS_VARIANT: Record<
   CustomerStatus,
   'neutral' | 'info' | 'violet' | 'warning' | 'cyan' | 'pink' | 'teal' | 'success' | 'danger'
 > = {
+  // Bộ màu có nghĩa cố định (DESIGN.md §1): xám = chưa bắt đầu, xanh xám = đang xử lý,
+  // vàng nâu = chờ (tiền/ảnh), xanh lá = xong, đỏ = mất. Nhãn luôn đi kèm nên không cần 9 màu.
   new: 'neutral',
   contacting: 'info',
-  contacted: 'violet',
+  contacted: 'info',
   deposited: 'warning',
-  scheduled: 'cyan',
-  shot: 'pink',
-  awaiting_print: 'teal',
+  scheduled: 'info',
+  shot: 'success',
+  awaiting_print: 'warning',
   done: 'success',
   lost: 'danger',
 };
@@ -313,12 +315,18 @@ export interface ProfitScenarioInput {
   pricePerMember: number;
   students: number;
   crewCount: number;
+  /** Số thợ lead trong tổng số thợ chụp. */
+  leadCount: number;
+  leadRate: number;
+  /** Đơn giá thợ support; cũng là đơn giá chung của kịch bản cũ. */
   crewRate: number;
   /** Thợ quay MV (gói có hasMv). */
   videoCrewCount: number;
   videoCrewRate: number;
   printItems: ProfitCostItem[];
   costumeItems: ProfitCostItem[];
+  postProductionItems: ProfitCostItem[];
+  accessoryItems: ProfitCostItem[];
   travelItems: ProfitCostItem[];
   otherCosts: { label: string; amount: number }[];
 }
@@ -350,8 +358,16 @@ export interface ProfitCostItem {
   unit: 'student' | 'class' | 'crew';
 }
 
-export interface ProfitScenario extends Omit<ProfitScenarioInput, 'package' | 'schedule'> {
+export interface ProfitScenario extends Omit<
+  ProfitScenarioInput,
+  'package' | 'schedule' | 'leadCount' | 'leadRate' | 'postProductionItems' | 'accessoryItems'
+> {
   _id: string;
+  /** Kịch bản cũ không có các trường này. */
+  leadCount?: number;
+  leadRate?: number;
+  postProductionItems?: ProfitCostItem[];
+  accessoryItems?: ProfitCostItem[];
   schedule?: {
     _id: string;
     shootDate: string;

@@ -21,7 +21,7 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
         <button
           type="button"
           className={cn(
-            'inline-flex h-[34px] items-center gap-2 whitespace-nowrap rounded-[9px] border bg-card px-3 text-[13px] transition-colors hover:bg-muted/60',
+            'inline-flex h-[34px] items-center gap-2 whitespace-nowrap rounded-md border bg-card px-3 text-[13px] transition-colors hover:bg-muted/60',
             label ? 'text-foreground' : 'text-muted-foreground',
             className,
           )}
@@ -31,7 +31,7 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[300px] space-y-3 rounded-[12px] p-3">
+      <PopoverContent align="start" className="w-[300px] space-y-3 rounded-lg p-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Từ ngày</span>
@@ -39,7 +39,7 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
               value={from}
               onChange={(v) => onChange({ dateFrom: v ?? '', dateTo: to })}
               placeholder="Từ ngày"
-              className="h-9 rounded-[9px]"
+              className="h-9 rounded-md"
             />
           </div>
           <div className="space-y-1">
@@ -48,7 +48,7 @@ const DateRangeButton = ({ from, to, onChange, placeholder, className }: DateRan
               value={to}
               onChange={(v) => onChange({ dateFrom: from, dateTo: v ?? '' })}
               placeholder="Đến ngày"
-              className="h-9 rounded-[9px]"
+              className="h-9 rounded-md"
             />
           </div>
         </div>

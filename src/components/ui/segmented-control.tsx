@@ -23,23 +23,19 @@ export function SegmentedControl<T extends SegmentedValue>({
   className,
 }: SegmentedControlProps<T>) {
   return (
-    <div
-      className={cn(
-        'inline-flex items-center gap-0.5 rounded-[10px] bg-muted p-[3px]',
-        className,
-      )}
-    >
+    <div className={cn('inline-flex items-center gap-0.5 rounded-md bg-muted p-[3px]', className)}>
       {items.map((item) => {
         const isActive = item.value === value;
         return (
           <button
             key={item.value}
             type="button"
+            aria-pressed={isActive}
             onClick={() => onChange(item.value)}
             className={cn(
-              'min-w-[5rem] rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all duration-200 inline-flex items-center justify-center gap-1.5',
+              'min-w-[5rem] rounded-[5px] px-3 py-1.5 text-[13px] font-medium transition-all duration-200 inline-flex items-center justify-center gap-1.5',
               isActive
-                ? 'bg-card text-foreground font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
+                ? 'bg-card text-foreground font-semibold shadow-[0_1px_2px_rgba(28,26,23,0.12)]'
                 : 'bg-transparent text-muted-foreground hover:text-foreground',
             )}
           >

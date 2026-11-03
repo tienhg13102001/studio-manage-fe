@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { Button, ConfirmDialog, Input, Spinner } from '@/components/ui';
+import { Button, ConfirmDialog, Input, PageHeader, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import ClassSummaryTable from '../components/organisms/finance/ClassSummaryTable';
 import FinanceFilterSheet from '../components/organisms/finance/FinanceFilterSheet';
@@ -37,6 +37,7 @@ import {
   fetchTransactions,
   fetchMoreTransactions,
   fetchTransactionSummary,
+  summaryScopeKey,
   patchTransaction,
 } from '../store/slices/transactionsSlice';
 import { fetchUsers } from '../store/slices/usersSlice';
@@ -65,6 +66,8 @@ const FinancePage = () => {
     totals,
     summary,
     summaryLoading,
+    summaryError,
+    summaryKey,
     loading,
     loadingMore,
   } = useAppSelector((s) => s.transactions);
@@ -355,6 +358,15 @@ const FinancePage = () => {
     ? rangeLabel(season.startDate.slice(0, 10), season.endDate.slice(0, 10))
     : 'Khoảng ngày';
   const txCount = kpi.incomeCount + kpi.expenseCount;
+  /** Số tổng hợp chưa thuộc phạm vi đang xem (mới vào / vừa đổi mùa, khoảng ngày): hiện khung chờ. */
+  const summaryStale =
+    !summaryError &&
+    summaryKey !==
+      summaryScopeKey({
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        season: selectedSeasonId || undefined,
+      });
   const listLoading = loading && !softReload;
 
   const searchBox = (
@@ -372,10 +384,10 @@ const FinancePage = () => {
         }}
         placeholder={tab === 'list' ? 'Tìm mô tả…' : 'Tìm lớp, trường…'}
         aria-label={tab === 'list' ? 'Tìm theo mô tả' : 'Tìm lớp, trường'}
-        className="h-[34px] w-full rounded-[9px] bg-card pl-8 pr-8 text-base shadow-none md:w-[240px] md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
+        className="h-[34px] w-full rounded-md bg-card pl-8 pr-8 text-base shadow-none md:w-[240px] md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
       />
       {isDesktop && (
-        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border px-1 text-[11px] text-muted-foreground">
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border px-1 text-xs text-muted-foreground">
           /
         </kbd>
       )}
@@ -430,47 +442,40 @@ const FinancePage = () => {
 
   return (
     <div className="flex flex-col gap-3 md:min-h-0 md:flex-1">
-      {/* Header */}
-      {isDesktop ? (
-        <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="shrink-0 font-display text-[22px] font-bold tracking-tight text-foreground">
-            Quản lý Thu Chi
-          </h1>
-          <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-            {seasonLabel} · {txCount} giao dịch
-          </span>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {searchBox}
-            <Button variant="outline" className="h-[34px]" onClick={doExport} disabled={exporting}>
-              {exporting ? <Spinner size="sm" /> : <Download />}
-              Xuất Excel
-            </Button>
-            <Button className="h-[34px]" onClick={openCreate}>
+      <PageHeader
+        title="Tài chính"
+        description={
+          summaryError || summaryStale ? seasonLabel : `${seasonLabel} · ${txCount} giao dịch`
+        }
+        className="mb-1 md:mb-2"
+        action={
+          isDesktop ? (
+            <>
+              {searchBox}
+              <Button variant="outline" onClick={doExport} disabled={exporting}>
+                {exporting ? <Spinner size="sm" /> : <Download />}
+                Xuất Excel
+              </Button>
+              <Button onClick={openCreate}>
+                <Plus /> Thêm giao dịch
+              </Button>
+            </>
+          ) : (
+            <Button onClick={openCreate} className="w-full">
               <Plus /> Thêm giao dịch
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-[22px] font-bold tracking-tight text-foreground">
-              Quản lý Thu Chi
-            </h1>
-            <p className="truncate text-[13px] text-muted-foreground">
-              {seasonLabel} · {txCount} giao dịch
-            </p>
-          </div>
-          <Button onClick={openCreate}>
-            <Plus /> Thêm
-          </Button>
-        </div>
-      )}
+          )
+        }
+      />
 
       <FinanceKpis
         kpi={kpi}
         compact={!isDesktop}
         pendingActive={pendingActive}
         onPendingClick={togglePending}
+        loading={summaryStale}
+        error={!!summaryError}
+        onRetry={fetchSummary}
       />
 
       {/* Toolbar */}
@@ -499,7 +504,7 @@ const FinancePage = () => {
                     <button
                       type="button"
                       aria-label="Đóng tìm kiếm"
-                      className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[9px] text-muted-foreground"
+                      className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-md text-muted-foreground"
                       onClick={() => {
                         setMobileSearchOpen(false);
                         setSearchInput('');
@@ -541,7 +546,7 @@ const FinancePage = () => {
                 >
                   <SlidersHorizontal />
                   {filterCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground tabular">
+                    <span className="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground tabular">
                       {filterCount}
                     </span>
                   )}
@@ -629,7 +634,13 @@ const FinancePage = () => {
           </div>
         )
       ) : (
-        <ClassSummaryTable rows={summaryRows} loading={summaryLoading} compact={!isDesktop} />
+        <ClassSummaryTable
+          rows={summaryStale ? [] : summaryRows}
+          loading={summaryLoading}
+          error={!!summaryError}
+          onRetry={fetchSummary}
+          compact={!isDesktop}
+        />
       )}
 
       <FinanceFilterSheet

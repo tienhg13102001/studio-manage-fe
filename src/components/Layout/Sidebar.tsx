@@ -13,10 +13,10 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const ACTIVE_CLS =
-  'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-[#1a0f02] font-semibold shadow-[0_4px_14px_rgba(245,158,11,0.33)]';
-const IDLE_CLS =
-  'text-[#5b6275] hover:bg-[#f1f2f6] hover:text-[#141826] dark:text-[#9aa3b8] dark:hover:bg-white/[0.06] dark:hover:text-white';
+const ACTIVE_CLS = 'bg-foil text-book font-semibold';
+const IDLE_CLS = 'text-book-foreground/85 hover:bg-book-line hover:text-book-foreground';
+const FOCUS_CLS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foil focus-visible:ring-offset-2 focus-visible:ring-offset-book';
 
 const themeOptions: Array<{ mode: ThemeMode; label: string; Icon: typeof Sun }> = [
   { mode: 'light', label: 'Sáng', Icon: Sun },
@@ -82,15 +82,16 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <button
             onClick={() => toggleGroup(item.to)}
             className={cn(
-              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] text-[13.5px] font-medium transition-colors',
-              groupActive ? 'text-[#141826] dark:text-white' : IDLE_CLS,
+              'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[14px] font-medium transition-colors',
+              FOCUS_CLS,
+              groupActive ? 'text-book-foreground font-semibold hover:bg-book-line' : IDLE_CLS,
             )}
           >
             {ParentIcon && <ParentIcon className="w-4 h-4" />}
             <span className="flex-1 text-left">{item.label}</span>
             <ChevronDown
               className={cn(
-                'w-3.5 h-3.5 text-[#9aa1b3] dark:text-[#5e6680] transition-transform',
+                'w-3.5 h-3.5 text-book-muted transition-transform',
                 !groupOpen && '-rotate-90',
               )}
             />
@@ -108,7 +109,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     onClick={onClose}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2.5 py-[7px] pl-[34px] pr-2.5 rounded-[9px] text-[13.5px] font-medium transition-colors',
+                        'flex items-center gap-2.5 py-[7px] pl-[34px] pr-2.5 rounded-md text-[14px] font-medium transition-colors',
+                        FOCUS_CLS,
                         isActive ? ACTIVE_CLS : IDLE_CLS,
                       )
                     }
@@ -133,7 +135,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         onClick={onClose}
         className={({ isActive }) =>
           cn(
-            'flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] text-[13.5px] font-medium transition-colors',
+            'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[14px] font-medium transition-colors',
+            FOCUS_CLS,
             isActive ? ACTIVE_CLS : IDLE_CLS,
           )
         }
@@ -161,26 +164,30 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       <aside
         className={cn(
           'w-64 flex flex-col h-[100dvh] fixed left-0 top-0 z-40 px-3.5 py-5 gap-[18px] transition-transform duration-300',
-          'bg-white border-r border-[#e8eaf0] dark:bg-transparent dark:bg-gradient-to-b dark:from-[#11112a] dark:to-[#0a0a14] dark:border-white/[0.04]',
+          'bg-book text-book-foreground',
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         )}
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-1.5">
-          <div className="rounded-[10px] overflow-hidden flex-shrink-0">
+          <div className="rounded-md overflow-hidden flex-shrink-0">
             <Logo size={34} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-base font-bold leading-tight text-[#141826] dark:text-white">
+            <p className="font-display text-[17px] font-bold leading-tight text-foil">
               Yume Studio
-            </h1>
-            <p className="text-[11px] text-[#8a91a5] dark:text-[#5e6680]">Quản lý chụp ảnh</p>
+            </p>
+            <p className="text-xs text-book-muted">Studio chụp kỷ yếu</p>
           </div>
           <div className="relative" ref={themeMenuRef}>
             <button
               onClick={() => setThemeMenuOpen((prev) => !prev)}
               title="Chế độ giao diện"
-              className="w-[30px] h-[30px] rounded-lg flex items-center justify-center bg-[#f1f2f6] text-[#5b6275] hover:text-[#141826] dark:bg-white/[0.06] dark:text-[#9aa3b8] dark:hover:text-white transition-colors"
+              aria-label="Chế độ giao diện"
+              className={cn(
+                'w-8 h-8 rounded-md flex items-center justify-center bg-book-line text-book-foreground/85 hover:text-book-foreground transition-colors',
+                FOCUS_CLS,
+              )}
             >
               <ThemeIcon className="w-[15px] h-[15px]" />
             </button>
@@ -207,16 +214,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto space-y-0.5 -mx-1 px-1">
-          <p className="px-2.5 pb-1.5 text-[10.5px] font-bold tracking-[0.12em] text-[#9aa1b3] dark:text-[#5e6680]">
-            TỔNG QUAN
-          </p>
+        <nav aria-label="Điều hướng" className="flex-1 overflow-y-auto space-y-0.5 -mx-1 px-1">
+          <p className="px-2.5 pb-1.5 text-xs font-semibold text-book-muted">Công việc</p>
           {navItems.map(renderNavItem)}
 
           {showAdmin && (
             <>
-              <p className="px-2.5 pt-5 pb-1.5 text-[10.5px] font-bold tracking-[0.12em] text-[#9aa1b3] dark:text-[#5e6680]">
-                ADMIN
+              <p className="mx-2.5 mt-4 border-t border-book-line px-0 pt-4 pb-1.5 text-xs font-semibold text-book-muted">
+                Quản trị
               </p>
               {adminItems.map(renderNavItem)}
             </>
@@ -224,21 +229,21 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </nav>
 
         {/* User block */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#f7f8fa] border border-[#e8eaf0] dark:bg-white/[0.03] dark:border-[#1e2034]">
+        <div className="flex items-center gap-2.5 border-t border-book-line px-1 pt-3.5">
           <NavLink
             to="/profile"
             onClick={onClose}
-            className="flex items-center gap-2.5 min-w-0 flex-1 group"
+            className={cn('flex items-center gap-2.5 min-w-0 flex-1 group rounded-md', FOCUS_CLS)}
             title="Hồ sơ cá nhân"
           >
-            <div className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-bold text-sm flex-shrink-0 text-white bg-gradient-to-br from-[#f59e0b] to-[#06b6d4]">
+            <div className="w-[34px] h-[34px] rounded-md flex items-center justify-center font-display font-bold text-[15px] flex-shrink-0 bg-foil text-book">
               {(user?.name || user?.username || '?')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold truncate text-[#141826] group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-200">
+              <p className="text-[13px] font-semibold truncate text-book-foreground group-hover:text-foil">
                 {user?.name || user?.username}
               </p>
-              <p className="text-[11px] truncate text-primary-700 dark:text-primary">
+              <p className="text-xs truncate text-book-muted">
                 {user?.roles?.map((r) => ROLE_LABELS[r]).join(', ')}
               </p>
             </div>
@@ -247,7 +252,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             onClick={handleLogout}
             title="Đăng xuất"
             aria-label="Đăng xuất"
-            className="p-1.5 rounded-lg text-[#8a91a5] hover:text-primary-700 hover:bg-[#f1f2f6] dark:text-[#5e6680] dark:hover:text-primary dark:hover:bg-white/[0.06] transition-colors"
+            className={cn(
+              'p-2 rounded-md text-book-muted hover:text-book-foreground hover:bg-book-line transition-colors',
+              FOCUS_CLS,
+            )}
           >
             <LogOut className="w-[15px] h-[15px]" />
           </button>

@@ -72,7 +72,7 @@ interface ContractFormValues {
   crewCountReason: string;
 }
 
-const formFieldCls = 'h-10 rounded-[10px]';
+const formFieldCls = 'h-10 rounded-md';
 
 const toSafeNumber = (v: unknown): number => {
   const n = Number(v);
@@ -97,7 +97,7 @@ const packageLabel = (p: Package) =>
 const IconTile = ({ className, children }: { className?: string; children: ReactNode }) => (
   <span
     className={cn(
-      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4',
+      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md [&_svg]:h-4 [&_svg]:w-4',
       className,
     )}
   >
@@ -116,7 +116,7 @@ const SectionLabel = ({
 }) => (
   <div
     className={cn(
-      'flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5',
+      'flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.05em] text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5',
       className,
     )}
   >
@@ -129,7 +129,7 @@ const SectionLabel = ({
 const LockedBox = ({ children, className }: { children: ReactNode; className?: string }) => (
   <div
     className={cn(
-      'flex h-10 items-center gap-2 rounded-[10px] border bg-muted/50 px-3 text-sm',
+      'flex h-10 items-center gap-2 rounded-md border bg-muted/50 px-3 text-sm',
       className,
     )}
   >
@@ -562,10 +562,10 @@ const ContractForm = (props: ContractFormProps) => {
             Dịch vụ thêm
           </SectionLabel>
           {serviceFields.length > 0 && (
-            <div className="overflow-x-auto rounded-[12px] border">
+            <div className="overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/60 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                  <tr className="border-b bg-muted/60 text-xs uppercase tracking-[0.05em] text-muted-foreground">
                     <th className="px-3 py-2.5 text-left font-bold">Dịch vụ</th>
                     <th className="w-24 px-3 py-2.5 text-left font-bold">Số lượng</th>
                     <th className="w-32 px-3 py-2.5 text-left font-bold">Đơn giá</th>
@@ -636,7 +636,7 @@ const ContractForm = (props: ContractFormProps) => {
                           <button
                             type="button"
                             onClick={() => removeService(idx)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/10 hover:text-red-600"
                             title="Xoá"
                             aria-label="Xoá dịch vụ"
                           >
@@ -671,7 +671,7 @@ const ContractForm = (props: ContractFormProps) => {
           <SectionLabel icon={<Camera />} className="mb-3">
             Ekip
           </SectionLabel>
-          <div className="space-y-4 rounded-[12px] border bg-muted/30 p-4">
+          <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
             <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Số thợ (hệ thống tính)</Label>
@@ -692,14 +692,14 @@ const ContractForm = (props: ContractFormProps) => {
                     {totalStudents % studentsPerCrew}) → {crewSystem} thợ
                   </p>
                 ) : selectedPackage ? (
-                  <div className="flex items-start gap-2 rounded-[10px] bg-amber-500/15 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                  <div className="flex items-start gap-2 rounded-md bg-amber-500/15 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <div>
                       <div className="font-semibold">Gói chưa cài số học sinh / 1 thợ</div>
                       <div>
                         Cài đặt trong{' '}
                         <Link
-                          to="/packages"
+                          to="/settings/packages"
                           target="_blank"
                           className="inline-flex items-center font-medium underline-offset-2 hover:underline"
                         >
@@ -714,7 +714,7 @@ const ContractForm = (props: ContractFormProps) => {
               <FormField label="Số thợ" required error={errors.crewCount?.message}>
                 <div
                   className={cn(
-                    'flex h-10 items-center rounded-[10px] border bg-card',
+                    'flex h-10 items-center rounded-md border bg-card',
                     crewAdjusted && 'border-primary ring-1 ring-primary/40',
                   )}
                 >
@@ -759,7 +759,7 @@ const ContractForm = (props: ContractFormProps) => {
               </FormField>
             </div>
             {selectedPackage?.hasMv && (
-              <div className="flex items-start gap-2.5 rounded-[10px] bg-primary/10 px-3.5 py-3 text-[13px]">
+              <div className="flex items-start gap-2.5 rounded-md bg-primary/10 px-3.5 py-3 text-[13px]">
                 <Video className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <div className="font-semibold text-primary-700 dark:text-primary">
@@ -801,7 +801,7 @@ const ContractForm = (props: ContractFormProps) => {
             Thanh toán
           </SectionLabel>
           {depositAmount === null && (
-            <div className="mb-3 flex items-start gap-2.5 rounded-[12px] border border-primary/40 bg-primary-100 px-3.5 py-3 text-[13px] dark:bg-primary/15">
+            <div className="mb-3 flex items-start gap-2.5 rounded-lg border border-primary/40 bg-primary-100 px-3.5 py-3 text-[13px] dark:bg-primary/15">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary-700 dark:text-primary" />
               <div>
                 <div className="font-semibold text-primary-700 dark:text-primary">
@@ -842,7 +842,7 @@ const ContractForm = (props: ContractFormProps) => {
               <div className="text-sm font-medium">Đợt 2 (còn lại)</div>
               {depositAmount !== null ? (
                 <>
-                  <div className="flex h-10 items-center gap-2 rounded-[10px] border border-primary/60 bg-primary-100 px-3 text-sm dark:bg-primary/15">
+                  <div className="flex h-10 items-center gap-2 rounded-md border border-primary/60 bg-primary-100 px-3 text-sm dark:bg-primary/15">
                     <Calculator className="h-3.5 w-3.5 shrink-0 text-primary-700 dark:text-primary" />
                     <span className="font-semibold text-primary-700 tabular dark:text-primary">
                       {formatVnd(Math.max(totalPayment - depositAmount, 0))}
@@ -866,7 +866,7 @@ const ContractForm = (props: ContractFormProps) => {
         {contractDocUrl && (
           <div>
             <SectionLabel className="mb-2">Hợp đồng</SectionLabel>
-            <div className="flex items-center gap-3 overflow-hidden rounded-[12px] border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5 text-sm">
+            <div className="flex items-center gap-3 overflow-hidden rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5 text-sm">
               <IconTile className="h-8 w-8 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
                 <FileText />
               </IconTile>
@@ -942,7 +942,7 @@ const ContractDialog = ({ customer, ...rest }: ContractDialogProps) => (
   <Dialog open={!!customer} onOpenChange={(o) => !o && rest.onClose()}>
     <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[760px]">
       <div className="flex shrink-0 items-center gap-3 border-b px-5 py-4 pr-12 sm:px-6">
-        <IconTile className="h-10 w-10 rounded-[10px] bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
+        <IconTile className="h-10 w-10 rounded-md bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
           <FilePen />
         </IconTile>
         <div className="min-w-0 text-left">

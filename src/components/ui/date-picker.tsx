@@ -216,7 +216,6 @@ export function DatePicker({
         }}
       >
         {/* header accent bar */}
-        <div className="h-1 w-full [background:linear-gradient(90deg,#f59e0b,#22d3ee)]" />
         <Calendar
           mode="single"
           locale={vi}

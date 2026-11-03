@@ -23,6 +23,7 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui';
+import { RowActions as SharedRowActions } from '@/components/ui/row-actions';
 import type { Column } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
@@ -55,18 +56,12 @@ const sortTypes = (types: CostumeType[]) =>
 
 type GenderFilter = 'all' | Costume['gender'];
 
-const GENDER_BADGE: Record<Costume['gender'], 'info' | 'pink' | 'violet'> = {
-  male: 'info',
-  female: 'pink',
-  unisex: 'violet',
-};
-
 const CostumeThumb = ({ costume, className }: { costume: CostumeResponse; className?: string }) => {
   const { icon: Icon, classes } = getTypeTile(costume.type?._id ?? costume.name);
   return (
     <span
       className={cn(
-        'inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] border',
+        'inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border',
         classes,
         className,
       )}
@@ -76,39 +71,27 @@ const CostumeThumb = ({ costume, className }: { costume: CostumeResponse; classN
   );
 };
 
-const RowActions = ({
+const CostumeActions = ({
+  name,
   onEdit,
   onDelete,
-  className,
 }: {
+  name: string;
   onEdit: () => void;
   onDelete: () => void;
-  className?: string;
 }) => (
-  <span className={cn('inline-flex items-center justify-end gap-1 [&_svg]:size-[15px]', className)}>
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-      onClick={onEdit}
-      title="Sửa"
-      aria-label="Sửa"
-    >
-      <Pencil className="h-3.5 w-3.5" />
-    </Button>
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-      onClick={onDelete}
-      title="Xoá"
-      aria-label="Xoá"
-    >
-      <Trash2 className="h-3.5 w-3.5" />
-    </Button>
-  </span>
+  <SharedRowActions
+    subject={`trang phục ${name}`}
+    primary={{ label: 'Sửa', icon: <Pencil className="h-4 w-4" />, onSelect: onEdit }}
+    actions={[
+      {
+        label: 'Xoá trang phục',
+        icon: <Trash2 className="h-4 w-4" />,
+        onSelect: onDelete,
+        destructive: true,
+      },
+    ]}
+  />
 );
 
 const getTypeId = (type: CostumeType | null | undefined): string => type?._id ?? '';
@@ -280,7 +263,7 @@ const CostumesPage = () => {
       header: 'Giới tính',
       render: (c) =>
         c.gender ? (
-          <Badge variant={GENDER_BADGE[c.gender]}>{GENDER_LABEL[c.gender]}</Badge>
+          <Badge variant="neutral">{GENDER_LABEL[c.gender]}</Badge>
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
@@ -304,19 +287,30 @@ const CostumesPage = () => {
       header: '',
       align: 'right',
       className: 'whitespace-nowrap',
-      render: (c) => <RowActions onEdit={() => openEdit(c)} onDelete={() => setConfirmId(c._id)} />,
+      render: (c) => (
+        <CostumeActions
+          name={c.name}
+          onEdit={() => openEdit(c)}
+          onDelete={() => setConfirmId(c._id)}
+        />
+      ),
     },
   ];
 
   return (
     <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
-        kicker="Settings"
         title="Trang phục"
-        description="Quản lý danh mục trang phục dùng trong các buổi chụp."
+        description={
+          loading && !costumes.length
+            ? 'Đang tải trang phục…'
+            : costumes.length
+              ? `${costumes.length} trang phục · gắn vào gói chụp để khách chọn khi chụp.`
+              : 'Gắn trang phục vào gói chụp để khách chọn khi chụp.'
+        }
         className="mb-3 md:mb-6 max-md:[&>div:first-child>span]:hidden max-md:[&>div:last-child]:hidden max-md:[&_h2]:hidden max-md:[&_p]:!mt-0 max-md:[&_p]:text-[13px]"
         action={
-          <Button variant="gradient" className="hidden md:inline-flex" onClick={openCreate}>
+          <Button className="hidden md:inline-flex" onClick={openCreate}>
             <Plus />
             Thêm trang phục
           </Button>
@@ -325,7 +319,7 @@ const CostumesPage = () => {
 
       {/* Mobile header actions */}
       <div className="mb-3.5 flex gap-2 md:hidden">
-        <Button variant="gradient" className="h-[42px] flex-1" onClick={openCreate}>
+        <Button className="h-[42px] flex-1" onClick={openCreate}>
           <Plus />
           Thêm trang phục
         </Button>
@@ -374,7 +368,7 @@ const CostumesPage = () => {
         <SegmentedControl<GenderFilter>
           value={genderFilter}
           onChange={setGenderFilter}
-          className="rounded-[9px] [&>button]:min-w-0 [&>button]:rounded-[7px] [&>button]:leading-[15px] max-md:order-first max-md:flex max-md:w-full max-md:[&>button]:flex-1 max-md:[&>button]:px-1.5 max-md:[&>button]:py-[7px] max-md:[&>button]:text-[12.5px] md:[&>button]:px-2.5 md:[&>button]:py-[5px] md:[&>button]:text-[12px]"
+          className="rounded-md [&>button]:min-w-0 [&>button]:rounded-[7px] [&>button]:leading-[15px] max-md:order-first max-md:flex max-md:w-full max-md:[&>button]:flex-1 max-md:[&>button]:px-1.5 max-md:[&>button]:py-[7px] max-md:[&>button]:text-[12.5px] md:[&>button]:px-2.5 md:[&>button]:py-[5px] md:[&>button]:text-[12px]"
           items={[
             { value: 'all', label: 'Tất cả' },
             { value: 'male', label: 'Nam' },
@@ -406,7 +400,7 @@ const CostumesPage = () => {
 
       {/* Mobile list */}
       <div className="md:hidden">
-        <div className="divide-y overflow-hidden rounded-[14px] border bg-card">
+        <div className="divide-y overflow-hidden rounded-lg border bg-card">
           {loading ? (
             <div className="py-10 text-center text-muted-foreground">Đang tải…</div>
           ) : filtered.length === 0 ? (
@@ -414,32 +408,27 @@ const CostumesPage = () => {
           ) : (
             filtered.map((c) => (
               <div key={c._id} className="flex items-start gap-3 px-3.5 py-3">
-                <CostumeThumb costume={c} className="h-10 w-10 rounded-[10px] [&>svg]:size-4" />
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate text-sm font-semibold">{c.name}</span>
-                    {c.gender && (
-                      <Badge variant={GENDER_BADGE[c.gender]} className="shrink-0">
-                        {GENDER_LABEL[c.gender]}
-                      </Badge>
-                    )}
-                  </div>
+                <CostumeThumb costume={c} className="h-10 w-10 rounded-md [&>svg]:size-4" />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="break-words text-sm font-semibold">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {[c.type && getTypeName(c.type), c.gender && GENDER_LABEL[c.gender]]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                   {c.description && (
                     <p className="break-words text-xs text-[color:var(--text-faint)]">
                       {c.description}
                     </p>
                   )}
-                  {c.type && (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {getTypeName(c.type)}
-                    </span>
-                  )}
                 </div>
-                <RowActions
-                  className="shrink-0 gap-0.5"
-                  onEdit={() => openEdit(c)}
-                  onDelete={() => setConfirmId(c._id)}
-                />
+                <div className="-mr-2 shrink-0">
+                  <CostumeActions
+                    name={c.name}
+                    onEdit={() => openEdit(c)}
+                    onDelete={() => setConfirmId(c._id)}
+                  />
+                </div>
               </div>
             ))
           )}
@@ -470,7 +459,7 @@ const CostumesPage = () => {
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
             </Button>
-            <Button type="submit" form="costume-form" variant="gradient" disabled={isSubmitting}>
+            <Button type="submit" form="costume-form" disabled={isSubmitting}>
               <Check />
               Lưu
             </Button>
@@ -547,10 +536,10 @@ const CostumesPage = () => {
                     <SelectSeparator />
                     <SelectItem
                       value={CREATE_TYPE}
-                      className="bg-amber-500/15 py-[9px] font-semibold text-amber-700 focus:bg-amber-500/25 focus:text-amber-700 dark:text-amber-300 dark:focus:text-amber-300"
+                      className="py-[9px] font-semibold text-foreground"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-[6px] bg-amber-500 text-amber-950">
+                        <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded bg-foreground text-background">
                           <Plus className="h-3.5 w-3.5" />
                         </span>
                         Tạo loại mới
@@ -592,7 +581,7 @@ const CostumesPage = () => {
       />
 
       <ConfirmDialog
-        contentClassName="max-sm:max-w-[calc(100%-32px)] max-sm:rounded-[18px]"
+        contentClassName="max-sm:max-w-[calc(100%-32px)] max-sm:rounded-lg"
         open={!!confirmId}
         onOpenChange={(o) => !o && setConfirmId(null)}
         title="Xác nhận xoá"

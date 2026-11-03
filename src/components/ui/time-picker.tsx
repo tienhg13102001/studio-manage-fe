@@ -114,7 +114,8 @@ export function TimePicker({
   // "8"→"8", "800"→"8:00", "1730"→"17:30" (không lấy nhầm 2 số đầu làm giờ).
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 4);
-    const v = digits.length <= 2 ? digits : `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}`;
+    const v =
+      digits.length <= 2 ? digits : `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}`;
     setText(v);
     // Commit ngay khi gõ đủ dạng hợp lệ HH:mm để cột bên dưới cũng cập nhật.
     if (/^([01]?\d|2[0-3]):[0-5]\d$/.test(v)) onChange(normalizeTime(v));
@@ -219,7 +220,6 @@ export function TimePicker({
           if (anchorRef.current?.contains(e.target as Node)) e.preventDefault();
         }}
       >
-        <div className="h-1 w-full [background:linear-gradient(90deg,#f59e0b,#22d3ee)]" />
         <div className="flex">
           <TimeColumn
             label="Giờ"
@@ -268,7 +268,10 @@ function TimeColumn({ label, items, value, onSelect }: TimeColumnProps) {
   React.useEffect(() => {
     const el = listRef.current;
     if (!el || value == null || items.length === 0) return;
-    const nearest = items.reduce((p, c) => (Math.abs(c - value) < Math.abs(p - value) ? c : p), items[0]);
+    const nearest = items.reduce(
+      (p, c) => (Math.abs(c - value) < Math.abs(p - value) ? c : p),
+      items[0],
+    );
     const node = el.querySelector<HTMLElement>(`[data-value="${nearest}"]`);
     if (node) el.scrollTop = node.offsetTop - el.clientHeight / 2 + node.clientHeight / 2;
   }, [value, items]);

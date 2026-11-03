@@ -16,6 +16,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  RowActions,
   TableSkeleton,
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
@@ -51,15 +52,10 @@ const STATUS_BADGE: Record<
   upcoming: { label: 'Sắp tới', variant: 'info' },
 };
 
-const BAR_COLORS = [
-  'bg-sky-100 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200',
-  'bg-violet-100 text-violet-900 dark:bg-violet-500/20 dark:text-violet-200',
-  'bg-rose-100 text-rose-900 dark:bg-rose-500/20 dark:text-rose-200',
-  'bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200',
-];
+/** Mùa khác: nền giấy xám; mùa đang diễn ra: mực đậm (đảo màu ở dark mode), không dùng amber. */
+const BAR_COLORS = ['bg-muted text-foreground'];
 
-const CURRENT_BAR =
-  'bg-primary-100 text-amber-900 ring-2 ring-primary dark:bg-primary/20 dark:text-amber-200';
+const CURRENT_BAR = 'bg-foreground text-background';
 
 const formatMonth = (t: number) => {
   const d = new Date(t);
@@ -68,7 +64,7 @@ const formatMonth = (t: number) => {
 
 const SeasonIcon = ({ status }: { status: SeasonStatus }) =>
   status === 'current' ? (
-    <Sun className="h-4 w-4 shrink-0 text-primary-700 dark:text-primary" />
+    <Sun className="h-4 w-4 shrink-0 text-foreground" />
   ) : (
     <CalendarRange className="h-4 w-4 shrink-0 text-muted-foreground" />
   );
@@ -112,12 +108,12 @@ const SeasonTimeline = ({ seasons, now }: { seasons: Season[]; now: number }) =>
   const yearTo = new Date(max).getFullYear();
 
   return (
-    <div className="mb-5 rounded-[14px] border bg-card p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="font-display text-[15px] font-bold">
+    <div className="mb-5 rounded-lg border bg-card p-4 md:p-5">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h3 className="font-display text-lg font-bold">
           Dòng thời gian {yearFrom === yearTo ? yearFrom : `${yearFrom} – ${yearTo}`}
         </h3>
-        <span className="text-xs font-semibold text-primary-700 dark:text-primary">
+        <span className="tabular text-[13px] font-medium text-muted-foreground">
           Hôm nay{' '}
           {new Date(now).toLocaleDateString('vi-VN', {
             day: '2-digit',
@@ -130,7 +126,7 @@ const SeasonTimeline = ({ seasons, now }: { seasons: Season[]; now: number }) =>
         {now >= min && now <= max && (
           <span
             aria-hidden
-            className="absolute -bottom-1 -top-1 w-px bg-primary/60"
+            className="absolute -bottom-1.5 -top-1.5 z-10 w-0.5 rounded-full bg-primary ring-1 ring-background"
             style={{ left: `${((now - min) / span) * 100}%` }}
           />
         )}
@@ -139,7 +135,7 @@ const SeasonTimeline = ({ seasons, now }: { seasons: Season[]; now: number }) =>
             key={p.s._id}
             title={`${p.s.name}: ${formatDate(p.s.startDate)} – ${formatDate(p.s.endDate)}`}
             className={cn(
-              'absolute flex h-11 items-center overflow-hidden rounded-[10px] px-3 text-[13px] font-semibold',
+              'absolute flex h-11 items-center overflow-hidden rounded-md px-3 text-[13px] font-semibold',
               getStatus(p.s, now) === 'current'
                 ? CURRENT_BAR
                 : BAR_COLORS[p.idx % BAR_COLORS.length],
@@ -154,9 +150,11 @@ const SeasonTimeline = ({ seasons, now }: { seasons: Season[]; now: number }) =>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex justify-between text-[11px] text-muted-foreground tabular">
+      <div className="mt-3 flex justify-between text-xs text-muted-foreground tabular">
         {ticks.map((t, k) => (
-          <span key={k}>{formatMonth(t)}</span>
+          <span key={k} className={cn(k % 2 === 1 && 'max-sm:hidden')}>
+            {formatMonth(t)}
+          </span>
         ))}
       </div>
     </div>
@@ -231,6 +229,21 @@ const SeasonPage = () => {
     setConfirmId(null);
   };
 
+  const actionsFor = (s: Season) => (
+    <RowActions
+      subject={`mùa ${s.name}`}
+      primary={{ label: 'Sửa', icon: <Pencil className="h-4 w-4" />, onSelect: () => openEdit(s) }}
+      actions={[
+        {
+          label: 'Xoá mùa',
+          icon: <Trash2 className="h-4 w-4" />,
+          onSelect: () => setConfirmId(s._id),
+          destructive: true,
+        },
+      ]}
+    />
+  );
+
   const columns: Column<Season>[] = [
     {
       key: 'name',
@@ -266,44 +279,26 @@ const SeasonPage = () => {
     },
     {
       key: 'actions',
-      header: '',
+      header: <span className="sr-only">Thao tác</span>,
       align: 'right',
-      className: 'whitespace-nowrap',
-      render: (s) => (
-        <span className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-            onClick={() => openEdit(s)}
-            title="Sửa"
-            aria-label="Sửa"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-            onClick={() => setConfirmId(s._id)}
-            title="Xoá"
-            aria-label="Xoá"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </span>
-      ),
+      className: 'w-28 whitespace-nowrap',
+      render: (s) => actionsFor(s),
     },
   ];
 
   return (
     <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
-        kicker="Settings"
         title="Mùa chụp"
-        description="Quản lý các mùa chụp ảnh trong năm."
+        description={
+          loading && !seasons.length
+            ? 'Đang tải mùa chụp…'
+            : seasons.length
+              ? `${seasons.length} mùa · mỗi lớp, lịch chụp và giao dịch thuộc về một mùa.`
+              : 'Mỗi lớp, lịch chụp và giao dịch thuộc về một mùa.'
+        }
         action={
-          <Button variant="gradient" onClick={openCreate}>
+          <Button onClick={openCreate} className="max-md:w-full">
             <Plus />
             Thêm mùa
           </Button>
@@ -323,9 +318,6 @@ const SeasonPage = () => {
               className="flex-1"
               data={sorted}
               keyExtractor={(s) => s._id}
-              rowClassName={(s) =>
-                getStatus(s, now) === 'current' ? 'bg-amber-50 dark:bg-amber-500/10' : ''
-              }
               emptyTitle="Chưa có mùa chụp nào"
               columns={columns}
             />
@@ -343,8 +335,8 @@ const SeasonPage = () => {
                 <div
                   key={s._id}
                   className={cn(
-                    'rounded-[14px] border bg-card p-4',
-                    status === 'current' && 'border-primary/60 bg-amber-50 dark:bg-amber-500/10',
+                    'rounded-lg border bg-card p-4',
+                    status === 'current' && 'border-foreground',
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -361,28 +353,7 @@ const SeasonPage = () => {
                         {st.label}
                       </Badge>
                     </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-                        onClick={() => openEdit(s)}
-                        title="Sửa"
-                        aria-label="Sửa"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                        onClick={() => setConfirmId(s._id)}
-                        title="Xoá"
-                        aria-label="Xoá"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+                    <div className="-mr-2 -mt-1 shrink-0">{actionsFor(s)}</div>
                   </div>
                 </div>
               );
@@ -440,7 +411,7 @@ const SeasonPage = () => {
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
             </Button>
-            <Button type="submit" variant="gradient" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting}>
               {editing ? 'Lưu thay đổi' : 'Thêm mùa'}
             </Button>
           </div>

@@ -1,5 +1,5 @@
 import { Clock } from 'lucide-react';
-import { Spinner } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { getSchoolName, type TransactionSummaryRow } from '../../../types';
 import {
@@ -16,6 +16,8 @@ import {
 interface ClassSummaryTableProps {
   rows: TransactionSummaryRow[];
   loading: boolean;
+  error?: boolean;
+  onRetry?: () => void;
   /** Mobile: stacked cards instead of a table. */
   compact: boolean;
 }
@@ -28,7 +30,7 @@ const MarginPill = ({ profit, income }: { profit: number; income: number }) => {
   return (
     <span
       className={cn(
-        'rounded-[5px] px-1.5 py-px text-[11px] font-semibold tabular',
+        'rounded-[5px] px-1.5 py-px text-xs font-semibold tabular',
         pct >= 60
           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
           : 'bg-muted text-muted-foreground',
@@ -50,11 +52,28 @@ const PendingPill = ({ amount }: { amount: number }) =>
   );
 
 const th =
-  'sticky top-0 z-10 h-8 bg-muted/95 px-2.5 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground backdrop-blur first:pl-4 last:pr-4';
+  'sticky top-0 z-10 h-9 whitespace-nowrap bg-muted/95 px-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground backdrop-blur first:pl-4 last:pr-4';
 const td = 'h-[38px] px-2.5 first:pl-4 last:pr-4';
 
 /** "Tổng hợp theo lớp": one row per class (sorted by transaction count) + pinned totals. */
-const ClassSummaryTable = ({ rows, loading, compact }: ClassSummaryTableProps) => {
+const ClassSummaryTable = ({ rows, loading, error, onRetry, compact }: ClassSummaryTableProps) => {
+  if (error) {
+    return (
+      <div
+        role="alert"
+        className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center"
+      >
+        <p className="text-sm font-semibold text-foreground">Không tải được tổng hợp theo lớp</p>
+        <p className="text-sm text-muted-foreground">Kiểm tra kết nối mạng rồi thử lại.</p>
+        {onRetry && (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            Thử lại
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   const sorted = [...rows].sort(
     (a, b) =>
       (b.count ?? 0) - (a.count ?? 0) ||
@@ -69,7 +88,7 @@ const ClassSummaryTable = ({ rows, loading, compact }: ClassSummaryTableProps) =
     return (
       <div className="space-y-2">
         {sorted.map((r) => (
-          <div key={r._id ?? 'none'} className="rounded-[12px] border bg-card px-3.5 py-2.5">
+          <div key={r._id ?? 'none'} className="rounded-lg border bg-card px-3.5 py-2.5">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-foreground">
                 {r.customer?.className ?? NO_CLASS}
@@ -91,11 +110,11 @@ const ClassSummaryTable = ({ rows, loading, compact }: ClassSummaryTableProps) =
           </div>
         ))}
         {rows.length === 0 ? (
-          <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+          <div className="rounded-lg border bg-card py-10 text-center text-muted-foreground">
             {loading ? <Spinner /> : 'Chưa có dữ liệu'}
           </div>
         ) : (
-          <div className="rounded-[12px] border bg-muted/40 px-3.5 py-2.5 text-[13px] tabular">
+          <div className="rounded-lg border bg-muted/40 px-3.5 py-2.5 text-[13px] tabular">
             <div className="font-semibold">
               Tổng {classCount} lớp · {totalCount} GD
             </div>
@@ -111,7 +130,7 @@ const ClassSummaryTable = ({ rows, loading, compact }: ClassSummaryTableProps) =
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] border bg-card">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
       <div className="relative min-h-[240px] flex-1 overflow-auto">
         <table className="w-full min-w-[820px] table-fixed border-separate border-spacing-0 text-[13px]">
           <colgroup>

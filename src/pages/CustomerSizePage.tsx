@@ -47,11 +47,12 @@ import {
   TableSkeleton,
   Textarea,
   Combobox,
+  RowActions,
 } from '@/components/ui';
 import type { Column } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-const BOOKED_STATUSES = CUSTOMER_STATUS_ORDER.slice(
+export const BOOKED_STATUSES = CUSTOMER_STATUS_ORDER.slice(
   CUSTOMER_STATUS_ORDER.indexOf('deposited'),
 ).join(',');
 
@@ -90,10 +91,16 @@ interface ImportRow {
   warning?: string;
 }
 
-const CustomerSizePage = () => {
+interface CustomerSizePageProps {
+  /** Nhúng trong Chi tiết lớp (tab "Học sinh"): cố định lớp, ẩn đầu trang và ô chọn lớp. */
+  customer?: Customer;
+}
+
+const CustomerSizePage = ({ customer: fixedCustomer }: CustomerSizePageProps = {}) => {
+  const embedded = !!fixedCustomer;
   const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(fixedCustomer ?? null);
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [schedules, setSchedules] = useState<ScheduleResponse | null>();
   const [totalMale, setTotalMale] = useState(0);
@@ -150,13 +157,21 @@ const CustomerSizePage = () => {
     }
   }, [formGender, modalOpen, scheduleCostumes, setValue]);
 
+  // Chỉ đồng bộ khi đổi sang lớp khác, để lớp cha tải lại không làm mất ô tìm kiếm.
+  const fixedId = fixedCustomer?._id;
   useEffect(() => {
+    if (fixedCustomer) setSelectedCustomer(fixedCustomer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedId]);
+
+  useEffect(() => {
+    if (embedded) return;
     // Chỉ lớp đã chốt (từ "Đã cọc" trở đi) mới cần nhập thông tin học sinh
     const params: Record<string, string | number> = { limit: 200, status: BOOKED_STATUSES };
     if (selectedSeasonId) params.season = selectedSeasonId;
     customerService.getAll(params).then((r) => setCustomers(r.data));
     setSelectedCustomer(null);
-  }, [selectedSeasonId]);
+  }, [selectedSeasonId, embedded]);
 
   useEffect(() => {
     setShowDupOnly(false);
@@ -532,36 +547,39 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
     setConfirmId(null);
   };
 
+  const excelActions = (
+    <>
+      <Button
+        variant="outline"
+        className="max-md:flex-1"
+        onClick={() => importFileRef.current?.click()}
+        disabled={disabledAll}
+      >
+        <Upload />
+        Nhập từ Excel
+      </Button>
+      <Button
+        variant="outline"
+        className="max-md:flex-1"
+        onClick={handleExportExcel}
+        disabled={disabledAll || students.length === 0}
+      >
+        <Download />
+        Xuất Excel
+      </Button>
+    </>
+  );
+
   return (
     <div className="flex flex-col md:min-h-0 md:flex-1">
-      <PageHeader
-        kicker="Customers"
-        title="Thông tin học sinh"
-        description="Quản lý số đo và thông tin trang phục của từng học sinh."
-        className="max-md:[&>div:last-child]:self-stretch"
-        action={
-          <>
-            <Button
-              variant="outline"
-              className="max-md:flex-1"
-              onClick={() => importFileRef.current?.click()}
-              disabled={disabledAll}
-            >
-              <Upload />
-              Nhập từ Excel
-            </Button>
-            <Button
-              variant="outline"
-              className="max-md:flex-1"
-              onClick={handleExportExcel}
-              disabled={disabledAll || students.length === 0}
-            >
-              <Download />
-              Xuất Excel
-            </Button>
-          </>
-        }
-      />
+      {!embedded && (
+        <PageHeader
+          title="Thông tin học sinh"
+          description="Số đo và trang phục của từng học sinh. Mở từ trang chi tiết lớp để khỏi chọn lại lớp."
+          className="max-md:[&>div:last-child]:self-stretch"
+          action={excelActions}
+        />
+      )}
       <input
         ref={importFileRef}
         type="file"
@@ -571,21 +589,30 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       />
 
       {/* Class selector */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[14px] border bg-card p-3.5">
-        <Label className="sr-only">Chọn lớp</Label>
-        <div className="relative w-full min-w-[220px] md:w-[320px]">
-          <School className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary-700 dark:text-primary" />
-          <Combobox
-            className="pl-9 max-md:h-[42px] max-md:bg-muted max-md:font-semibold"
-            options={customers.map((c) => ({
-              value: c._id,
-              label: `${c.className}${getSchoolName(c) ? ` · ${getSchoolName(c)}` : ''}`,
-            }))}
-            value={selectedCustomer?._id ?? ''}
-            onChange={(v) => setSelectedCustomer(customers.find((c) => c._id === v) ?? null)}
-            placeholder="-- Chọn lớp --"
-          />
-        </div>
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border bg-card p-3.5">
+        {embedded && (
+          <div className="flex flex-wrap gap-2 max-md:w-full max-md:[&>*]:flex-1">
+            {excelActions}
+          </div>
+        )}
+        {!embedded && (
+          <>
+            <Label className="sr-only">Chọn lớp</Label>
+            <div className="relative w-full min-w-[220px] md:w-[320px]">
+              <School className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Combobox
+                className="pl-9 max-md:h-[42px] max-md:bg-muted max-md:font-semibold"
+                options={customers.map((c) => ({
+                  value: c._id,
+                  label: `${c.className}${getSchoolName(c) ? ` · ${getSchoolName(c)}` : ''}`,
+                }))}
+                value={selectedCustomer?._id ?? ''}
+                onChange={(v) => setSelectedCustomer(customers.find((c) => c._id === v) ?? null)}
+                placeholder="-- Chọn lớp --"
+              />
+            </div>
+          </>
+        )}
         {selectedCustomer && schedules && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -633,18 +660,20 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
 
       {/* Empty state */}
       {!selectedCustomer && (
-        <div className="rounded-[14px] border bg-card py-16 text-center text-muted-foreground">
+        <div className="rounded-lg border bg-card py-16 text-center text-muted-foreground">
           <div className="mb-3 flex justify-center">
-            <School className="h-10 w-10 text-sky-500" />
+            <School className="h-10 w-10 text-muted-foreground/70" />
           </div>
-          <p className="text-base font-medium">Xin mời chọn lớp để xem danh sách học sinh</p>
+          <p className="text-base font-medium text-foreground">
+            Chọn lớp để xem danh sách học sinh
+          </p>
           <p className="text-sm mt-1">Sau đó bạn có thể copy link để học sinh tự nhập thông tin</p>
         </div>
       )}
 
       {/* No-schedule warning */}
       {selectedCustomer && noSchedule && (
-        <div className="rounded-[14px] p-4 mb-4 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 text-sm flex items-center gap-2">
+        <div className="rounded-lg p-4 mb-4 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 text-sm flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             Lớp này chưa có lịch chụp. Vui lòng tạo lịch chụp trước khi thêm/nhập học sinh hoặc copy
@@ -657,13 +686,13 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
       {selectedCustomer && (
         <>
           <div className="mb-6 grid grid-cols-2 gap-2.5 max-md:mb-3.5 md:grid-cols-3 md:gap-4">
-            <div className="self-start rounded-[14px] border bg-card p-3.5 md:self-auto md:p-5">
+            <div className="self-start rounded-lg border bg-card p-3.5 md:self-auto md:p-5">
               <p className="text-xs text-muted-foreground">Đã đăng ký</p>
-              <p className="mt-1 font-display text-xl font-bold text-foreground tabular md:text-2xl">
+              <p className="mt-1 text-xl font-bold text-foreground tabular md:text-2xl">
                 {selectedCustomer.total} học sinh
               </p>
             </div>
-            <div className="rounded-[14px] border bg-card p-3.5 md:p-5">
+            <div className="rounded-lg border bg-card p-3.5 md:p-5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Đã điền thông tin</span>
                 {selectedCustomer.total > 0 && (
@@ -672,7 +701,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-display text-xl font-bold text-foreground tabular md:text-2xl">
+              <p className="mt-1 text-xl font-bold text-foreground tabular md:text-2xl">
                 {students.length} / {selectedCustomer.total}
               </p>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -690,7 +719,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               </p>
             </div>
             {duplicateNorms.size > 0 && (
-              <div className="col-span-2 rounded-[14px] bg-amber-50 p-3.5 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 max-md:bg-primary/15 max-md:text-primary-700 max-md:dark:bg-primary/15 max-md:dark:text-primary md:col-span-1 md:p-5">
+              <div className="col-span-2 rounded-lg bg-amber-50 p-3.5 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 max-md:bg-primary/15 max-md:text-primary-700 max-md:dark:bg-primary/15 max-md:dark:text-primary md:col-span-1 md:p-5">
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -720,7 +749,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     </span>
                   </button>
                 </div>
-                <p className="mt-1 font-display text-xl font-bold tabular md:text-2xl">
+                <p className="mt-1 text-xl font-bold tabular md:text-2xl">
                   {[...duplicateNorms].reduce(
                     (acc, norm) =>
                       acc + students.filter((s) => normalizeName(s.name) === norm).length,
@@ -742,7 +771,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
-                  className="h-10 rounded-[10px] bg-card pl-9"
+                  className="h-10 rounded-md bg-card pl-9"
                   placeholder="Tìm học sinh…"
                   aria-label="Tìm học sinh"
                   value={search}
@@ -828,7 +857,11 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                     s.costumes?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {s.costumes.map((c) => (
-                          <Badge key={c._id} variant="neutral" className="px-2 py-0 font-medium">
+                          <Badge
+                            key={c._id}
+                            variant="neutral"
+                            className="max-w-full whitespace-normal break-words px-2 py-0 font-medium"
+                          >
                             {c.name}
                           </Badge>
                         ))}
@@ -849,26 +882,22 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                   className: 'whitespace-nowrap',
                   render: (s) => (
                     <span className="inline-flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-muted-foreground"
-                        title="Sửa"
-                        aria-label="Sửa"
-                        onClick={() => openEdit(s)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                        title="Xoá"
-                        aria-label="Xoá"
-                        onClick={() => setConfirmId(s._id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <RowActions
+                        subject={`học sinh ${s.name}`}
+                        primary={{
+                          label: 'Sửa',
+                          icon: <Pencil className="h-4 w-4" />,
+                          onSelect: () => openEdit(s),
+                        }}
+                        actions={[
+                          {
+                            label: 'Xoá học sinh',
+                            icon: <Trash2 className="h-4 w-4" />,
+                            onSelect: () => setConfirmId(s._id),
+                            destructive: true,
+                          },
+                        ]}
+                      />
                     </span>
                   ),
                 },
@@ -916,7 +945,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                           key={s._id}
                           onClick={() => openEdit(s)}
                           className={cn(
-                            'cursor-pointer space-y-3 rounded-[14px] border bg-card p-3.5',
+                            'cursor-pointer space-y-3 rounded-lg border bg-card p-3.5',
                             isDup && 'border-primary',
                           )}
                         >
@@ -953,26 +982,22 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                               className="flex shrink-0 items-center gap-1"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-[30px] w-[30px] rounded-lg text-muted-foreground"
-                                title="Sửa"
-                                aria-label="Sửa"
-                                onClick={() => openEdit(s)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-[30px] w-[30px] rounded-lg text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                                title="Xoá"
-                                aria-label="Xoá"
-                                onClick={() => setConfirmId(s._id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <RowActions
+                                subject={`học sinh ${s.name}`}
+                                primary={{
+                                  label: 'Sửa',
+                                  icon: <Pencil className="h-4 w-4" />,
+                                  onSelect: () => openEdit(s),
+                                }}
+                                actions={[
+                                  {
+                                    label: 'Xoá học sinh',
+                                    icon: <Trash2 className="h-4 w-4" />,
+                                    onSelect: () => setConfirmId(s._id),
+                                    destructive: true,
+                                  },
+                                ]}
+                              />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
@@ -992,7 +1017,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                             ].map(({ key, Icon, label, value }) => (
                               <div
                                 key={key}
-                                className="flex min-w-0 items-center gap-2 rounded-[10px] bg-muted px-2.5 py-2"
+                                className="flex min-w-0 items-center gap-2 rounded-md bg-muted px-2.5 py-2"
                               >
                                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
@@ -1010,7 +1035,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                               {s.costumes.map((c) => (
                                 <span
                                   key={c._id}
-                                  className="rounded-md bg-muted px-2 py-0.5 text-[11.5px] text-muted-foreground"
+                                  className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
                                 >
                                   {c.name}
                                 </span>
@@ -1029,7 +1054,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
                       );
                     })}
                     {mobileStudents.length === 0 && (
-                      <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+                      <div className="rounded-lg border bg-card py-10 text-center text-muted-foreground">
                         {searchKey ? (
                           'Không tìm thấy học sinh phù hợp'
                         ) : showDupOnly ? (
@@ -1098,7 +1123,7 @@ ${costumeLines || `- ${totalMale} bộ nam\n- ${totalFemale} bộ nữ`}
               </span>
             )}
           </p>
-          <div className="max-h-72 overflow-y-auto border rounded-[12px]">
+          <div className="max-h-72 overflow-y-auto border rounded-lg">
             <DataTable<ImportRow>
               variant="plain"
               textSize="xs"

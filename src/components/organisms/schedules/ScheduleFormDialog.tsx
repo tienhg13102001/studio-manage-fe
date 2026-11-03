@@ -51,7 +51,7 @@ import type {
 } from '../../../types';
 import { ROLE_LABELS } from '../../../types';
 import { neededVideoCount } from '../../../utils/crewCount';
-import { classLabel } from '../../../utils/format';
+import { classLabel, formatCurrency } from '../../../utils/format';
 import { CREW_EDITOR_HINT } from '../../../utils/permissions';
 import { isScheduleCancelled } from '../../../utils/scheduleConstants';
 import { apiErrorMessage } from './scheduleHelpers';
@@ -60,7 +60,7 @@ import { apiErrorMessage } from './scheduleHelpers';
 const IconTile = ({ className, children }: { className?: string; children: React.ReactNode }) => (
   <span
     className={cn(
-      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4',
+      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md [&_svg]:h-4 [&_svg]:w-4',
       className,
     )}
   >
@@ -76,10 +76,7 @@ const SectionLabel = ({
   className?: string;
 }) => (
   <div
-    className={cn(
-      'text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground',
-      className,
-    )}
+    className={cn('text-xs font-bold uppercase tracking-[0.05em] text-muted-foreground', className)}
   >
     {children}
   </div>
@@ -153,7 +150,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
         <SectionLabel className="mb-3">
           Trang phục <span className="text-destructive">*</span>
         </SectionLabel>
-        <div className="rounded-[12px] border border-dashed border-destructive/50 bg-destructive/5 px-4 py-6 text-center">
+        <div className="rounded-lg border border-dashed border-destructive/50 bg-destructive/5 px-4 py-6 text-center">
           <Shirt className="mx-auto mb-2 h-6 w-6 text-destructive" />
           <p className="text-sm font-medium text-destructive">
             Gói chụp này chưa có trang phục nào được liên kết.
@@ -171,7 +168,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
 
       <div
         className={cn(
-          'rounded-[12px] border bg-muted/50 p-3 sm:p-4',
+          'rounded-lg border bg-muted/50 p-3 sm:p-4',
           showError && 'border-destructive/60',
         )}
       >
@@ -186,7 +183,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
               className="h-9 bg-card pl-8"
             />
           </div>
-          <div className="inline-flex items-center gap-0.5 rounded-[9px] bg-muted p-[3px] text-xs">
+          <div className="inline-flex items-center gap-0.5 rounded-md bg-muted p-[3px] text-xs">
             {(['all', 'male', 'female', 'unisex'] as const).map((g) => {
               const active = genderFilter === g;
               const labels: Record<typeof g, string> = {
@@ -244,7 +241,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                   <div className="mb-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-foreground">{g.name}</span>
-                      <span className="text-[11px] text-muted-foreground tabular">
+                      <span className="text-xs text-muted-foreground tabular">
                         {g.items.length}
                       </span>
                     </div>
@@ -268,7 +265,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                         <label
                           key={c._id}
                           className={cn(
-                            'group inline-flex max-w-full cursor-pointer items-center gap-2 rounded-[9px] border bg-card px-2.5 py-1.5 transition-colors',
+                            'group inline-flex max-w-full cursor-pointer items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 transition-colors',
                             checked
                               ? 'border-primary bg-primary-100/60 dark:bg-primary/10'
                               : 'border-border hover:border-primary/50',
@@ -293,7 +290,7 @@ const CostumePicker = ({ costumes, selected, onChange, showError }: CostumePicke
                           <span className="truncate text-[13px] text-foreground">{c.name}</span>
                           <span
                             className={cn(
-                              'shrink-0 rounded-[5px] px-1.5 py-px text-[10px] font-semibold',
+                              'shrink-0 rounded-[5px] px-1.5 py-px text-xs font-semibold',
                               meta.cls,
                             )}
                           >
@@ -577,13 +574,13 @@ const ScheduleFormDialog = ({
             })),
         ));
 
-  const formFieldCls = 'h-10 rounded-[10px]';
+  const formFieldCls = 'h-10 rounded-md';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]">
         <div className="flex shrink-0 items-center gap-3 border-b px-5 py-4 pr-12 sm:px-6">
-          <IconTile className="h-10 w-10 rounded-[10px] bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
+          <IconTile className="h-10 w-10 rounded-md bg-primary-100 text-primary-700 dark:bg-primary/15 dark:text-primary">
             <CalendarPlus />
           </IconTile>
           <div className="min-w-0 text-left">
@@ -650,7 +647,7 @@ const ScheduleFormDialog = ({
                         <Combobox
                           options={packages.map((p) => ({
                             value: p._id,
-                            label: `${p.name} – ${p.pricePerMember.toLocaleString('vi-VN')}₫/thành viên`,
+                            label: `${p.name} – ${formatCurrency(p.pricePerMember)}/thành viên`,
                           }))}
                           value={field.value ?? ''}
                           onChange={(v) => field.onChange(v || undefined)}
@@ -834,7 +831,7 @@ const ScheduleFormDialog = ({
                       emptyText="Không có người dùng phù hợp"
                       maxBadges={8}
                       disabled={!canEditCrew}
-                      className="min-h-10 rounded-[10px]"
+                      className="min-h-10 rounded-md"
                     />
                   </FormField>
                 )}
@@ -1014,10 +1011,10 @@ const ScheduleFormDialog = ({
             <section>
               <SectionLabel className="mb-3">Dịch vụ sử dụng thêm</SectionLabel>
               {extraServiceFields.length > 0 && (
-                <div className="overflow-x-auto rounded-[12px] border">
+                <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full min-w-[640px] text-sm">
                     <thead>
-                      <tr className="border-b bg-muted/60 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                      <tr className="border-b bg-muted/60 text-xs uppercase tracking-[0.05em] text-muted-foreground">
                         <th className="px-3 py-2.5 text-left font-bold">Tên</th>
                         <th className="w-24 px-3 py-2.5 text-left font-bold">Số lượng</th>
                         <th className="w-32 px-3 py-2.5 text-left font-bold">Đơn giá (₫)</th>
@@ -1061,7 +1058,7 @@ const ScheduleFormDialog = ({
                               />
                             </td>
                             <td className="whitespace-nowrap px-3 py-2 font-semibold text-foreground tabular">
-                              {amount.toLocaleString('vi-VN')}₫
+                              {formatCurrency(amount)}
                             </td>
                             <td className="px-3 py-2">
                               <Input
@@ -1076,7 +1073,7 @@ const ScheduleFormDialog = ({
                                 onClick={() => removeExtraService(idx)}
                                 className={cn(
                                   iconActionCls,
-                                  'hover:bg-rose-500/10 hover:text-rose-600',
+                                  'hover:bg-red-500/10 hover:text-red-600',
                                 )}
                                 title="Xoá"
                                 aria-label="Xoá"
@@ -1094,14 +1091,13 @@ const ScheduleFormDialog = ({
                           Tổng cộng:
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5 font-bold text-foreground tabular">
-                          {extraServiceFields
-                            .reduce((sum, _, idx) => {
+                          {formatCurrency(
+                            extraServiceFields.reduce((sum, _, idx) => {
                               const qty = toSafeNumber(watch(`extraServices.${idx}.quantity`));
                               const price = toSafeNumber(watch(`extraServices.${idx}.unitPrice`));
                               return sum + qty * price;
-                            }, 0)
-                            .toLocaleString('vi-VN')}
-                          ₫
+                            }, 0),
+                          )}
                         </td>
                         <td colSpan={2} />
                       </tr>
@@ -1142,7 +1138,7 @@ const ScheduleFormDialog = ({
                   className={cn(
                     'px-2',
                     !isScheduleCancelled(editing) &&
-                      'text-rose-600 hover:bg-rose-500/10 hover:text-rose-600',
+                      'text-red-600 hover:bg-red-500/10 hover:text-red-600',
                   )}
                   onClick={onToggleCancel}
                 >

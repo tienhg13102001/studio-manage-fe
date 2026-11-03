@@ -19,7 +19,7 @@ interface ModalProps {
   className?: string;
   contentClassName?: string;
   headerClassName?: string;
-  /** Dưới breakpoint `sm` hiển thị dạng bottom sheet (opt-in) */
+  /** Dưới breakpoint `sm` hiển thị dạng bottom sheet (mặc định bật; `false` để giữ hộp giữa màn hình) */
   mobileSheet?: boolean;
   /** Tiêu đề riêng cho bottom sheet (mặc định dùng `title`) */
   mobileTitle?: ReactNode;
@@ -41,7 +41,7 @@ const sizeClass: Record<NonNullable<ModalProps['size']>, string> = {
 
 /** Bottom sheet < sm: ghim đáy, full width, bo góc trên 24px, trượt lên từ dưới */
 const sheetClass =
-  'max-sm:inset-x-0 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:gap-3.5 max-sm:rounded-t-3xl max-sm:border-0 max-sm:px-4 max-sm:pb-[30px] max-sm:pt-2.5 max-sm:data-[state=closed]:slide-out-to-left-0 max-sm:data-[state=open]:slide-in-from-left-0 max-sm:data-[state=closed]:slide-out-to-bottom-full max-sm:data-[state=open]:slide-in-from-bottom-full max-sm:data-[state=closed]:zoom-out-100 max-sm:data-[state=open]:zoom-in-100 max-sm:[&>button:last-child]:hidden';
+  'max-sm:inset-x-0 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:gap-3.5 max-sm:rounded-t-2xl max-sm:border-0 max-sm:px-4 max-sm:pb-[30px] max-sm:pt-2.5 max-sm:data-[state=closed]:slide-out-to-left-0 max-sm:data-[state=open]:slide-in-from-left-0 max-sm:data-[state=closed]:slide-out-to-bottom-full max-sm:data-[state=open]:slide-in-from-bottom-full max-sm:data-[state=closed]:zoom-out-100 max-sm:data-[state=open]:zoom-in-100 max-sm:[&>button:last-child]:hidden';
 
 /**
  * Convenience wrapper around shadcn Dialog with title + sized content,
@@ -57,7 +57,7 @@ export const Modal = ({
   className,
   contentClassName,
   headerClassName,
-  mobileSheet = false,
+  mobileSheet = true,
   mobileTitle,
   mobileDescription,
   icon,
@@ -74,7 +74,7 @@ export const Modal = ({
           onEscapeKeyDown={onEscapeKeyDown}
           className={cn(
             sizeClass[size],
-            'flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl [&>button:last-child]:hidden',
+            'flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:rounded-lg [&>button:last-child]:hidden',
             mobileSheet && sheetClass,
             mobileSheet && 'max-sm:overflow-y-auto',
             contentClassName,
@@ -92,7 +92,7 @@ export const Modal = ({
             {icon && (
               <span
                 className={cn(
-                  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 [&_svg]:h-[18px] [&_svg]:w-[18px]',
+                  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground [&_svg]:h-[18px] [&_svg]:w-[18px]',
                   mobileSheet && 'max-sm:hidden',
                 )}
               >
@@ -133,9 +133,9 @@ export const Modal = ({
               )}
             </DialogHeader>
             {mobileSheet && (
-              <DialogClose className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden">
+              <DialogClose className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden">
                 <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">Đóng</span>
               </DialogClose>
             )}
             {/* Chừa chỗ cho nút đóng desktop (đặt cuối DOM để focus đầu tiên rơi vào field) */}
@@ -169,7 +169,7 @@ export const Modal = ({
             )}
           >
             <X className="h-[18px] w-[18px]" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Đóng</span>
           </DialogClose>
         </DialogContent>
       </Dialog>
@@ -226,9 +226,9 @@ export const Modal = ({
               <p className="hidden text-sm text-muted-foreground sm:block">{description}</p>
             )}
           </DialogHeader>
-          <DialogClose className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden">
+          <DialogClose className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden">
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Đóng</span>
           </DialogClose>
         </div>
         <div className={className}>{children}</div>

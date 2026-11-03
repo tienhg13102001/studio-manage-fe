@@ -21,7 +21,7 @@ const useBreadcrumb = (): string[] => {
   if (pathname === '/profile') return ['Tài khoản', 'Hồ sơ cá nhân'];
   for (const item of [...navItems, ...adminItems]) {
     if (!item.children) {
-      if (item.to === pathname) return item.to === '/' ? ['Tổng quan', item.label] : [item.label];
+      if (item.to === pathname) return [item.label];
       continue;
     }
     if (!pathname.startsWith(item.to)) continue;
@@ -64,14 +64,17 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
     <header className="sticky top-0 z-20 flex items-center gap-3 h-[52px] md:h-16 px-4 md:px-8 border-b bg-card/95 backdrop-blur">
       <button
         onClick={onOpenMenu}
-        className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-border text-muted-foreground hover:bg-muted"
+        className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted"
         aria-label="Mở menu"
       >
         <Menu className="w-5 h-5" />
       </button>
-      <h1 className="md:hidden flex-1 min-w-0 truncate font-display text-[17px] font-bold text-foreground">
+      <p
+        aria-hidden
+        className="md:hidden flex-1 min-w-0 truncate font-display text-lg font-bold text-foreground"
+      >
         {mobileTitle}
-      </h1>
+      </p>
 
       <nav className="hidden md:flex items-center gap-2 text-[13px] min-w-0">
         {crumbs.map((c, i) => (
@@ -81,7 +84,7 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
               className={
                 i === crumbs.length - 1
                   ? 'font-semibold text-foreground truncate'
-                  : 'text-muted-foreground/80'
+                  : 'text-muted-foreground'
               }
             >
               {c}
@@ -99,7 +102,7 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
           rel="noopener noreferrer"
           title="Hướng dẫn quy trình chăm sóc lớp (mở tab mới)"
           aria-label="Hướng dẫn"
-          className="inline-flex h-9 w-9 justify-center md:h-[38px] md:w-auto md:justify-start shrink-0 items-center gap-2 rounded-[10px] border border-border bg-card md:px-3 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 w-9 justify-center md:h-[38px] md:w-auto md:justify-start shrink-0 items-center gap-2 rounded-md border border-border bg-card md:px-3 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <BookOpen className="h-[15px] w-[15px] text-primary-700 dark:text-primary" />
           <span className="hidden md:inline">Hướng dẫn</span>
@@ -112,9 +115,9 @@ const Topbar = ({ onOpenMenu }: TopbarProps) => {
       >
         <SelectTrigger
           aria-label="Mùa chụp"
-          className="h-[30px] w-auto min-w-0 max-w-[min(140px,36vw)] gap-1.5 rounded-full px-2.5 text-xs md:h-[38px] md:max-w-[240px] md:gap-2 md:rounded-[10px] md:px-3 md:text-[13px] border-0 bg-primary-100 font-semibold text-primary-700 shadow-none dark:bg-primary/15 dark:text-primary [&>svg]:opacity-80"
+          className="h-8 w-auto min-w-0 max-w-[40vw] shrink-0 gap-1.5 rounded-md px-2.5 text-xs md:h-[38px] md:max-w-[260px] md:gap-2 md:px-3 md:text-[13px] border-0 bg-book font-semibold text-book-foreground shadow-none dark:bg-book-line [&>span]:truncate [&>svg]:opacity-80"
         >
-          <Sun className="w-[15px] h-[15px] shrink-0" />
+          <Sun className="hidden w-[15px] h-[15px] shrink-0 text-foil sm:block" />
           <SelectValue placeholder="Tất cả mùa" />
         </SelectTrigger>
         <SelectContent align="end">

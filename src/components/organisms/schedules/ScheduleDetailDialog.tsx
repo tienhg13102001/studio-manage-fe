@@ -22,7 +22,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getSchoolName, type ScheduleResponse } from '../../../types';
 import { neededVideoCount } from '../../../utils/crewCount';
-import { formatDate } from '../../../utils/format';
+import { formatCurrency, formatDate } from '../../../utils/format';
 import {
   SCHEDULE_CANCELLED_LABEL,
   SHOOT_STATUS_LABELS,
@@ -37,7 +37,7 @@ import { getInitial } from './scheduleHelpers';
 const IconTile = ({ className, children }: { className?: string; children: ReactNode }) => (
   <span
     className={cn(
-      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] [&_svg]:h-4 [&_svg]:w-4',
+      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md [&_svg]:h-4 [&_svg]:w-4',
       className,
     )}
   >
@@ -47,10 +47,7 @@ const IconTile = ({ className, children }: { className?: string; children: React
 
 const SectionLabel = ({ children, className }: { children: ReactNode; className?: string }) => (
   <div
-    className={cn(
-      'text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground',
-      className,
-    )}
+    className={cn('text-xs font-bold uppercase tracking-[0.05em] text-muted-foreground', className)}
   >
     {children}
   </div>
@@ -192,7 +189,7 @@ const ScheduleDetailDialog = ({
                   <div className="space-y-3">
                     <InfoRow
                       icon={<MapPin />}
-                      tone="bg-rose-500/10 text-rose-600 dark:text-rose-300"
+                      tone="bg-red-500/10 text-red-600 dark:text-red-300"
                       label="Địa điểm"
                     >
                       {detail.location}
@@ -208,7 +205,7 @@ const ScheduleDetailDialog = ({
                           {typeof pkg.pricePerMember === 'number' && (
                             <span className="font-normal text-muted-foreground">
                               {' '}
-                              · {pkg.pricePerMember.toLocaleString('vi-VN')}₫/thành viên
+                              · {formatCurrency(pkg.pricePerMember)}/thành viên
                             </span>
                           )}
                         </>
@@ -247,7 +244,7 @@ const ScheduleDetailDialog = ({
                     ].map(({ role, name }) => (
                       <div
                         key={role}
-                        className="flex items-center gap-3 rounded-[12px] border px-3.5 py-3"
+                        className="flex items-center gap-3 rounded-lg border px-3.5 py-3"
                       >
                         {name ? (
                           <CrewAvatar name={name} size={36} className="text-sm ring-0" />
@@ -279,7 +276,7 @@ const ScheduleDetailDialog = ({
                           key={i}
                           className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 py-0.5 pl-0.5 pr-2.5 text-[13px] font-medium text-violet-700 dark:text-violet-300"
                         >
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold">
                             {getInitial(n)}
                           </span>
                           {n}
@@ -294,7 +291,7 @@ const ScheduleDetailDialog = ({
                 {detail.notes && (
                   <section>
                     <SectionLabel className="mb-3">Ghi chú</SectionLabel>
-                    <div className="flex items-start gap-2.5 rounded-[10px] bg-amber-50 px-3.5 py-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+                    <div className="flex items-start gap-2.5 rounded-md bg-amber-50 px-3.5 py-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
                       <StickyNote className="mt-0.5 h-4 w-4 shrink-0" />
                       <div className="min-w-0 whitespace-pre-line break-words leading-relaxed">
                         {detail.notes}
@@ -319,14 +316,14 @@ const ScheduleDetailDialog = ({
                             {es.quantity} × {es.unitPrice.toLocaleString('vi-VN')}
                           </span>
                           <span className="w-28 whitespace-nowrap text-right font-semibold text-foreground tabular">
-                            {es.amount.toLocaleString('vi-VN')} ₫
+                            {formatCurrency(es.amount)}
                           </span>
                         </div>
                       ))}
                       <div className="flex items-center justify-between border-t pt-2.5">
                         <span className="text-sm font-semibold text-foreground">Tổng cộng</span>
-                        <span className="font-display text-lg font-bold text-primary-700 tabular dark:text-primary">
-                          {servicesTotal.toLocaleString('vi-VN')} ₫
+                        <span className="text-lg font-bold text-foreground tabular">
+                          {formatCurrency(servicesTotal)}
                         </span>
                       </div>
                     </div>
@@ -337,7 +334,7 @@ const ScheduleDetailDialog = ({
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-5 py-3.5 sm:px-6">
                 <Button
                   variant="ghost"
-                  className="px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
+                  className="px-2 text-red-600 hover:bg-red-500/10 hover:text-red-600"
                   onClick={() => onDelete(detail)}
                 >
                   <Trash2 /> Xoá lịch chụp

@@ -22,7 +22,7 @@ interface ConfirmDialogProps {
   contentClassName?: string;
   /** Icon trong vòng tròn 44px phía trên tiêu đề (opt-in; kèm tiêu đề 18px, nội dung 13.5px, căn trái) */
   icon?: ReactNode;
-  /** Class màu cho vòng tròn icon, VD `bg-rose-100 text-rose-600` */
+  /** Class màu cho vòng tròn icon, VD `bg-red-100 text-red-600` */
   iconClassName?: string;
   /** Icon đặt trước nhãn nút xác nhận (opt-in) */
   confirmIcon?: ReactNode;

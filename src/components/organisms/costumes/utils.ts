@@ -13,17 +13,17 @@ export const normalizeTypeName = (name: string) =>
 export const errMessage = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 
-/** Bảng màu tile loại trang phục theo design (light: nền -100 / icon -600·700; dark: nền -500/15 / icon -400) */
+/** Tile loại trang phục: chỉ khác biểu tượng, nền trung tính (DESIGN.md: không tô màu phân loại). */
 const TYPE_TILES: { icon: LucideIcon; classes: string }[] = [
   {
     icon: GraduationCap,
-    classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    classes: 'bg-muted text-foreground/70',
   },
-  { icon: Shirt, classes: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400' },
-  { icon: Gem, classes: 'bg-pink-100 text-pink-600 dark:bg-pink-500/15 dark:text-pink-400' },
+  { icon: Shirt, classes: 'bg-muted text-foreground/70' },
+  { icon: Gem, classes: 'bg-muted text-foreground/70' },
   {
     icon: Sparkles,
-    classes: 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400',
+    classes: 'bg-muted text-foreground/70',
   },
 ];
 

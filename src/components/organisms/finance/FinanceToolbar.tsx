@@ -19,7 +19,7 @@ export const FinanceTabs = ({
   <div
     role="tablist"
     className={cn(
-      'inline-flex h-[34px] items-center gap-0.5 rounded-[9px] bg-muted p-[3px]',
+      'inline-flex h-[34px] items-center gap-0.5 rounded-md bg-muted p-[3px]',
       className,
     )}
   >
@@ -61,7 +61,7 @@ export const TypeSegmented = ({
     role="radiogroup"
     aria-label="Loại giao dịch"
     className={cn(
-      'inline-flex h-[34px] items-center gap-0.5 rounded-[9px] bg-muted p-[3px]',
+      'inline-flex h-[34px] items-center gap-0.5 rounded-md bg-muted p-[3px]',
       className,
     )}
   >
@@ -69,7 +69,7 @@ export const TypeSegmented = ({
       [
         { v: '', label: 'Tất cả' },
         { v: 'income', label: 'Thu', dot: 'bg-emerald-500' },
-        { v: 'expense', label: 'Chi', dot: 'bg-rose-500' },
+        { v: 'expense', label: 'Chi', dot: 'bg-red-500' },
       ] as { v: TxType; label: string; dot?: string }[]
     ).map((t) => (
       <button
@@ -115,7 +115,7 @@ const IconCombo = ({
       onChange={onChange}
       placeholder={placeholder}
       className={cn(
-        'h-[34px] w-auto min-w-[130px] max-w-[220px] rounded-[9px] bg-card pl-8 text-[13px] shadow-none',
+        'h-[34px] w-auto min-w-[130px] max-w-[220px] rounded-md bg-card pl-8 text-[13px] shadow-none',
         value && 'border-primary/50 text-foreground',
       )}
     />

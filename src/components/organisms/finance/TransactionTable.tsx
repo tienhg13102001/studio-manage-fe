@@ -1,5 +1,12 @@
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react';
-import { Pagination, Spinner, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui';
+import {
+  Pagination,
+  RowActions,
+  Spinner,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type { Season, TransactionResponse, TransactionTotals } from '../../../types';
 import { CrewAvatar } from '../schedules/CrewAvatar';
@@ -32,7 +39,7 @@ interface TransactionTableProps {
 }
 
 const th =
-  'sticky top-0 z-10 h-8 bg-muted/95 px-2.5 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground backdrop-blur first:pl-4 last:pr-4';
+  'sticky top-0 z-10 h-9 whitespace-nowrap bg-muted/95 px-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground backdrop-blur first:pl-4 last:pr-4';
 const td = 'h-[38px] px-2.5 first:pl-4 last:pr-4';
 
 /** Dense transaction list: sticky header, body scrolls inside, pinned totals + pager footer. */
@@ -53,7 +60,7 @@ const TransactionTable = ({
   onPageChange,
   onPageSizeChange,
 }: TransactionTableProps) => (
-  <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] border bg-card">
+  <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
     <div className="relative min-h-[240px] flex-1 overflow-auto">
       <table className="w-full min-w-[660px] table-fixed border-separate border-spacing-0 text-[13px]">
         <colgroup>
@@ -109,7 +116,7 @@ const TransactionTable = ({
                     <span
                       className={cn(
                         'h-[7px] w-[7px] shrink-0 rounded-full',
-                        income ? 'bg-emerald-500' : 'bg-rose-500',
+                        income ? 'bg-emerald-500' : 'bg-red-500',
                       )}
                       aria-label={income ? 'Thu' : 'Chi'}
                     />
@@ -161,26 +168,22 @@ const TransactionTable = ({
                   <RefundStatus tx={t} canToggle={canRefund} onToggle={onToggleRefund} />
                 </td>
                 <td className={cn(td, 'text-right')}>
-                  <span className="inline-flex gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                    <button
-                      type="button"
-                      title="Sửa"
-                      aria-label="Sửa giao dịch"
-                      onClick={() => onEdit(t)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Xoá"
-                      aria-label="Xoá giao dịch"
-                      onClick={() => onDelete(t)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
+                  <RowActions
+                    subject="giao dịch"
+                    primary={{
+                      label: 'Sửa',
+                      icon: <Pencil className="h-4 w-4" />,
+                      onSelect: () => onEdit(t),
+                    }}
+                    actions={[
+                      {
+                        label: 'Xoá giao dịch',
+                        icon: <Trash2 className="h-4 w-4" />,
+                        onSelect: () => onDelete(t),
+                        destructive: true,
+                      },
+                    ]}
+                  />
                 </td>
               </tr>
             );

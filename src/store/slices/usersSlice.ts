@@ -16,7 +16,8 @@ const initialState: UsersState = {
   photographers: [],
   videographers: [],
   sales: [],
-  loading: false,
+  // true từ đầu: trang chưa tải lần nào thì hiện khung chờ, không hiện "0 tài khoản".
+  loading: true,
   error: null,
 };
 

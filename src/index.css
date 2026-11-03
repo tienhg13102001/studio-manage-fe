@@ -7,68 +7,81 @@
    primary = amber (#f59e0b), accent = cyan (#22d3ee)
 ══════════════════════════════════════════════════ */
 @layer base {
+  /* Thế giới "Trang sách kỷ yếu": giấy + mực, bìa vải xanh rêu, amber là nhũ vàng. */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 227 27% 10%;
+    --background: 43 28% 95%;
+    --foreground: 36 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 227 27% 10%;
+    --card-foreground: 36 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 227 27% 10%;
+    --popover-foreground: 36 10% 10%;
 
-    /* Amber 500 */
+    /* Amber 500 — nhũ vàng: nút chính, hôm nay, mục đang chọn */
     --primary: 38 92% 50%;
-    --primary-foreground: 29 87% 12%;
+    --primary-foreground: 28 80% 11%;
 
-    --secondary: 225 22% 96%;
-    --secondary-foreground: 227 27% 10%;
+    --secondary: 44 24% 91%;
+    --secondary-foreground: 36 10% 10%;
 
-    --muted: 225 22% 96%;
-    --muted-foreground: 225 12% 41%;
+    --muted: 44 24% 91%;
+    --muted-foreground: 40 13% 32%;
 
-    /* Cyan 400 */
-    --accent: 187 85% 53%;
-    --accent-foreground: 227 27% 10%;
+    --accent: 150 18% 92%;
+    --accent-foreground: 163 33% 17%;
 
-    --destructive: 347 77% 50%;
+    --destructive: 4 77% 40%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 225 20% 92%;
-    --input: 225 20% 92%;
-    --ring: 38 92% 50%;
+    --border: 41 25% 85%;
+    --input: 41 25% 82%;
+    --ring: 38 92% 45%;
 
-    --radius: 0.75rem;
+    /* Bìa kỷ yếu */
+    --cover: 163 33% 17%;
+    --cover-foreground: 43 54% 90%;
+    --cover-muted: 150 15% 72%;
+    --cover-line: 163 22% 26%;
+    --foil: 39 87% 61%;
+
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 233 29% 6%;
-    --foreground: 225 27% 94%;
+    --background: 144 13% 7%;
+    --foreground: 43 30% 91%;
 
-    --card: 235 22% 10%;
-    --card-foreground: 225 27% 94%;
+    --card: 140 12% 10%;
+    --card-foreground: 43 30% 91%;
 
-    --popover: 235 22% 10%;
-    --popover-foreground: 225 27% 94%;
+    --popover: 140 12% 11%;
+    --popover-foreground: 43 30% 91%;
 
     --primary: 38 92% 50%;
-    --primary-foreground: 26 83% 14%;
+    --primary-foreground: 28 80% 11%;
 
-    --secondary: 231 21% 13%;
-    --secondary-foreground: 225 27% 94%;
+    --secondary: 145 12% 15%;
+    --secondary-foreground: 43 30% 91%;
 
-    --muted: 231 21% 13%;
-    --muted-foreground: 226 16% 69%;
+    --muted: 145 12% 15%;
+    --muted-foreground: 40 12% 70%;
 
-    --accent: 187 85% 58%;
-    --accent-foreground: 233 29% 6%;
+    --accent: 158 20% 17%;
+    --accent-foreground: 43 30% 91%;
 
-    --destructive: 350 89% 60%;
+    --destructive: 4 80% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 233 19% 18%;
-    --input: 232 20% 22%;
+    --border: 145 12% 19%;
+    --input: 145 12% 23%;
     --ring: 38 92% 55%;
+
+    --cover: 162 35% 10%;
+    --cover-foreground: 43 40% 88%;
+    --cover-muted: 150 12% 64%;
+    --cover-line: 162 25% 17%;
+    --foil: 39 87% 61%;
   }
 
   /* Lưới an toàn chống iOS Safari auto-zoom: iOS phóng to khi ô nhập đang focus
@@ -101,7 +114,7 @@
 ══════════════════════════════════════════════════ */
 :root {
   /* Page */
-  --page-bg: #f5f6f9;
+  --page-bg: hsl(var(--background));
 
   /* Sidebar */
   --sidebar-bg: #ffffff;
@@ -125,14 +138,14 @@
   --user-logout-color: #94a3b8;
 
   /* Topbar (mobile) */
-  --topbar-bg: rgba(255, 255, 255, 0.95);
-  --topbar-border: rgba(0, 0, 0, 0.06);
-  --topbar-icon-color: #374151;
+  --topbar-bg: hsl(var(--background) / 0.95);
+  --topbar-border: hsl(var(--border));
+  --topbar-icon-color: hsl(var(--foreground));
 
   /* Card */
   --card-bg: #ffffff;
-  --card-border: #e7e9ef;
-  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --card-border: hsl(var(--border));
+  --card-shadow: 0 1px 2px rgba(28, 26, 23, 0.04);
 
   /* Modal */
   --modal-bg: #ffffff;
@@ -140,7 +153,7 @@
   --modal-shadow: 0 28px 72px rgba(15, 23, 42, 0.24);
 
   /* Table */
-  --table-head-bg: #f8f9fb;
+  --table-head-bg: #faf8f3;
   --table-row-hover: rgba(245, 158, 11, 0.08);
   --table-row-warning-bg: rgba(245, 158, 11, 0.12);
 
@@ -148,24 +161,24 @@
   --chip-bg: rgba(245, 158, 11, 0.1);
   --chip-text: #b45309;
   --costume-chip-bg: #ffffff;
-  --costume-chip-border: rgba(148, 163, 184, 0.32);
-  --costume-chip-text: #334155;
+  --costume-chip-border: hsl(var(--border));
+  --costume-chip-text: hsl(var(--foreground));
   --costume-chip-checked-bg: rgba(245, 158, 11, 0.16);
   --costume-chip-checked-border: rgba(245, 158, 11, 0.52);
   --costume-chip-checked-text: #92400e;
 
   /* Input */
-  --input-bg: #f8fafc;
-  --input-border: rgba(148, 163, 184, 0.32);
-  --input-color: #111827;
-  --input-placeholder: #94a3b8;
+  --input-bg: #ffffff;
+  --input-border: hsl(var(--input));
+  --input-color: hsl(var(--foreground));
+  --input-placeholder: #857e70;
   --input-focus-border: rgba(217, 119, 6, 0.52);
   --input-focus-ring: rgba(245, 158, 11, 0.14);
 
   /* Text */
-  --text-primary: #12151f;
-  --text-muted: #5b6275;
-  --text-faint: #9097a8;
+  --text-primary: hsl(var(--foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --text-faint: #6f6858;
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #fffbeb 0%, #fff7ed 40%, #fef3c7 100%);
@@ -178,7 +191,7 @@
 
 :root.dark {
   /* Page */
-  --page-bg: #0b0c14;
+  --page-bg: hsl(var(--background));
 
   /* Sidebar */
   --sidebar-bg: linear-gradient(180deg, #0d0d1f 0%, #0a0a14 100%);
@@ -202,22 +215,22 @@
   --user-logout-color: #475569;
 
   /* Topbar (mobile) */
-  --topbar-bg: rgba(20, 21, 31, 0.92);
-  --topbar-border: #262838;
-  --topbar-icon-color: #94a3b8;
+  --topbar-bg: hsl(var(--background) / 0.94);
+  --topbar-border: hsl(var(--border));
+  --topbar-icon-color: hsl(var(--foreground));
 
   /* Card */
-  --card-bg: #14151f;
-  --card-border: #262838;
+  --card-bg: hsl(var(--card));
+  --card-border: hsl(var(--border));
   --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 
   /* Modal */
-  --modal-bg: #14151f;
+  --modal-bg: hsl(var(--card));
   --modal-border: rgba(148, 163, 184, 0.28);
   --modal-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
 
   /* Table */
-  --table-head-bg: #1a1c28;
+  --table-head-bg: hsl(var(--muted));
   --table-row-hover: rgba(245, 158, 11, 0.16);
   --table-row-warning-bg: rgba(245, 158, 11, 0.14);
 
@@ -232,17 +245,17 @@
   --costume-chip-checked-text: #fef3c7;
 
   /* Input */
-  --input-bg: #14151f;
-  --input-border: #2c2f42;
-  --input-color: #f1f5f9;
-  --input-placeholder: #64748b;
+  --input-bg: hsl(var(--card));
+  --input-border: hsl(var(--input));
+  --input-color: hsl(var(--foreground));
+  --input-placeholder: #8f8a7c;
   --input-focus-border: rgba(245, 158, 11, 0.58);
   --input-focus-ring: rgba(245, 158, 11, 0.16);
 
   /* Text */
-  --text-primary: #eceef4;
-  --text-muted: #a3a9bc;
-  --text-faint: #6c7389;
+  --text-primary: hsl(var(--foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --text-faint: #9a9484;
 
   /* Login bg */
   --login-bg: linear-gradient(135deg, #0a0a12 0%, #2a1a05 40%, #0c1a2e 100%);
@@ -280,11 +293,26 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(245, 158, 11, 0.35);
+    background: hsl(var(--border));
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #d97706;
+    background: hsl(var(--muted-foreground) / 0.6);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
+  }
+
+  /* Literata: số lót thẳng hàng cho ngày/giờ/tiền in bằng chữ tiêu đề */
+  .font-display {
+    font-variant-numeric: lining-nums;
+    font-optical-sizing: auto;
+  }
+  .tabular,
+  .tabular-nums {
+    font-variant-numeric: lining-nums tabular-nums;
   }
 
   .theme-page {
@@ -756,6 +784,12 @@ select {
 /* ══════════════════════════════════════════════════
    Redesign 2026 — shared helpers (design/app_yume_design.pen)
 ══════════════════════════════════════════════════ */
-.tabular {
-  font-variant-numeric: tabular-nums;
+/* Trùng lịch ekip: gạch chéo như dấu gạch bỏ trên tờ phân công (DESIGN.md §1). */
+.hatch-conflict {
+  background-color: hsl(var(--card));
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(185 28 28 / 0.14) 0 2px,
+    transparent 2px 6px
+  );
 }

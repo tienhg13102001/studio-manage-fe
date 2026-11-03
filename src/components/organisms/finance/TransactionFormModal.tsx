@@ -274,7 +274,7 @@ const TransactionFormModal = ({
             <Button
               type="button"
               variant="ghost"
-              className="mr-auto px-2 text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
+              className="mr-auto px-2 text-red-600 hover:bg-red-500/10 hover:text-red-600"
               onClick={() => onDelete(editing)}
             >
               <Trash2 /> Xoá

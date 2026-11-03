@@ -85,7 +85,7 @@ import {
 const ALL = '__all__';
 const MOBILE_PAGE_SIZE = 20;
 
-const filterControlCls = 'h-[38px] rounded-[10px] border-border bg-card shadow-none';
+const filterControlCls = 'h-[38px] rounded-md border-border bg-card shadow-none';
 
 const iconActionCls =
   'inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground';
@@ -122,7 +122,11 @@ const SchedulesPage = () => {
   const { photographers, sales: salesUsers } = useAppSelector((s) => s.users);
   const { list: seasons, selectedSeasonId } = useAppSelector((s) => s.seasons);
 
-  const [filters, setFilters] = useState<ScheduleFilters>(DEFAULT_SCHEDULE_FILTERS);
+  // Thợ chụp/quay mở trang thì thấy lịch của mình trước; bấm "Lịch của tôi" để xem tất cả.
+  const [filters, setFilters] = useState<ScheduleFilters>(() => ({
+    ...DEFAULT_SCHEDULE_FILTERS,
+    mine: statusPickerRole(user?.roles) === 'photographer',
+  }));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   /** Mobile "Xem thêm": the list grows by reloading page 1 with a larger limit. */
@@ -536,7 +540,7 @@ const SchedulesPage = () => {
 
   const issuesSummary = (issues.short > 0 || issues.conflict > 0) && (
     <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
-      <AlertTriangle className="h-4 w-4 text-rose-500" />
+      <AlertTriangle className="h-4 w-4 text-destructive" />
       {issues.short} lịch thiếu thợ · {issues.conflict} lịch trùng thợ{issuesScope}
     </span>
   );
@@ -544,16 +548,21 @@ const SchedulesPage = () => {
   return (
     <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
-        kicker="Schedules"
         title="Lịch chụp"
-        description="Phân công ekip thợ chụp và cập nhật trạng thái buổi chụp."
+        description={
+          showSkeleton
+            ? 'Đang tải lịch…'
+            : `${total} buổi chụp${filters.mine ? ' của bạn' : ''}${
+                hasFilters && !filters.mine ? ' khớp bộ lọc' : ''
+              }`
+        }
         action={
           <div className="flex w-full items-center justify-between gap-2 md:w-auto">
             <SegmentedControl
               value={viewMode}
               onChange={(v) => setViewMode(v as 'table' | 'calendar')}
               items={[
-                { value: 'table', label: 'Bảng', icon: <TableIcon className="h-3.5 w-3.5" /> },
+                { value: 'table', label: 'Danh sách', icon: <TableIcon className="h-3.5 w-3.5" /> },
                 { value: 'calendar', label: 'Lịch', icon: <Calendar className="h-3.5 w-3.5" /> },
               ]}
             />
@@ -680,7 +689,7 @@ const SchedulesPage = () => {
             <button
               type="button"
               onClick={() => setFilterOpen(true)}
-              className="inline-flex h-[42px] min-w-0 flex-1 items-center gap-2 rounded-[10px] border bg-card px-3 text-[13.5px] text-foreground"
+              className="inline-flex h-[42px] min-w-0 flex-1 items-center gap-2 rounded-md border bg-card px-3 text-[13.5px] text-foreground"
             >
               <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="truncate tabular">
@@ -724,7 +733,7 @@ const SchedulesPage = () => {
             >
               <SlidersHorizontal />
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground tabular">
+                <span className="absolute -right-1.5 -top-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground tabular">
                   {activeFilterCount}
                 </span>
               )}

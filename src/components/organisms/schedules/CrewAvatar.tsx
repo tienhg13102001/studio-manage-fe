@@ -17,7 +17,7 @@ export const CrewAvatar = ({ name, size = 26, lead, tooltip, className }: CrewAv
     <span
       className={cn(
         'inline-flex shrink-0 cursor-default select-none items-center justify-center rounded-full font-bold',
-        size <= 20 ? 'text-[10px]' : 'text-[11px]',
+        'text-xs',
         avatarTone(name),
         lead ? 'ring-2 ring-primary' : 'ring-2 ring-card',
         className,
@@ -55,9 +55,9 @@ export const LeadChip = ({
   >
     <CrewAvatar name={name} size={22} lead />
     <span className="truncate">{name}</span>
-    <span className="shrink-0 rounded-[5px] bg-primary-100 px-1.5 py-px text-[10.5px] font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
+    <span className="shrink-0 rounded-[5px] bg-primary-100 px-1.5 py-px text-xs font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
       Chính
     </span>
-    {external && <span className="shrink-0 text-[10px] text-sky-600 dark:text-sky-300">Ngoài</span>}
+    {external && <span className="shrink-0 text-xs text-sky-600 dark:text-sky-300">Ngoài</span>}
   </span>
 );

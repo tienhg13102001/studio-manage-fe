@@ -31,14 +31,14 @@ const TransactionMobileList = ({
 }: TransactionMobileListProps) => {
   if (rows.length === 0) {
     return (
-      <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+      <div className="rounded-lg border bg-card py-10 text-center text-muted-foreground">
         Chưa có dữ liệu
       </div>
     );
   }
   return (
     <div className="space-y-2.5">
-      <div className="divide-y overflow-hidden rounded-[14px] border bg-card">
+      <div className="divide-y overflow-hidden rounded-lg border bg-card">
         {rows.map((t) => {
           const income = t.type === 'income';
           const meta = [shortDate(t.date, season), t.categoryId?.name, t.customer?.className]
@@ -58,7 +58,7 @@ const TransactionMobileList = ({
               <span
                 className={cn(
                   'w-[3px] shrink-0 rounded-full',
-                  income ? 'bg-emerald-500' : 'bg-rose-500',
+                  income ? 'bg-emerald-500' : 'bg-red-500',
                 )}
               />
               <div className="min-w-0 flex-1">

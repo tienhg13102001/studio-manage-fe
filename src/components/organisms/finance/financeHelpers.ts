@@ -143,5 +143,5 @@ export const kpiFromSummary = (rows: TransactionSummaryRow[]): FinanceKpi =>
     },
   );
 
-export const INCOME_TEXT = 'text-emerald-600 dark:text-emerald-400';
-export const EXPENSE_TEXT = 'text-rose-600 dark:text-rose-400';
+export const INCOME_TEXT = 'text-emerald-700 dark:text-emerald-400';
+export const EXPENSE_TEXT = 'text-red-700 dark:text-red-400';

@@ -9,8 +9,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, RotateCw } from 'lucide-react';
 
 export interface Column<T> {
   key: string;
@@ -52,6 +54,15 @@ interface DataTableProps<T> {
   textSize?: 'xs' | 'sm';
   onRowClick?: (row: T, index: number) => void;
   pagination?: boolean | PaginationOptions;
+  /** Lỗi tải dữ liệu: hiện thông báo thay vì bảng rỗng (không giả vờ là "không có dữ liệu"). */
+  error?: ReactNode;
+  onRetry?: () => void;
+  /**
+   * Hiển thị dạng thẻ trên mobile (<768px) từ cùng một nguồn dữ liệu; bảng chỉ hiện từ md trở lên.
+   * Bỏ trống thì mobile vẫn dùng bảng cuộn ngang.
+   */
+  mobileCard?: (row: T, index: number) => ReactNode;
+  emptyAction?: ReactNode;
 }
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
@@ -78,6 +89,10 @@ export function DataTable<T>({
   textSize = 'sm',
   onRowClick,
   pagination,
+  error,
+  onRetry,
+  mobileCard,
+  emptyAction,
 }: DataTableProps<T>) {
   const paginationOpts = useMemo<PaginationOptions | null>(
     () => (pagination ? (typeof pagination === 'object' ? pagination : {}) : null),
@@ -111,7 +126,7 @@ export function DataTable<T>({
   const wrapperCls =
     variant === 'card'
       ? cn(
-          'rounded-[14px] border bg-card overflow-hidden',
+          'rounded-lg border bg-card overflow-hidden',
           fill && 'flex min-h-[320px] flex-col',
           className,
         )
@@ -129,33 +144,63 @@ export function DataTable<T>({
       </div>
     ) : null;
 
-  if (loading) {
-    const content = (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Spinner size="lg" />
-      </div>
-    );
-    return variant === 'card' ? (
+  const wrap = (content: ReactNode) =>
+    variant === 'card' ? (
       <div className={wrapperCls}>
         {renderTitle()}
         {content}
       </div>
     ) : (
       <>{content}</>
+    );
+
+  if (loading) {
+    return wrap(
+      <div role="status" aria-busy="true" className="divide-y">
+        <span className="sr-only">Đang tải…</span>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-5 py-4">
+            {columns.slice(0, Math.min(columns.length, 5)).map((c, j) => (
+              <Skeleton
+                key={c.key}
+                className={cn('h-4', j === 0 ? 'flex-[2]' : 'flex-1', j > 1 && 'max-md:hidden')}
+              />
+            ))}
+          </div>
+        ))}
+      </div>,
+    );
+  }
+
+  if (error) {
+    return wrap(
+      <div
+        role="alert"
+        className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center"
+      >
+        <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
+        <div>
+          <p className="text-sm font-semibold text-foreground">Không tải được dữ liệu</p>
+          <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+        </div>
+        {onRetry && (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RotateCw className="h-4 w-4" />
+            Thử lại
+          </Button>
+        )}
+      </div>,
     );
   }
 
   if (data.length === 0) {
-    const content = (
-      <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />
-    );
-    return variant === 'card' ? (
-      <div className={wrapperCls}>
-        {renderTitle()}
-        {content}
-      </div>
-    ) : (
-      <>{content}</>
+    return wrap(
+      <EmptyState
+        icon={emptyIcon}
+        title={emptyTitle}
+        description={emptyDescription}
+        action={emptyAction}
+      />,
     );
   }
 
@@ -177,7 +222,7 @@ export function DataTable<T>({
               key={col.key}
               className={cn(
                 cellPad,
-                'h-10 font-semibold uppercase tracking-[0.06em] text-[11px] text-muted-foreground/80',
+                'h-10 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground',
                 alignClass[col.align ?? 'left'],
                 col.className,
               )}
@@ -219,7 +264,33 @@ export function DataTable<T>({
     </Table>
   );
 
-  const scrollCls = fill ? 'min-h-0 flex-1 overflow-auto' : 'overflow-x-auto';
+  const scrollCls = cn(
+    fill ? 'min-h-0 flex-1 overflow-auto' : 'overflow-x-auto',
+    mobileCard && 'max-md:hidden',
+  );
+
+  const cards = mobileCard ? (
+    <ul className={cn('divide-y md:hidden', fill && 'min-h-0 flex-1 overflow-auto')}>
+      {pagedData.map((row, i) => {
+        const absoluteIndex = paginationOpts ? (page - 1) * pageSize + i : i;
+        return (
+          <li
+            key={keyExtractor(row, absoluteIndex)}
+            className={cn('px-4 py-3.5', onRowClick && 'cursor-pointer active:bg-muted/60')}
+            onClick={(e) => {
+              if (!onRowClick) return;
+              const target = e.target as HTMLElement;
+              if (!e.currentTarget.contains(target)) return;
+              if (target.closest('button,a,input,label,select,textarea,[role=menuitem]')) return;
+              onRowClick(row, absoluteIndex);
+            }}
+          >
+            {mobileCard(row, absoluteIndex)}
+          </li>
+        );
+      })}
+    </ul>
+  ) : null;
 
   const paginationFooter = paginationOpts ? (
     <Pagination
@@ -245,12 +316,14 @@ export function DataTable<T>({
   return variant === 'card' ? (
     <div className={wrapperCls}>
       {renderTitle()}
+      {cards}
       <div className={scrollCls}>{table}</div>
       {paginationFooter}
       {footer}
     </div>
   ) : (
     <div className={wrapperCls}>
+      {cards}
       <div className={scrollCls}>{table}</div>
       {paginationFooter}
       {footer}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import {
   Camera,
   Car,
+  Gift,
   Package as PackageIcon,
   Receipt,
   Plus,
@@ -9,6 +10,7 @@ import {
   RotateCcw,
   Save,
   Shirt,
+  Sparkles,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -29,10 +31,13 @@ import type {
 import { formatDate } from '../utils/format';
 import {
   calcProfit,
+  createWorkbookProfitForm,
   costItemAmount,
   type CostBasis,
+  findWorkbookCostTemplate,
   formatPercent,
   formatVnd,
+  fromProfitScenario,
   suggestCrewCount,
 } from '../utils/packageProfit';
 import { cn } from '@/lib/utils';
@@ -52,24 +57,6 @@ import {
 
 type Form = Omit<ProfitScenarioInput, 'name'>;
 
-const EMPTY_FORM: Form = {
-  package: null,
-  schedule: null,
-  pricePerMember: 0,
-  students: 0,
-  crewCount: 0,
-  crewRate: 0,
-  videoCrewCount: 0,
-  videoCrewRate: 0,
-  printItems: [{ label: 'Ảnh in', unitPrice: 0, quantity: 1, unit: 'student' }],
-  costumeItems: [],
-  travelItems: [
-    { label: 'Đi lại', unitPrice: 0, quantity: 1, unit: 'crew' },
-    { label: 'Ăn uống', unitPrice: 0, quantity: 1, unit: 'crew' },
-  ],
-  otherCosts: [{ label: '', amount: 0 }],
-};
-
 const emptyItem = (unit: ProfitCostItem['unit'] = 'student'): ProfitCostItem => ({
   label: '',
   unitPrice: 0,
@@ -84,31 +71,6 @@ const pick = <T extends object, K extends keyof T>(obj: T, keys: K[]) =>
 
 const getApiErrorMessage = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-
-const fromScenario = (s: ProfitScenario): Form => ({
-  package: s.package?._id ?? null,
-  schedule: s.schedule?._id ?? null,
-  pricePerMember: s.pricePerMember,
-  students: s.students,
-  crewCount: s.crewCount,
-  crewRate: s.crewRate,
-  videoCrewCount: s.videoCrewCount ?? 0,
-  videoCrewRate: s.videoCrewRate ?? 0,
-  // Kịch bản cũ lưu 1 con số → chuyển thành 1 dòng
-  printItems: s.printItems?.length
-    ? s.printItems
-    : s.printCostPerStudent
-      ? [{ label: 'In ấn', unitPrice: s.printCostPerStudent, quantity: 1, unit: 'student' }]
-      : [],
-  // Đi lại & ăn uống luôn tính theo người ekip
-  travelItems: (s.travelItems ?? []).map((it) => ({ ...it, unit: 'crew' })),
-  costumeItems: s.costumeItems?.length
-    ? s.costumeItems
-    : s.costumeCost
-      ? [{ label: 'Trang phục', unitPrice: s.costumeCost, quantity: 1, unit: 'class' }]
-      : [],
-  otherCosts: s.otherCosts.length ? s.otherCosts : [{ label: '', amount: 0 }],
-});
 
 /** Number input showing thousands separators ("250.000"); empty = 0. */
 const AmountInput = ({
@@ -137,7 +99,7 @@ const AmountInput = ({
       onChange={(e) => onChange(Number(e.target.value.replace(/\D/g, '').slice(0, 13)) || 0)}
     />
     {suffix && (
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12.5px] text-muted-foreground">
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground">
         {suffix}
       </span>
     )}
@@ -158,7 +120,7 @@ const Field = ({
   children: ReactNode;
 }) => (
   <div className={cn('min-w-0 space-y-1.5', className)}>
-    <label htmlFor={htmlFor} className="block text-[12.5px] font-semibold text-muted-foreground">
+    <label htmlFor={htmlFor} className="block text-[13px] font-semibold text-muted-foreground">
       {label}
     </label>
     {children}
@@ -181,7 +143,7 @@ const SectionCard = ({
   className?: string;
   children: ReactNode;
 }) => (
-  <section className={cn('space-y-3.5 rounded-[14px] border bg-card p-4 md:px-[18px]', className)}>
+  <section className={cn('space-y-3.5 rounded-lg border bg-card p-4 md:px-[18px]', className)}>
     <div className="flex items-center gap-2.5">
       <span
         className={cn(
@@ -191,7 +153,7 @@ const SectionCard = ({
       >
         {icon}
       </span>
-      <h3 className="flex-1 text-[14.5px] font-bold text-foreground">{title}</h3>
+      <h3 className="flex-1 font-display text-lg font-bold text-foreground">{title}</h3>
       <span className="text-[13px] font-semibold text-muted-foreground tabular">
         {formatVnd(subtotal)}
       </span>
@@ -203,10 +165,10 @@ const SectionCard = ({
 const UNIT_LABELS: Record<ProfitCostItem['unit'], string> = {
   student: '/hs',
   crew: '/người',
-  class: '/lớp',
+  class: 'SL cố định',
 };
 
-/** Bảng dòng chi phí: tên · đơn giá × SL · /hs, /người (ekip) hoặc /lớp · thành tiền. */
+/** Bảng dòng chi phí: tên · đơn giá × SL · /hs, /người (ekip) hoặc số lượng cố định. */
 const CostItemsEditor = ({
   items,
   basis,
@@ -226,7 +188,7 @@ const CostItemsEditor = ({
 }) => {
   // Cột desktop: tên co giãn, nút đơn vị rộng theo số lựa chọn
   const cols = {
-    '--cols': `minmax(0,1fr) 124px 60px ${units.length > 1 ? units.length * 52 : 64}px 108px 32px`,
+    '--cols': `minmax(0,1fr) 124px 60px ${units.length > 1 ? units.length * 78 : 74}px 108px 32px`,
   } as CSSProperties;
   const patch = (i: number, p: Partial<ProfitCostItem>) =>
     onChange(items.map((it, idx) => (idx === i ? { ...it, ...p } : it)));
@@ -236,7 +198,7 @@ const CostItemsEditor = ({
         <p className="text-[13px] text-muted-foreground">{emptyText}</p>
       )}
       {items.length > 0 && (
-        <div className="hidden gap-2 [grid-template-columns:var(--cols)] px-0.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+        <div className="hidden gap-2 [grid-template-columns:var(--cols)] px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
           <span>Hạng mục</span>
           <span>Đơn giá</span>
           <span>SL</span>
@@ -248,7 +210,7 @@ const CostItemsEditor = ({
       {items.map((it, i) => (
         <div
           key={i}
-          className="grid grid-cols-[minmax(0,1fr)_68px_32px] items-center gap-2 rounded-[10px] border p-2.5 lg:gap-2 lg:[grid-template-columns:var(--cols)] lg:border-0 lg:p-0"
+          className="grid grid-cols-[minmax(0,1fr)_68px_32px] items-center gap-2 rounded-md border p-2.5 lg:gap-2 lg:[grid-template-columns:var(--cols)] lg:border-0 lg:p-0"
         >
           <Input
             className="col-span-2 h-10 min-w-0 lg:col-span-1"
@@ -279,7 +241,7 @@ const CostItemsEditor = ({
               onChange={(v) => patch(i, { quantity: v })}
             />
             {units.length === 1 ? (
-              <span className="flex h-10 items-center rounded-[10px] bg-muted px-3 text-[12.5px] font-semibold text-muted-foreground">
+              <span className="flex h-10 items-center rounded-md bg-muted px-3 text-[13px] font-semibold text-muted-foreground">
                 {UNIT_LABELS[units[0]]}
               </span>
             ) : (
@@ -287,9 +249,9 @@ const CostItemsEditor = ({
                 role="radiogroup"
                 aria-label="Tính theo"
                 className={cn(
-                  'flex h-10 rounded-[10px] bg-muted p-0.5 text-[12.5px] font-semibold',
-                  // 3 lựa chọn: mobile xuống dòng riêng để ô đơn giá không bị bóp
-                  units.length > 2 && 'col-span-3 lg:col-span-1',
+                  'flex h-10 rounded-md bg-muted p-0.5 text-[13px] font-semibold',
+                  // Các lựa chọn đơn vị xuống dòng riêng trên mobile để ô đơn giá đủ rộng.
+                  units.length > 1 && 'col-span-3 lg:col-span-1',
                 )}
               >
                 {units.map((unit) => (
@@ -347,6 +309,14 @@ const COST_TONES = {
   },
   print: { bar: 'bg-violet-500', icon: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
   costume: { bar: 'bg-pink-500', icon: 'bg-pink-500/15 text-pink-700 dark:text-pink-300' },
+  postProduction: {
+    bar: 'bg-cyan-500',
+    icon: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+  },
+  accessory: {
+    bar: 'bg-orange-500',
+    icon: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+  },
   travel: { bar: 'bg-amber-500', icon: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
   other: { bar: 'bg-teal-500', icon: 'bg-teal-500/15 text-teal-700 dark:text-teal-300' },
 };
@@ -359,7 +329,7 @@ const PackageProfitPage = () => {
   const { selectedSeasonId } = useAppSelector((st) => st.seasons);
   const [scenarios, setScenarios] = useState<ProfitScenario[]>([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [form, setForm] = useState<Form>(EMPTY_FORM);
+  const [form, setForm] = useState<Form>(createWorkbookProfitForm);
   /** Số thợ tự tính theo gói cho tới khi người dùng sửa tay. */
   const [crewAuto, setCrewAuto] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -384,6 +354,7 @@ const PackageProfitPage = () => {
   const cls = classes.find((c) => c.scheduleId === form.schedule) ?? null;
   const suggestedCrew = suggestCrewCount(form.students, pkg?.studentsPerCrew);
   const crewCount = crewAuto && suggestedCrew != null ? suggestedCrew : form.crewCount;
+  const leadCount = Math.min(form.leadCount, crewCount);
   const result = calcProfit({ ...form, crewCount });
   const active = scenarios.find((s) => s._id === activeId) ?? null;
   const showVideo = !!pkg?.hasMv || form.videoCrewCount > 0;
@@ -417,18 +388,21 @@ const PackageProfitPage = () => {
     [packages],
   );
 
-  /** Trang phục theo gói — giữ đơn giá đã nhập cho loại trùng tên. */
+  /** Giữ bảng giá mẫu và bổ sung trang phục riêng của gói. */
   const costumesFor = (p: Package | undefined, prev: ProfitCostItem[]) =>
     p
-      ? (p.costumes ?? [])
-          .filter((c) => typeof c === 'object' && c?.name)
-          .map(
-            (c) =>
-              prev.find((it) => it.label === c.name) ?? {
-                ...emptyItem(),
-                label: c.name,
-              },
-          )
+      ? [
+          ...prev,
+          ...(p.costumes ?? [])
+            .filter((c) => typeof c === 'object' && c?.name)
+            .filter(
+              (c) =>
+                !prev.some(
+                  (it) => it.label.toLocaleLowerCase('vi') === c.name.toLocaleLowerCase('vi'),
+                ),
+            )
+            .map((c) => ({ ...emptyItem(), label: c.name })),
+        ]
       : prev;
 
   const choosePackage = (id: string) => {
@@ -437,7 +411,7 @@ const PackageProfitPage = () => {
       ...f,
       package: p?._id ?? null,
       pricePerMember: p?.pricePerMember ?? f.pricePerMember,
-      crewCount: 0,
+      crewCount: p?.studentsPerCrew ? 0 : f.crewCount,
       videoCrewCount: p ? (p.hasMv ? 1 : 0) : f.videoCrewCount,
       costumeItems: costumesFor(p, f.costumeItems),
     }));
@@ -456,15 +430,24 @@ const PackageProfitPage = () => {
     // Ưu tiên số thợ đã phân công trên lịch, rồi tới hợp đồng
     const crew = c.crewAssigned || c.crewCount || 0;
     const video = c.videoAssigned || c.videoCrewCount || (p?.hasMv ? 1 : 0);
-    // Đơn giá chi phí lấy từ kịch bản gần nhất cùng gói (danh sách đã sắp mới nhất trước)
-    const tpl = p ? scenarios.find((x) => x.package?._id === p._id) : undefined;
+    // Chỉ kế thừa kịch bản đã dùng cấu trúc giá mới; kịch bản cũ giữ nguyên khi mở lại.
+    const tpl = p ? findWorkbookCostTemplate(scenarios, p._id) : undefined;
     setTemplateName(tpl?.name ?? null);
     setForm((f) => ({
       ...f,
       ...(tpl && {
+        leadCount: tpl.leadCount ?? 0,
+        leadRate: tpl.leadRate ?? 0,
         crewRate: tpl.crewRate,
         videoCrewRate: tpl.videoCrewRate ?? 0,
-        ...pick(fromScenario(tpl), ['printItems', 'costumeItems', 'travelItems', 'otherCosts']),
+        ...pick(fromProfitScenario(tpl), [
+          'printItems',
+          'costumeItems',
+          'postProductionItems',
+          'accessoryItems',
+          'travelItems',
+          'otherCosts',
+        ]),
       }),
       schedule: c.scheduleId,
       package: p?._id ?? null,
@@ -472,7 +455,7 @@ const PackageProfitPage = () => {
       students: c.students,
       crewCount: crew,
       videoCrewCount: video,
-      costumeItems: costumesFor(p, tpl ? fromScenario(tpl).costumeItems : f.costumeItems),
+      costumeItems: costumesFor(p, tpl ? fromProfitScenario(tpl).costumeItems : f.costumeItems),
     }));
     setCrewAuto(!crew);
     setActiveId(null);
@@ -485,14 +468,14 @@ const PackageProfitPage = () => {
     );
 
   const reset = () => {
-    setForm(EMPTY_FORM);
+    setForm(createWorkbookProfitForm());
     setTemplateName(null);
     setCrewAuto(true);
     setActiveId(null);
   };
 
   const load = (s: ProfitScenario) => {
-    setForm(fromScenario(s));
+    setForm(fromProfitScenario(s));
     setTemplateName(null);
     // Số thợ đã lưu khớp số tự tính → tiếp tục tự tính khi đổi sĩ số
     setCrewAuto(s.crewCount === suggestCrewCount(s.students, s.package?.studentsPerCrew));
@@ -513,9 +496,12 @@ const PackageProfitPage = () => {
     const payload: ProfitScenarioInput = {
       ...form,
       crewCount,
+      leadCount: Math.min(form.leadCount, crewCount),
       name: name.trim(),
       printItems: form.printItems.filter(isFilledItem),
       costumeItems: form.costumeItems.filter(isFilledItem),
+      postProductionItems: form.postProductionItems.filter(isFilledItem),
+      accessoryItems: form.accessoryItems.filter(isFilledItem),
       travelItems: form.travelItems.filter(isFilledItem),
       otherCosts: form.otherCosts.filter((c) => c.label.trim() || c.amount),
     };
@@ -567,8 +553,10 @@ const PackageProfitPage = () => {
       : []),
     { key: 'print', label: 'In ấn', value: result.print },
     { key: 'costume', label: 'Trang phục', value: result.costume },
+    { key: 'postProduction', label: 'Hậu kỳ', value: result.postProduction },
+    { key: 'accessory', label: 'Phụ kiện', value: result.accessory },
     { key: 'travel', label: 'Đi lại & ăn uống', value: result.travel },
-    { key: 'other', label: 'Khác', value: result.other },
+    { key: 'other', label: 'Dự phòng & khác', value: result.other },
   ] satisfies { key: keyof typeof COST_TONES; label: string; value: number }[];
   const basis = { students: form.students, crew: crewCount + form.videoCrewCount };
   const losing = result.profit < 0;
@@ -576,10 +564,10 @@ const PackageProfitPage = () => {
     result.margin == null
       ? 'bg-muted text-muted-foreground'
       : losing || result.margin < 0.2
-        ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+        ? 'bg-red-500/15 text-red-700 dark:text-red-300'
         : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300';
   const profitColor = losing
-    ? 'text-rose-600 dark:text-rose-400'
+    ? 'text-red-600 dark:text-red-400'
     : 'text-emerald-600 dark:text-emerald-400';
   /** Thanh tỉ trọng chi phí trên doanh thu (hoặc trên tổng chi khi lỗ). */
   const barBase = Math.max(result.revenue, result.totalCost, 1);
@@ -598,9 +586,9 @@ const PackageProfitPage = () => {
   );
 
   const resultCard = (
-    <section className="space-y-3 rounded-2xl border bg-card p-4 md:space-y-4 md:rounded-[14px] md:p-5">
+    <section className="space-y-3 rounded-lg border bg-card p-4 md:space-y-4 md:p-5">
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground md:text-[11px]">
+        <span className="flex-1 text-[13px] font-semibold text-muted-foreground">
           Lợi nhuận ước tính
         </span>
         {result.margin != null && (
@@ -617,7 +605,7 @@ const PackageProfitPage = () => {
       </div>
       <p
         className={cn(
-          'font-display text-[30px] font-bold leading-none tracking-tight tabular md:text-[32px]',
+          'text-[30px] font-bold leading-none tracking-tight tabular md:text-[32px]',
           profitColor,
         )}
       >
@@ -653,9 +641,9 @@ const PackageProfitPage = () => {
             profitColor,
           ],
         ].map(([label, value, color]) => (
-          <div key={label} className="min-w-0 rounded-[10px] bg-muted px-2 py-2">
-            <p className="text-[11px] text-muted-foreground">{label}</p>
-            <p className={cn('break-all text-[12.5px] font-bold tabular', color)}>{value}</p>
+          <div key={label} className="min-w-0 rounded-md bg-muted px-2 py-2">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={cn('break-all text-[13px] font-bold tabular', color)}>{value}</p>
           </div>
         ))}
       </div>
@@ -694,9 +682,9 @@ const PackageProfitPage = () => {
   );
 
   const savedCard = (
-    <section className="overflow-hidden rounded-2xl border bg-card md:rounded-[14px]">
+    <section className="overflow-hidden rounded-lg border bg-card">
       <div className="flex items-center gap-2 px-4 py-3.5 md:px-[18px]">
-        <h3 className="flex-1 text-[14.5px] font-bold text-foreground">Kịch bản đã lưu</h3>
+        <h3 className="flex-1 font-display text-lg font-bold text-foreground">Kịch bản đã lưu</h3>
         <span className="text-[13px] font-semibold text-muted-foreground tabular">
           {scenarios.length}
         </span>
@@ -711,7 +699,7 @@ const PackageProfitPage = () => {
         </p>
       ) : (
         scenarios.map((s) => {
-          const r = calcProfit(fromScenario(s));
+          const r = calcProfit(fromProfitScenario(s));
           const low = r.profit < 0 || (r.margin != null && r.margin < 0.2);
           return (
             <div
@@ -726,7 +714,7 @@ const PackageProfitPage = () => {
                 onClick={() => load(s)}
                 className="min-w-0 flex-1 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
               >
-                <span className="block truncate text-[13.5px] font-semibold text-foreground">
+                <span className="block truncate text-sm font-semibold text-foreground">
                   {s.name}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground tabular">
@@ -735,15 +723,15 @@ const PackageProfitPage = () => {
                 </span>
               </button>
               <div className="flex shrink-0 flex-col items-end gap-0.5">
-                <span className="text-[13.5px] font-bold text-foreground tabular">
+                <span className="text-sm font-bold text-foreground tabular">
                   {formatVnd(r.profit)}
                 </span>
                 {r.margin != null && (
                   <span
                     className={cn(
-                      'rounded-full px-2 py-px text-[11.5px] font-bold tabular',
+                      'rounded-full px-2 py-px text-xs font-bold tabular',
                       low
-                        ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                        ? 'bg-red-500/15 text-red-700 dark:text-red-300'
                         : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
                     )}
                   >
@@ -754,7 +742,7 @@ const PackageProfitPage = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative z-10 h-7 w-7 shrink-0 text-rose-600 hover:text-rose-700 dark:text-rose-400 [&_svg]:size-3.5"
+                className="relative z-10 h-7 w-7 shrink-0 text-red-600 hover:text-red-700 dark:text-red-400 [&_svg]:size-3.5"
                 title="Xoá"
                 aria-label={`Xoá kịch bản ${s.name}`}
                 onClick={() => setConfirmId(s._id)}
@@ -771,14 +759,17 @@ const PackageProfitPage = () => {
   return (
     <div>
       <PageHeader
-        kicker="Tools"
         title="Tính lãi gói"
         description="Ước tính doanh thu, chi phí và lợi nhuận của một lớp theo gói chụp — lưu lại để so sánh."
         className="hidden md:flex"
         action={actions}
       />
-      <p className="mb-3.5 text-[13.5px] leading-snug text-muted-foreground md:hidden">
+      <p className="mb-3.5 text-sm leading-snug text-muted-foreground md:hidden">
         Ước tính doanh thu, chi phí và lợi nhuận của một lớp theo gói chụp.
+      </p>
+      <p className="mb-3.5 rounded-lg border bg-muted px-3.5 py-2.5 text-[13px] leading-relaxed text-muted-foreground md:mb-4">
+        Đơn giá và số lượng ban đầu theo mẫu <strong>Chi_phi_ky_yeu.xlsx</strong> (44 học sinh,
+        539.000 ₫/hs). Hãy sửa số lượng trang phục, lượt đi lại và suất ăn theo từng lớp.
       </p>
 
       <div className="grid gap-3.5 md:gap-4 xl:grid-cols-[minmax(0,1fr)_384px] xl:items-start xl:gap-6">
@@ -818,7 +809,7 @@ const PackageProfitPage = () => {
                 onChange={chooseClass}
                 placeholder="Chọn lớp để tính lãi…"
                 searchPlaceholder="Tìm lớp, trường…"
-                className="h-10 rounded-[10px] bg-card shadow-none"
+                className="h-10 rounded-md bg-card shadow-none"
               />
             </Field>
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_150px]">
@@ -835,7 +826,7 @@ const PackageProfitPage = () => {
                   onChange={choosePackage}
                   placeholder="Chọn gói…"
                   searchPlaceholder="Tìm gói…"
-                  className="h-10 rounded-[10px] bg-card shadow-none"
+                  className="h-10 rounded-md bg-card shadow-none"
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3 md:contents">
@@ -866,18 +857,34 @@ const PackageProfitPage = () => {
             subtotal={result.crew + result.video}
           >
             <div className="grid grid-cols-2 gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
-              <Field label="Số thợ" htmlFor="pp-crew">
+              <Field label="Tổng thợ chụp" htmlFor="pp-crew">
                 <AmountInput
                   id="pp-crew"
                   value={crewCount}
                   onChange={(v) => {
                     setCrewAuto(false);
-                    set('crewCount', v);
+                    setForm((f) => ({ ...f, crewCount: v, leadCount: Math.min(f.leadCount, v) }));
                   }}
                   suffix="người"
                 />
               </Field>
-              <Field label="Tiền công / thợ" htmlFor="pp-rate">
+              <Field label="Số thợ lead" htmlFor="pp-lead-count">
+                <AmountInput
+                  id="pp-lead-count"
+                  value={form.leadCount}
+                  onChange={(v) => set('leadCount', Math.min(v, crewCount))}
+                  suffix="người"
+                />
+              </Field>
+              <Field label="Công / thợ lead" htmlFor="pp-lead-rate">
+                <AmountInput
+                  id="pp-lead-rate"
+                  value={form.leadRate}
+                  onChange={(v) => set('leadRate', v)}
+                  suffix="đ"
+                />
+              </Field>
+              <Field label="Công / thợ support" htmlFor="pp-rate">
                 <AmountInput
                   id="pp-rate"
                   value={form.crewRate}
@@ -886,6 +893,10 @@ const PackageProfitPage = () => {
                 />
               </Field>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {leadCount} lead × {formatVnd(form.leadRate)} + {crewCount - leadCount} support ×{' '}
+              {formatVnd(form.crewRate)} = {formatVnd(result.crew)}
+            </p>
             {suggestedCrew != null && pkg?.studentsPerCrew && (
               <p className="text-xs text-blue-700 dark:text-blue-300">
                 Tự tính: {form.students} hs ÷ {pkg.studentsPerCrew} hs/thợ = {suggestedCrew} thợ
@@ -939,7 +950,19 @@ const PackageProfitPage = () => {
                     />
                   </Field>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Bảng Excel chưa có đơn giá thợ quay; hãy nhập giá khi gói có quay.
+                </p>
               </div>
+            )}
+            {!showVideo && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-700 hover:underline dark:text-primary"
+                onClick={() => set('videoCrewCount', 1)}
+              >
+                <Plus className="h-3.5 w-3.5" /> Thêm thợ quay
+              </button>
             )}
           </SectionCard>
 
@@ -959,7 +982,7 @@ const PackageProfitPage = () => {
               />
             </SectionCard>
             <SectionCard
-              title="Trang phục & đạo cụ"
+              title="Trang phục"
               icon={<Shirt />}
               tone={COST_TONES.costume.icon}
               subtotal={result.costume}
@@ -970,11 +993,35 @@ const PackageProfitPage = () => {
                 onChange={(v) => set('costumeItems', v)}
                 addLabel="Thêm trang phục"
                 namePlaceholder="VD: Áo dài, Vest…"
-                emptyText={
-                  pkg
-                    ? 'Gói này chưa gắn loại trang phục — thêm tay bên dưới.'
-                    : 'Chọn gói để tự liệt kê các loại trang phục của gói.'
-                }
+                emptyText="Chưa có trang phục. Thêm dòng hoặc bấm Làm mới để nạp mẫu Excel."
+              />
+            </SectionCard>
+            <SectionCard
+              title="Hậu kỳ"
+              icon={<Sparkles />}
+              tone={COST_TONES.postProduction.icon}
+              subtotal={result.postProduction}
+            >
+              <CostItemsEditor
+                items={form.postProductionItems}
+                basis={basis}
+                onChange={(v) => set('postProductionItems', v)}
+                addLabel="Thêm mục hậu kỳ"
+                namePlaceholder="VD: Hậu kỳ (máy)…"
+              />
+            </SectionCard>
+            <SectionCard
+              title="Phụ kiện"
+              icon={<Gift />}
+              tone={COST_TONES.accessory.icon}
+              subtotal={result.accessory}
+            >
+              <CostItemsEditor
+                items={form.accessoryItems}
+                basis={basis}
+                onChange={(v) => set('accessoryItems', v)}
+                addLabel="Thêm phụ kiện"
+                namePlaceholder="VD: Giấy màu, Sash…"
               />
             </SectionCard>
           </div>
@@ -988,19 +1035,20 @@ const PackageProfitPage = () => {
             <CostItemsEditor
               items={form.travelItems}
               basis={basis}
-              units={['crew']}
+              units={['class', 'crew']}
               onChange={(v) => set('travelItems', v)}
               addLabel="Thêm khoản đi lại / ăn uống"
               namePlaceholder="VD: Xăng xe, Ăn trưa ekip…"
             />
             <p className="text-xs text-muted-foreground">
-              Mỗi khoản nhân theo số người ekip ({basis.crew} người: {crewCount} thợ chụp
-              {form.videoCrewCount ? ` + ${form.videoCrewCount} thợ quay` : ''}).
+              Mẫu Excel dùng 8 lượt di chuyển và 4 suất ăn. Chọn “cố định” để nhập tổng số
+              lượt/suất, hoặc “/người” để nhân theo {basis.crew} người trong ekip (nhớ đổi SL thành
+              lượt/suất mỗi người).
             </p>
           </SectionCard>
 
           <SectionCard
-            title="Chi phí khác"
+            title="Dự phòng & chi phí khác"
             icon={<Receipt />}
             tone={COST_TONES.other.icon}
             subtotal={result.other}

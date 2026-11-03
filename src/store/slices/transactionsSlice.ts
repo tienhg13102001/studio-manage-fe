@@ -9,6 +9,10 @@ interface TransactionsState {
   totals: TransactionTotals | null;
   summary: TransactionSummaryRow[];
   summaryLoading: boolean;
+  /** Tổng hợp tải lỗi: KPI phải báo lỗi, không hiện 0 ₫. */
+  summaryError: string | null;
+  /** Phạm vi (mùa|từ|đến) của `summary` đang giữ — khác phạm vi hiện tại thì số liệu là cũ. */
+  summaryKey: string | null;
   loading: boolean;
   /** Mobile "Tải thêm": next page being appended. */
   loadingMore: boolean;
@@ -21,6 +25,8 @@ const initialState: TransactionsState = {
   totals: null,
   summary: [],
   summaryLoading: false,
+  summaryError: null,
+  summaryKey: null,
   loading: false,
   loadingMore: false,
   error: null,
@@ -36,6 +42,9 @@ export const fetchMoreTransactions = createAsyncThunk(
   'transactions/fetchMore',
   (params: Record<string, string | number>) => transactionService.getAll(params),
 );
+
+export const summaryScopeKey = (p?: { dateFrom?: string; dateTo?: string; season?: string }) =>
+  `${p?.season ?? ''}|${p?.dateFrom ?? ''}|${p?.dateTo ?? ''}`;
 
 export const fetchTransactionSummary = createAsyncThunk(
   'transactions/fetchSummary',
@@ -92,14 +101,20 @@ const transactionsSlice = createSlice({
       })
       .addCase(fetchTransactionSummary.pending, (state) => {
         state.summaryLoading = true;
+        state.summaryError = null;
       })
       .addCase(fetchTransactionSummary.fulfilled, (state, action) => {
         state.summaryLoading = false;
+        state.summaryError = null;
         state.summary = action.payload;
+        state.summaryKey = summaryScopeKey(action.meta.arg);
       })
       .addCase(fetchTransactionSummary.rejected, (state, action) => {
         if (action.meta.aborted) return;
         state.summaryLoading = false;
+        state.summaryError = action.error.message ?? 'Không tải được số liệu tổng hợp';
+        state.summary = [];
+        state.summaryKey = null;
       });
   },
 });

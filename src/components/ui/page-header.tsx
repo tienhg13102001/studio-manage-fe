@@ -3,38 +3,32 @@ import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
   title: string;
+  /** @deprecated Không còn hiển thị: tiêu đề tự đủ nghĩa (giữ prop để không vỡ trang cũ). */
   kicker?: string;
-  description?: string;
+  description?: ReactNode;
   action?: ReactNode;
   className?: string;
 }
 
-export const PageHeader = ({
-  title,
-  kicker,
-  description,
-  action,
-  className,
-}: PageHeaderProps) => (
+/**
+ * Đầu trang kiểu chú thích kỷ yếu: tiêu đề serif + một dòng mô tả, gạch mực bên dưới.
+ * Trên mobile, topbar đã hiện tên trang nên tiêu đề ở đây ẩn (chỉ còn mô tả + hành động).
+ */
+export const PageHeader = ({ title, description, action, className }: PageHeaderProps) => (
   <div
     className={cn(
-      'flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6',
+      'mb-5 flex flex-col gap-3 border-b border-foreground/80 pb-3 md:mb-6 md:flex-row md:items-end md:justify-between md:pb-4',
       className,
     )}
   >
-    <div className="space-y-1.5">
-      {kicker && (
-        <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-primary-700 dark:text-primary">
-          {kicker}
-        </span>
-      )}
-      <h2 className="font-display text-2xl md:text-[28px] font-bold tracking-tight text-foreground">
+    <div className="min-w-0 space-y-1">
+      <h1 className="font-display text-[28px] font-bold leading-tight tracking-[-0.01em] text-foreground max-md:sr-only">
         {title}
-      </h2>
+      </h1>
       {description && <p className="text-sm text-muted-foreground">{description}</p>}
     </div>
     {action && (
-      <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">{action}</div>
+      <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:self-auto">{action}</div>
     )}
   </div>
 );

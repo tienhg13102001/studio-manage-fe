@@ -35,6 +35,7 @@ import {
 } from '../../../types';
 import { neededCrewCount, neededVideoCount } from '../../../utils/crewCount';
 import { CrewAvatar } from './CrewAvatar';
+import { formatCurrency } from '../../../utils/format';
 import {
   SHEET_CONTENT_CLS,
   apiErrorMessage,
@@ -393,7 +394,7 @@ const CrewEditorBody = ({
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
         {(needed !== null || videoNeeded > 0) && (
-          <div className="flex items-center gap-3 rounded-[12px] border bg-muted/50 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-3 py-2.5">
             <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold text-foreground">
@@ -415,7 +416,7 @@ const CrewEditorBody = ({
               className={cn(
                 'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular',
                 missing
-                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                  ? 'bg-red-500/15 text-red-700 dark:text-red-300'
                   : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
               )}
             >
@@ -441,7 +442,7 @@ const CrewEditorBody = ({
             }
             onValueChange={(v) => pickLead(v === NO_LEAD ? '' : v)}
           >
-            <SelectTrigger className="h-11 rounded-[10px] bg-card shadow-none data-[state=open]:border-primary">
+            <SelectTrigger className="h-11 rounded-md bg-card shadow-none data-[state=open]:border-primary">
               {leadUser || externalLeadPerson ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
                   <CrewAvatar
@@ -540,7 +541,7 @@ const CrewEditorBody = ({
               }
               onValueChange={(v) => pickVideo(v === NO_VIDEO ? '' : v)}
             >
-              <SelectTrigger className="h-11 rounded-[10px] bg-card shadow-none data-[state=open]:border-primary">
+              <SelectTrigger className="h-11 rounded-md bg-card shadow-none data-[state=open]:border-primary">
                 {videoName ? (
                   <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -633,7 +634,7 @@ const CrewEditorBody = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm thợ chụp..."
-              className="h-9 rounded-[10px] border-transparent bg-muted pl-9 shadow-none"
+              className="h-9 rounded-md border-transparent bg-muted pl-9 shadow-none"
             />
           </div>
           <div className="space-y-1">
@@ -651,7 +652,7 @@ const CrewEditorBody = ({
                 <label
                   key={u._id}
                   className={cn(
-                    'flex items-center gap-3 rounded-[10px] px-2.5 py-2 transition-colors',
+                    'flex items-center gap-3 rounded-md px-2.5 py-2 transition-colors',
                     isLead || isVideo
                       ? 'cursor-not-allowed opacity-50'
                       : checked
@@ -718,7 +719,7 @@ const CrewEditorBody = ({
             </span>
           </div>
           {quickAddOpen && (
-            <div className="mb-2 space-y-2 rounded-[10px] border bg-muted/40 p-2.5">
+            <div className="mb-2 space-y-2 rounded-md border bg-muted/40 p-2.5">
               <Input
                 value={quickName}
                 onChange={(event) => setQuickName(event.target.value)}
@@ -774,7 +775,7 @@ const CrewEditorBody = ({
                 const isVideo = assignment?.role === 'video';
                 const checked = assignment?.role === 'support';
                 return (
-                  <div key={person._id} className="rounded-[10px] px-2.5 py-2 hover:bg-muted/60">
+                  <div key={person._id} className="rounded-md px-2.5 py-2 hover:bg-muted/60">
                     <label
                       className={cn(
                         'flex cursor-pointer items-center gap-3',
@@ -812,7 +813,7 @@ const CrewEditorBody = ({
                               : externalAvailability(person._id)}
                           {person.phone ? ` · ${person.phone}` : ''}
                           {person.defaultFee != null
-                            ? ` · ${person.defaultFee.toLocaleString('vi-VN')}₫`
+                            ? ` · ${formatCurrency(person.defaultFee)}`
                             : ''}
                         </span>
                       </span>
@@ -902,7 +903,7 @@ const CrewEditor = ({
           align="start"
           collisionPadding={12}
           aria-label="Sửa ekip"
-          className="flex max-h-[min(640px,var(--radix-popover-content-available-height))] w-[372px] flex-col overflow-hidden rounded-[14px] p-0"
+          className="flex max-h-[min(640px,var(--radix-popover-content-available-height))] w-[372px] flex-col overflow-hidden rounded-lg p-0"
         >
           {schedule && (
             <CrewEditorBody
@@ -929,7 +930,7 @@ const CrewEditor = ({
           className={cn(
             'flex flex-col gap-0 overflow-hidden p-0',
             isDesktop
-              ? 'max-h-[calc(100dvh-2rem)] max-w-[372px] rounded-[14px] [&>button:last-child]:hidden'
+              ? 'max-h-[calc(100dvh-2rem)] max-w-[372px] rounded-lg [&>button:last-child]:hidden'
               : cn(SHEET_CONTENT_CLS, 'overflow-hidden px-0 pb-[env(safe-area-inset-bottom)]'),
           )}
         >

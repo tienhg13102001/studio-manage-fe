@@ -40,7 +40,7 @@ const ScheduleMobileList = ({
 
   if (schedules.length === 0) {
     return (
-      <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
+      <div className="rounded-lg border bg-card py-10 text-center text-muted-foreground">
         Chưa có dữ liệu
       </div>
     );
@@ -69,7 +69,7 @@ const ScheduleMobileList = ({
             return (
               <article
                 key={s._id}
-                className={cn('rounded-[14px] border bg-card p-4', cancelled && 'opacity-60')}
+                className={cn('rounded-lg border bg-card p-4', cancelled && 'opacity-60')}
               >
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/80 tabular">

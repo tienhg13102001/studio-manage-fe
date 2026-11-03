@@ -36,7 +36,7 @@ import {
 import { formatCurrency } from '../../utils/format';
 
 const NONE = '__none__';
-const fieldCls = 'h-10 rounded-[10px]';
+const fieldCls = 'h-10 rounded-md';
 
 interface FormValues {
   note: string;
@@ -60,7 +60,7 @@ const today = () => {
 };
 
 const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <div className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
+  <div className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.05em] text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
     {children}
   </div>
 );
@@ -260,7 +260,7 @@ const CustomerStatusDialog = ({
               )}
 
               {askSchedule && (
-                <section className="rounded-[12px] border border-dashed p-4">
+                <section className="rounded-lg border border-dashed p-4">
                   <label className="flex cursor-pointer items-start gap-2.5">
                     <Controller
                       name="createSchedule"

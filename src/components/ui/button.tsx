@@ -4,10 +4,10 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const primaryCls =
-  'bg-primary text-primary-foreground font-semibold shadow-[0_4px_14px_rgba(245,158,11,0.25)] hover:bg-[#fbab24] hover:shadow-[0_6px_18px_rgba(245,158,11,0.32)]';
+  'bg-primary text-primary-foreground font-semibold shadow-[0_1px_2px_rgba(28,26,23,0.18)] hover:bg-primary/90 active:translate-y-px';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-[13.5px] font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-[14px] font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -15,15 +15,15 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive text-destructive-foreground font-semibold shadow-sm hover:bg-destructive/90',
         outline:
-          'border border-border bg-card text-foreground shadow-sm hover:border-primary/40 hover:bg-primary/5',
+          'border border-input bg-card text-foreground shadow-sm hover:border-foreground/30 hover:bg-muted/60',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground',
-        link: 'text-primary-700 dark:text-primary underline-offset-4 hover:underline',
+        link: 'text-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-foreground',
         gradient: primaryCls,
       },
       size: {
         default: 'h-[38px] px-3.5',
-        sm: 'h-8 rounded-lg px-3 text-xs',
+        sm: 'h-8 rounded-md px-3 text-[13px]',
         lg: 'h-11 px-6',
         icon: 'h-[38px] w-[38px]',
       },
@@ -36,8 +36,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 
@@ -45,11 +44,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
+      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
     );
   },
 );

@@ -50,7 +50,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   {
     to: '/',
-    label: 'Dashboard',
+    label: 'Tổng quan',
     icon: LayoutDashboard,
     iconClassName: 'text-blue-400',
     allowedRoles: [0, 1, 2, 3, 4, 6],
@@ -66,7 +66,7 @@ export const navItems: NavItem[] = [
     children: [
       {
         to: '',
-        label: 'Danh sách lớp học',
+        label: 'Lớp học',
         icon: ClipboardList,
         iconClassName: 'text-slate-300',
         allowedRoles: [0, 1, 2, 4],
@@ -148,7 +148,7 @@ export const adminItems: NavItem[] = [
     children: [
       {
         to: '/categories',
-        label: 'Danh mục thu/chi',
+        label: 'Danh mục',
         icon: Tags,
         iconClassName: 'text-violet-300',
         allowedRoles: [0, 1],

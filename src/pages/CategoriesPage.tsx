@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { ArrowDown, ArrowUp, FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, FolderOpen, Pencil, Plus, RotateCw, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { categoryService } from '../services/categoryService';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -13,6 +13,8 @@ import {
   Input,
   Modal,
   PageHeader,
+  RowActions,
+  Skeleton,
   Select,
   SelectContent,
   SelectItem,
@@ -23,7 +25,7 @@ import { cn } from '@/lib/utils';
 
 const CategoriesPage = () => {
   const dispatch = useAppDispatch();
-  const { list: categories } = useAppSelector((s) => s.categories);
+  const { list: categories, loading, error } = useAppSelector((s) => s.categories);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -32,7 +34,7 @@ const CategoriesPage = () => {
     handleSubmit,
     reset,
     control,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<Partial<Category>>();
 
   useEffect(() => {
@@ -63,7 +65,7 @@ const CategoriesPage = () => {
       setModalOpen(false);
       dispatch(fetchCategories());
     } catch {
-      toast.error('Có lỗi xảy ra, vui lòng thử lại.');
+      toast.error('Không lưu được danh mục. Kiểm tra kết nối rồi thử lại.');
     }
   };
 
@@ -83,131 +85,116 @@ const CategoriesPage = () => {
   const expense = categories.filter((c) => c.type === 'expense');
 
   const groups = [
-    {
-      key: 'income',
-      type: 'income' as const,
-      label: 'Khoản thu',
-      list: income,
-      icon: <ArrowDown className="h-4 w-4" />,
-      classes: {
-        bg: 'bg-emerald-500/15',
-        text: 'text-emerald-600 dark:text-emerald-400',
-        dot: 'bg-emerald-500',
-      },
-    },
-    {
-      key: 'expense',
-      type: 'expense' as const,
-      label: 'Khoản chi',
-      list: expense,
-      icon: <ArrowUp className="h-4 w-4" />,
-      classes: {
-        bg: 'bg-rose-500/15',
-        text: 'text-rose-600 dark:text-rose-400',
-        dot: 'bg-rose-500',
-      },
-    },
+    { type: 'income' as const, label: 'Khoản thu', list: income, dot: 'bg-emerald-600' },
+    { type: 'expense' as const, label: 'Khoản chi', list: expense, dot: 'bg-red-600' },
   ];
 
   return (
     <div>
       <PageHeader
-        kicker="Settings"
-        title="Danh mục thu / chi"
-        description="Quản lý các danh mục khoản thu và khoản chi."
+        title="Danh mục thu chi"
+        description={
+          loading && !categories.length
+            ? 'Đang tải danh mục…'
+            : error && !categories.length
+              ? 'Phân loại giao dịch ở trang Tài chính.'
+              : `${income.length} khoản thu · ${expense.length} khoản chi. Dùng để phân loại giao dịch ở trang Tài chính.`
+        }
         action={
-          <Button variant="gradient" onClick={() => openCreate()}>
+          <Button onClick={() => openCreate()} className="max-md:w-full">
             <Plus />
             Thêm danh mục
           </Button>
         }
       />
 
-      <div className="grid md:grid-cols-2 gap-5 items-start">
-        {groups.map(({ key, type, label, list, icon, classes }) => (
-          <div key={key} className="rounded-[14px] border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'inline-flex h-9 w-9 items-center justify-center rounded-[9px]',
-                    classes.bg,
-                    classes.text,
-                  )}
-                >
-                  {icon}
-                </span>
-                <div>
-                  <h3 className="font-display text-[15px] font-bold leading-tight">{label}</h3>
-                  <p className="text-xs text-muted-foreground">{list.length} danh mục</p>
+      {error && !categories.length ? (
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center"
+        >
+          <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
+          <p className="text-sm font-semibold text-foreground">Không tải được danh mục</p>
+          <Button variant="outline" size="sm" onClick={() => dispatch(fetchCategories())}>
+            <RotateCw /> Thử lại
+          </Button>
+        </div>
+      ) : (
+        <div className="grid items-start gap-4 md:grid-cols-2 md:gap-5">
+          {groups.map(({ type, label, list, dot }) => (
+            <section
+              key={type}
+              aria-labelledby={`cat-${type}`}
+              className="overflow-hidden rounded-lg border bg-card"
+            >
+              <div className="flex items-center justify-between gap-3 border-b px-4 py-3 md:px-5">
+                <div className="flex items-baseline gap-2">
+                  <span className={cn('h-2.5 w-2.5 self-center rounded-full', dot)} aria-hidden />
+                  <h3 id={`cat-${type}`} className="font-display text-lg font-bold">
+                    {label}
+                  </h3>
+                  <span className="tabular text-[13px] text-muted-foreground">{list.length}</span>
                 </div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => openCreate(type)}>
+                  <Plus /> Thêm
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-                onClick={() => openCreate(type)}
-                title={`Thêm ${label.toLowerCase()}`}
-                aria-label={`Thêm ${label.toLowerCase()}`}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
 
-            <ul className="divide-y">
-              {list.map((c) => (
-                <li
-                  key={c._id}
-                  className="group flex items-center justify-between gap-3 px-5 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={cn('h-2 w-2 rounded-full flex-shrink-0', classes.dot)} />
-                    <span className="text-sm font-medium truncate">{c.name}</span>
-                    {c.isDefault && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-                        Mặc định
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
-                      onClick={() => openEdit(c)}
-                      title="Sửa"
-                      aria-label="Sửa"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {!c.isDefault && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                        onClick={() => setConfirmId(c._id)}
-                        title="Xoá"
-                        aria-label="Xoá"
+              <ul className="divide-y">
+                {loading && !categories.length
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <li key={i} className="px-5 py-3.5">
+                        <Skeleton className="h-4 w-2/3" />
+                      </li>
+                    ))
+                  : list.map((c) => (
+                      <li
+                        key={c._id}
+                        className="flex items-center justify-between gap-3 py-1.5 pl-4 pr-2 md:pl-5"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-              {list.length === 0 && (
-                <li className="flex flex-col items-center justify-center gap-2 px-5 py-10 text-muted-foreground">
-                  <FolderOpen className="h-6 w-6 opacity-60" />
-                  <span className="text-sm">Chưa có danh mục</span>
-                </li>
-              )}
-            </ul>
-          </div>
-        ))}
-      </div>
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span className="truncate text-sm font-medium text-foreground">
+                            {c.name}
+                          </span>
+                          {c.isDefault && (
+                            <span
+                              className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+                              title="Danh mục hệ thống dùng tự động, không xoá được"
+                            >
+                              Mặc định
+                            </span>
+                          )}
+                        </div>
+                        <RowActions
+                          subject={`danh mục ${c.name}`}
+                          primary={{
+                            label: 'Sửa',
+                            icon: <Pencil className="h-4 w-4" />,
+                            onSelect: () => openEdit(c),
+                          }}
+                          actions={[
+                            {
+                              label: 'Xoá danh mục',
+                              icon: <Trash2 className="h-4 w-4" />,
+                              onSelect: () => setConfirmId(c._id),
+                              destructive: true,
+                              disabled: c.isDefault,
+                            },
+                          ]}
+                        />
+                      </li>
+                    ))}
+                {!loading && list.length === 0 && (
+                  <li className="flex flex-col items-center justify-center gap-2 px-5 py-10 text-muted-foreground">
+                    <FolderOpen className="h-6 w-6 opacity-60" aria-hidden />
+                    <span className="text-sm">Chưa có {label.toLowerCase()}</span>
+                  </li>
+                )}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
 
       <Modal
         open={modalOpen}
@@ -216,8 +203,15 @@ const CategoriesPage = () => {
         size="sm"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <FormField label="Tên danh mục" required htmlFor="name">
-            <Input id="name" {...register('name', { required: true })} />
+          <FormField label="Tên danh mục" required htmlFor="name" error={errors.name?.message}>
+            <Input
+              id="name"
+              aria-invalid={!!errors.name}
+              {...register('name', {
+                setValueAs: (v) => (v ?? '').trim(),
+                validate: (v) => (v ?? '').trim() !== '' || 'Vui lòng nhập tên danh mục',
+              })}
+            />
           </FormField>
           <FormField label="Loại" required>
             <Controller
@@ -241,8 +235,8 @@ const CategoriesPage = () => {
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Huỷ
             </Button>
-            <Button type="submit" variant="gradient" disabled={isSubmitting}>
-              Lưu
+            <Button type="submit" disabled={isSubmitting}>
+              {editing ? 'Lưu thay đổi' : 'Thêm danh mục'}
             </Button>
           </div>
         </form>
@@ -251,8 +245,8 @@ const CategoriesPage = () => {
       <ConfirmDialog
         open={!!confirmId}
         onOpenChange={(o) => !o && setConfirmId(null)}
-        title="Xác nhận xoá"
-        message="Bạn có chắc muốn xoá danh mục này?"
+        title="Xoá danh mục này?"
+        message="Giao dịch đã gắn danh mục này sẽ không còn danh mục. Không thể hoàn tác."
         onConfirm={doDelete}
       />
     </div>

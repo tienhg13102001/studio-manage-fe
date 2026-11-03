@@ -1,17 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Copy, Lightbulb, Link2, Mail, MailOpen, Phone, Star, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  Lightbulb,
+  Link2,
+  Mail,
+  MailOpen,
+  Phone,
+  RotateCw,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { feedbackService } from '../services/feedbackService';
-import type { Customer, FeedbackItem, FeedbackResponse, FeedbackStats } from '../types';
+import type { FeedbackItem, FeedbackResponse, FeedbackStats } from '../types';
 import { getSchoolName } from '../types';
 import { formatDateTime } from '../utils/format';
 import {
-  Badge,
   Button,
   ConfirmDialog,
   EmptyState,
   PageHeader,
-  Spinner,
+  RowActions,
+  SegmentedControl,
+  Skeleton,
   Stars,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -20,52 +32,21 @@ type FilterValue = 'all' | 'unread' | 'read';
 
 const LIMIT = 20;
 
-const getClassLabel = (customer: Customer | null): string | null => {
-  if (!customer) return null;
-  return getSchoolName(customer)
-    ? `${customer.className} — ${getSchoolName(customer)}`
-    : customer.className;
-};
-
-const getInitials = (customer: Customer | null, phone?: string): string => {
-  if (customer) {
-    const src = customer.className || getSchoolName(customer) || '';
-    const parts = src.trim().split(/\s+/).slice(0, 2);
-    const initials = parts.map((p) => p[0]?.toUpperCase() ?? '').join('');
-    if (initials) return initials;
-  }
-  if (phone) return phone.slice(-2);
-  return '?';
-};
-
-const avatarColor = (seed: string): string => {
-  const colors = [
-    'bg-blue-500/20 text-blue-600 dark:text-blue-300',
-    'bg-amber-500/20 text-amber-600 dark:text-amber-300',
-    'bg-pink-500/20 text-pink-600 dark:text-pink-300',
-    'bg-teal-500/20 text-teal-600 dark:text-teal-300',
-    'bg-violet-500/20 text-violet-600 dark:text-violet-300',
-    'bg-sky-500/20 text-sky-600 dark:text-sky-300',
-    'bg-rose-500/20 text-rose-600 dark:text-rose-300',
-  ];
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;
-  return colors[Math.abs(hash) % colors.length];
-};
-
 const ratingColor = (r: number) => {
-  if (r >= 4) return 'text-emerald-600 dark:text-emerald-400';
-  if (r >= 3) return 'text-amber-600 dark:text-amber-400';
-  return 'text-rose-600 dark:text-rose-400';
+  if (r >= 4) return 'text-emerald-700 dark:text-emerald-400';
+  if (r >= 3) return 'text-amber-800 dark:text-amber-300';
+  return 'text-red-700 dark:text-red-400';
 };
 
 const RatingPanel = ({ label, item }: { label: string; item: FeedbackItem }) => (
-  <div className="rounded-lg bg-muted/60 px-3 py-2">
-    <div className="flex items-center justify-between gap-2 mb-1">
-      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+  <div className="rounded-md border px-3 py-2">
+    <div className="mb-1 flex items-center justify-between gap-2">
+      <span className="text-[13px] font-semibold text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
         <Stars value={item.rating} />
-        <span className={cn('text-xs font-bold', ratingColor(item.rating))}>{item.rating}/5</span>
+        <span className={cn('tabular text-[13px] font-bold', ratingColor(item.rating))}>
+          {item.rating}/5
+        </span>
       </div>
     </div>
     {item.description && (
@@ -86,12 +67,14 @@ const FeedbackPage = () => {
   const [stats, setStats] = useState<FeedbackStats | null>(null);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<FilterValue>('all');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params: Record<string, string | number> = { page, limit: LIMIT };
       if (filter === 'unread') params.isRead = 'false';
@@ -103,7 +86,7 @@ const FeedbackPage = () => {
       setTotalUnread(res.totalUnread);
       setStats(res.stats);
     } catch {
-      toast.error('Không thể tải phản hồi.');
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -113,14 +96,15 @@ const FeedbackPage = () => {
     load();
   }, [load]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [filter]);
-
   const totalPages = useMemo(() => {
     const count = filter === 'unread' ? totalUnread : filter === 'read' ? totalRead : total;
     return Math.max(1, Math.ceil(count / LIMIT));
   }, [filter, total, totalRead, totalUnread]);
+
+  // Xoá mục cuối của trang cuối: lùi về trang còn dữ liệu.
+  useEffect(() => {
+    if (!loading && page > totalPages) setPage(totalPages);
+  }, [loading, page, totalPages]);
 
   const toggleRead = async (fb: FeedbackResponse) => {
     try {
@@ -156,23 +140,29 @@ const FeedbackPage = () => {
     }
   };
 
+  const counts = { all: total, unread: totalUnread, read: totalRead };
+  const firstLoad = loading && list.length === 0 && !stats;
+
   return (
     <div>
       <PageHeader
-        kicker="Feedback"
-        title="Phản hồi khách hàng"
-        description="Xem và quản lý các đánh giá từ khách hàng của bạn."
+        title="Phản hồi"
+        description={
+          firstLoad || loadError
+            ? 'Đánh giá của các lớp sau buổi chụp.'
+            : `${total} phản hồi · ${totalUnread} chưa đọc`
+        }
         action={
-          <Button variant={linkCopied ? 'gradient' : 'outline'} onClick={copyLink}>
-            {linkCopied ? <Copy /> : <Link2 />}
-            {linkCopied ? 'Đã sao chép' : 'Sao chép link gửi phản hồi'}
+          <Button variant="outline" onClick={copyLink} className="max-md:w-full">
+            {linkCopied ? <Check /> : <Link2 />}
+            {linkCopied ? 'Đã sao chép link' : 'Sao chép link gửi phản hồi'}
           </Button>
         }
       />
 
-      {/* Summary (all feedback) */}
+      {/* Tổng hợp (mọi phản hồi) */}
       {stats && stats.count > 0 && (
-        <div className="mb-6 grid grid-cols-1 divide-y rounded-[14px] border bg-card md:grid-cols-2 md:divide-x md:divide-y-0">
+        <div className="mb-5 grid grid-cols-2 divide-x rounded-lg border bg-card">
           {(
             [
               { label: 'Ekip chụp ảnh', avg: stats.crewAvg, dist: stats.crewDist },
@@ -181,17 +171,19 @@ const FeedbackPage = () => {
           ).map((c) => (
             <div
               key={c.label}
-              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5"
+              className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:gap-6 lg:px-5"
             >
               <div className="shrink-0">
-                <p className="text-sm text-muted-foreground">{c.label}</p>
-                <div className="mt-1 flex items-center gap-2.5">
-                  <span className="font-display text-3xl font-bold">{fmtAvg(c.avg)}</span>
+                <p className="text-[13px] font-medium text-muted-foreground">{c.label}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <span className="tabular text-3xl font-bold text-foreground">
+                    {fmtAvg(c.avg)}
+                  </span>
                   <Stars value={Math.round(c.avg)} size="md" />
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{stats.count} đánh giá</p>
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
+              <div className="min-w-0 flex-1 space-y-1 max-md:hidden" aria-label="Phân bố số sao">
                 {[5, 4, 3, 2, 1].map((star) => {
                   const pct = Math.round((c.dist[star - 1] / stats.count) * 100);
                   return (
@@ -201,15 +193,15 @@ const FeedbackPage = () => {
                     >
                       <span className="inline-flex w-6 items-center gap-0.5">
                         {star}
-                        <Star className="h-3 w-3" />
+                        <Star className="h-3 w-3" aria-hidden />
                       </span>
-                      <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full rounded-full bg-primary"
+                          className="h-full rounded-full bg-foreground/70"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right tabular">{pct}%</span>
+                      <span className="tabular w-9 text-right">{pct}%</span>
                     </div>
                   );
                 })}
@@ -219,181 +211,183 @@ const FeedbackPage = () => {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="inline-flex max-w-full gap-1 mb-4 overflow-x-auto rounded-xl p-1 bg-muted">
-        {(
-          [
-            { v: 'all', label: 'Tất cả', count: total },
-            { v: 'unread', label: 'Chưa đọc', count: totalUnread },
-            { v: 'read', label: 'Đã đọc', count: totalRead },
-          ] as { v: FilterValue; label: string; count: number }[]
-        ).map((opt) => {
-          const active = filter === opt.v;
-          return (
-            <button
-              key={opt.v}
-              onClick={() => setFilter(opt.v)}
-              className={cn(
-                'shrink-0 inline-flex items-center gap-2 h-9 px-3 rounded-[9px] text-sm font-medium transition-colors',
-                active
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <span className="leading-none">{opt.label}</span>
-              <span
-                className={cn(
-                  'inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-xs font-semibold leading-none',
-                  opt.v === 'unread' && opt.count > 0
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted-foreground/15 text-muted-foreground',
-                )}
-              >
-                {opt.count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl<FilterValue>
+        value={filter}
+        onChange={(v) => {
+          setFilter(v);
+          setPage(1);
+        }}
+        className="mb-4"
+        items={[
+          { value: 'all', label: `Tất cả · ${counts.all}` },
+          { value: 'unread', label: `Chưa đọc · ${counts.unread}` },
+          { value: 'read', label: `Đã đọc · ${counts.read}` },
+        ]}
+      />
 
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
+      {loadError ? (
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center"
+        >
+          <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden />
+          <p className="text-sm font-semibold text-foreground">Không tải được phản hồi</p>
+          <p className="text-sm text-muted-foreground">Kiểm tra kết nối mạng rồi thử lại.</p>
+          <Button variant="outline" size="sm" onClick={load}>
+            <RotateCw /> Thử lại
+          </Button>
+        </div>
+      ) : loading && list.length === 0 ? (
+        <div role="status" className="space-y-3">
+          <span className="sr-only">Đang tải…</span>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2 rounded-lg border bg-card p-4">
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          ))}
         </div>
       ) : list.length === 0 ? (
-        <EmptyState title="Chưa có phản hồi nào" description="Phản hồi sẽ hiển thị ở đây." />
+        <EmptyState
+          className="rounded-lg border bg-card"
+          title={filter === 'unread' ? 'Không còn phản hồi chưa đọc' : 'Chưa có phản hồi nào'}
+          description={
+            filter === 'all'
+              ? 'Gửi link phản hồi cho lớp sau buổi chụp; đánh giá sẽ hiện ở đây.'
+              : undefined
+          }
+        />
       ) : (
-        <div className="space-y-3">
+        <ul className={cn('space-y-3', loading && 'opacity-60')} aria-busy={loading}>
           {list.map((fb) => {
-            const classLabel = getClassLabel(fb.customer);
-            const seed = fb.customer?._id || fb.phone || fb._id;
+            const school = fb.customer ? getSchoolName(fb.customer) : null;
             return (
-              <div
-                key={fb._id}
-                className={cn(
-                  'rounded-[14px] border border-l-[3px] bg-card p-4',
-                  !fb.isRead && 'border-l-primary',
-                )}
-              >
-                <div className="flex items-start gap-3 mb-2.5">
-                  <div
-                    className={cn(
-                      'w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-bold text-sm',
-                      avatarColor(seed),
-                    )}
-                  >
-                    {getInitials(fb.customer, fb.phone)}
-                  </div>
-                  <div className="flex-1 min-w-0">
+              <li key={fb._id} className="rounded-lg border bg-card p-4">
+                <div className="mb-3 flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="min-w-0 font-semibold truncate">
-                        {classLabel ?? 'Khách hàng ẩn danh'}
-                      </span>
                       {!fb.isRead && (
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 border-transparent bg-primary px-2 text-[11px] text-primary-foreground"
-                        >
-                          Mới
-                        </Badge>
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-primary"
+                          aria-label="Chưa đọc"
+                        />
                       )}
+                      <span
+                        className={cn(
+                          'min-w-0 truncate font-display text-[17px] font-bold text-foreground',
+                          fb.isRead && 'font-semibold',
+                        )}
+                      >
+                        {fb.customer?.className ?? 'Khách ẩn danh'}
+                      </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-1.5 text-xs mt-0.5 text-muted-foreground">
+                    {school && (
+                      <p className="mt-0.5 truncate text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
+                        {school}
+                      </p>
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-muted-foreground">
                       {fb.phone && (
-                        <>
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Phone className="h-3.5 w-3.5 text-emerald-500" />
-                            <span>{fb.phone}</span>
-                          </span>
-                          <span aria-hidden="true">·</span>
-                        </>
+                        <a
+                          href={`tel:${fb.phone}`}
+                          className="tabular inline-flex items-center gap-1 whitespace-nowrap text-foreground underline decoration-border underline-offset-4"
+                        >
+                          <Phone className="h-3.5 w-3.5" aria-hidden />
+                          {fb.phone}
+                        </a>
                       )}
-                      <span className="whitespace-nowrap">{formatDateTime(fb.createdAt)}</span>
+                      <span className="tabular whitespace-nowrap">
+                        {formatDateTime(fb.createdAt)}
+                      </span>
                     </div>
                   </div>
-                  <div className="-mr-1.5 -mt-1 flex shrink-0 items-center gap-0.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-muted-foreground hover:text-foreground"
-                      onClick={() => toggleRead(fb)}
-                      title={fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                      aria-label={fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}
-                    >
-                      {fb.isRead ? (
-                        <Mail className="h-3.5 w-3.5" />
-                      ) : (
-                        <MailOpen className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
-                      onClick={() => setConfirmId(fb._id)}
-                      title="Xoá"
-                      aria-label="Xoá"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="-mr-2 -mt-1">
+                    <RowActions
+                      subject={`phản hồi ${fb.customer?.className ?? 'khách ẩn danh'}`}
+                      primary={{
+                        label: fb.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc',
+                        icon: fb.isRead ? (
+                          <Mail className="h-4 w-4" />
+                        ) : (
+                          <MailOpen className="h-4 w-4" />
+                        ),
+                        onSelect: () => toggleRead(fb),
+                      }}
+                      actions={[
+                        {
+                          label: 'Xoá phản hồi',
+                          icon: <Trash2 className="h-4 w-4" />,
+                          onSelect: () => setConfirmId(fb._id),
+                          destructive: true,
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <RatingPanel label="Ekip chụp ảnh" item={fb.crewFeedback} />
-                  <RatingPanel label="Album" item={fb.albumFeedback} />
+                  <RatingPanel label="Album ảnh" item={fb.albumFeedback} />
                 </div>
 
                 {fb.content && (
-                  <div className="mt-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-0.5 text-muted-foreground">
+                  <div className="mt-3">
+                    <p className="mb-0.5 text-[13px] font-semibold text-muted-foreground">
                       Cảm nhận chung
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-snug">{fb.content}</p>
+                    <p className="whitespace-pre-wrap text-sm leading-snug text-foreground">
+                      {fb.content}
+                    </p>
                   </div>
                 )}
 
                 {fb.suggestion && (
-                  <div className="mt-2 rounded-lg px-3 py-2 bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
-                    <p className="text-xs font-semibold mb-0.5 inline-flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5" />
-                      <span>Đề xuất cải thiện</span>
+                  <div className="mt-3 rounded-md bg-muted px-3 py-2">
+                    <p className="mb-0.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                      <Lightbulb className="h-3.5 w-3.5" aria-hidden />
+                      Đề xuất cải thiện
                     </p>
-                    <p className="text-sm whitespace-pre-wrap leading-snug">{fb.suggestion}</p>
+                    <p className="whitespace-pre-wrap text-sm leading-snug text-foreground">
+                      {fb.suggestion}
+                    </p>
                   </div>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <Button variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+      {!loadError && totalPages > 1 && (
+        <nav aria-label="Phân trang" className="mt-6 flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
             ‹ Trước
           </Button>
-          <span className="text-sm px-2 text-muted-foreground">
+          <span className="tabular px-2 text-sm text-muted-foreground">
             Trang <span className="font-semibold text-foreground">{page}</span> / {totalPages}
           </span>
           <Button
-            variant="ghost"
-            className="text-primary-700 dark:text-primary"
+            variant="outline"
+            size="sm"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
             Sau ›
           </Button>
-        </div>
+        </nav>
       )}
 
       <ConfirmDialog
         open={!!confirmId}
         onOpenChange={(o) => !o && setConfirmId(null)}
-        title="Xác nhận xoá"
-        message="Bạn có chắc muốn xoá phản hồi này?"
+        title="Xoá phản hồi này?"
+        message="Phản hồi sẽ bị xoá khỏi danh sách và không tính vào điểm trung bình nữa."
         onConfirm={doDelete}
       />
     </div>

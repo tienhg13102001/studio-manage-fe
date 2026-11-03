@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowUpRight,
   CalendarClock,
-  Check,
   ChevronsDown,
   Download,
-  MapPin,
   Pencil,
   Plus,
-  RotateCcw,
   School,
   Search,
   SlidersHorizontal,
-  StickyNote,
   Trash2,
   UserCheck,
   UserRound,
@@ -43,18 +40,20 @@ import { formatDate } from '../utils/format';
 import { cn } from '@/lib/utils';
 import {
   Badge,
-  badgeVariants,
+  badgeDotClass,
   Button,
   Combobox,
   ConfirmDialog,
   DataTable,
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
+  EmptyState,
+  FilterChip,
+  FilterSection,
+  FilterSheet,
   Input,
   PageHeader,
+  RowActions,
   SearchInput,
+  SHEET_CONTROL_CLS,
   Spinner,
   TableSkeleton,
 } from '@/components/ui';
@@ -63,6 +62,40 @@ import CustomerFormDialog from '../components/organisms/CustomerFormDialog';
 import SchoolCombobox from '../components/organisms/SchoolCombobox';
 
 const SEARCH_DEBOUNCE_MS = 400;
+
+/** Chú thích kỷ yếu: tên lớp serif + trường chữ nhỏ tracking. */
+const Caption = ({ c }: { c: Customer }) => (
+  <div className="min-w-0">
+    <Link
+      to={`/customers/${c._id}`}
+      className="block truncate font-display text-[17px] font-bold leading-tight text-foreground hover:underline hover:decoration-primary hover:decoration-2 hover:underline-offset-4"
+    >
+      {c.className}
+    </Link>
+    {getSchoolName(c) && (
+      <span className="mt-0.5 block truncate text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
+        {getSchoolName(c)}
+      </span>
+    )}
+  </div>
+);
+
+const Headcount = ({ c }: { c: Customer }) => {
+  const male = c.totalMale ?? 0;
+  const female = c.totalFemale ?? 0;
+  return (
+    <span className="tabular whitespace-nowrap">
+      <span className="font-semibold text-foreground">{c.total ?? 0}</span>
+      <span className="text-muted-foreground"> HS</span>
+      {male + female > 0 && (
+        <span className="text-muted-foreground">
+          {' '}
+          · {male} nam · {female} nữ
+        </span>
+      )}
+    </span>
+  );
+};
 
 const StatusBadge = ({ customer }: { customer: Customer }) => {
   const status = getCustomerStatus(customer);
@@ -73,13 +106,35 @@ const StatusBadge = ({ customer }: { customer: Customer }) => {
   );
 };
 
-/** "Lớp 12A1" / "12A1" -> "12A1" (for the mobile code tile). */
-const classCode = (name: string) => name.replace(/^lớp\s+/i, '');
+/** Chip bộ lọc đang bật (mobile), bấm để bỏ. */
+const ActiveFilter = ({
+  label,
+  dot,
+  icon,
+  onRemove,
+}: {
+  label: string;
+  dot?: string;
+  icon?: React.ReactNode;
+  onRemove: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onRemove}
+    aria-label={`Bỏ lọc ${label}`}
+    className="inline-flex h-9 max-w-[240px] shrink-0 items-center gap-2 rounded-md border bg-card px-3 text-[13px] text-foreground [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
+  >
+    {dot && <span className={cn('h-2 w-2 shrink-0 rounded-full', dot)} aria-hidden />}
+    {icon}
+    <span className="truncate">{label}</span>
+    <X className="h-3.5 w-3.5" />
+  </button>
+);
 
 const CustomersPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { list: customers, total, loading } = useAppSelector((s) => s.customers);
+  const { list: customers, total, loading, error: loadError } = useAppSelector((s) => s.customers);
   const { selectedSeasonId } = useAppSelector((s) => s.seasons);
   const { user } = useAuth();
   const isAdmin = !!user?.roles.some((r) => r === 0 || r === 1);
@@ -149,7 +204,17 @@ const CustomersPage = () => {
     const request = dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
     return () => request.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, appliedSearch, page, pageSize, selectedSeasonId, statusFilter, mine, schoolFilter, creatorFilter]);
+  }, [
+    dispatch,
+    appliedSearch,
+    page,
+    pageSize,
+    selectedSeasonId,
+    statusFilter,
+    mine,
+    schoolFilter,
+    creatorFilter,
+  ]);
 
   const resetExtra = () => {
     loadMoreToken.current += 1;
@@ -376,43 +441,101 @@ const CustomersPage = () => {
     setMine((m) => !m);
   };
 
+  const anyFilter = !!(statusFilter || mine || schoolFilter || creatorFilter);
+  const reloadList = () => {
+    dispatch(fetchCustomers(buildParams(appliedSearch, page, pageSize)));
+    loadCounts();
+  };
+  const allCount = counts
+    ? CUSTOMER_STATUSES.reduce((sum, st) => sum + (counts[st] ?? 0), 0)
+    : null;
+  const resetAllFilters = () => {
+    setPage(1);
+    setStatusFilter('');
+    setMine(false);
+    setSchoolFilter(null);
+    setCreatorFilter('');
+  };
+
+  const rowActions = (c: Customer) => (
+    <RowActions
+      subject={`lớp ${c.className}`}
+      primary={{ label: 'Sửa', icon: <Pencil className="h-4 w-4" />, onSelect: () => openEdit(c) }}
+      actions={[
+        {
+          label: 'Mở chi tiết',
+          icon: <ArrowUpRight className="h-4 w-4" />,
+          onSelect: () => navigate(`/customers/${c._id}`),
+        },
+        {
+          label: 'Xoá lớp',
+          icon: <Trash2 className="h-4 w-4" />,
+          onSelect: () => setConfirmId(c._id),
+          destructive: true,
+        },
+      ]}
+    />
+  );
+
+  const statusChips = (
+    <>
+      <FilterChip active={!statusFilter} onClick={() => changeStatusFilter('')}>
+        Tất cả
+        <span className="tabular">{allCount ?? '–'}</span>
+      </FilterChip>
+      {CUSTOMER_STATUSES.map((st) => (
+        <FilterChip
+          key={st}
+          active={statusFilter === st}
+          dot={badgeDotClass[CUSTOMER_STATUS_VARIANT[st]]}
+          onClick={() => changeStatusFilter(statusFilter === st ? '' : st)}
+        >
+          {CUSTOMER_STATUS_LABELS[st]}
+          <span className="tabular">{counts ? (counts[st] ?? 0) : '–'}</span>
+        </FilterChip>
+      ))}
+    </>
+  );
+
   return (
     <div className="flex flex-col md:min-h-0 md:flex-1">
       <PageHeader
-        kicker="Customers"
-        title="Khách hàng (Lớp)"
-        description="Danh sách lớp học, trường và thông tin liên hệ."
-        className="mb-3.5 md:mb-6 max-md:[&>div:last-child]:hidden"
+        title="Lớp học"
+        description={
+          loading && !customers.length
+            ? 'Đang tải danh sách lớp…'
+            : `${total} lớp${anyFilter || appliedSearch ? ' khớp bộ lọc' : selectedSeasonId ? ' trong mùa này' : ''}`
+        }
         action={
-          <Button variant="gradient" className="hidden md:inline-flex" onClick={openCreate}>
-            <Plus />
-            Thêm lớp
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={exportExcel}
+              disabled={exporting}
+              className="max-md:flex-1"
+            >
+              {exporting ? <Spinner size="sm" /> : <Download />}
+              Xuất Excel
+            </Button>
+            <Button onClick={openCreate} className="max-md:flex-1">
+              <Plus />
+              Thêm lớp
+            </Button>
+          </>
         }
       />
 
-      {/* Mobile header actions */}
-      <div className="mb-3.5 grid grid-cols-2 gap-2.5 md:hidden">
-        <Button variant="outline" onClick={exportExcel} disabled={exporting}>
-          {exporting ? <Spinner size="sm" /> : <Download />}
-          Xuất Excel
-        </Button>
-        <Button variant="gradient" onClick={openCreate}>
-          <Plus />
-          Thêm lớp
-        </Button>
-      </div>
-
-      {/* Mobile search + filters */}
-      <div className="mb-3.5 space-y-3.5 md:hidden">
-        <div className="flex gap-2.5">
+      {/* Tìm + lọc (mobile) */}
+      <div className="mb-3 space-y-3 md:hidden">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               enterKeyHint="search"
-              className="h-[42px] rounded-[10px] bg-card pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
-              placeholder="Tìm kiếm lớp, trường…"
+              aria-label="Tìm lớp hoặc trường"
+              className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden"
+              placeholder="Tìm lớp, trường…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && runSearch()}
@@ -420,7 +543,7 @@ const CustomersPage = () => {
             {search && (
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Xoá tìm kiếm"
                 onClick={() => {
                   setSearch('');
@@ -436,108 +559,63 @@ const CustomersPage = () => {
             type="button"
             variant="outline"
             size="icon"
-            className="relative h-[42px] w-[42px] shrink-0 text-muted-foreground shadow-none [&_svg]:size-[17px]"
-            aria-label="Bộ lọc"
+            className="relative h-11 w-11 shrink-0"
+            aria-label={anyFilter ? 'Bộ lọc (đang lọc)' : 'Bộ lọc'}
             onClick={() => setFilterOpen(true)}
           >
             <SlidersHorizontal />
-            {(statusFilter || mine || schoolFilter || creatorFilter) && (
+            {anyFilter && (
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
             )}
           </Button>
         </div>
-        {(statusFilter || mine || schoolFilter || creatorFilter) && (
+        {anyFilter && (
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
             {statusFilter && (
-              <button
-                type="button"
-                onClick={() => changeStatusFilter('')}
-                aria-label={`Bỏ lọc ${CUSTOMER_STATUS_LABELS[statusFilter]}`}
-                className="inline-flex h-[34px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
-              >
-                <Badge
-                  variant={CUSTOMER_STATUS_VARIANT[statusFilter]}
-                  dot
-                  className="px-0 border-transparent bg-transparent"
-                >
-                  {CUSTOMER_STATUS_LABELS[statusFilter]}
-                </Badge>
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
+              <ActiveFilter
+                label={CUSTOMER_STATUS_LABELS[statusFilter]}
+                dot={badgeDotClass[CUSTOMER_STATUS_VARIANT[statusFilter]]}
+                onRemove={() => changeStatusFilter('')}
+              />
             )}
             {schoolFilter && (
-              <button
-                type="button"
-                onClick={() => changeSchoolFilter(null)}
-                aria-label={`Bỏ lọc trường ${schoolFilter.name}`}
-                className="inline-flex h-[34px] max-w-[240px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
-              >
-                <School className="h-[15px] w-[15px] shrink-0 text-muted-foreground" />
-                <span className="truncate">{schoolFilter.name}</span>
-                <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </button>
+              <ActiveFilter
+                label={schoolFilter.name}
+                icon={<School className="h-4 w-4" />}
+                onRemove={() => changeSchoolFilter(null)}
+              />
             )}
             {creatorFilter && (
-              <button
-                type="button"
-                onClick={() => changeCreatorFilter('')}
-                aria-label={`Bỏ lọc người tạo ${creatorName ?? ''}`}
-                className="inline-flex h-[34px] max-w-[240px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
-              >
-                <UserRound className="h-[15px] w-[15px] shrink-0 text-muted-foreground" />
-                <span className="truncate">{creatorName ?? 'Người tạo'}</span>
-                <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </button>
+              <ActiveFilter
+                label={creatorName ?? 'Người tạo'}
+                icon={<UserRound className="h-4 w-4" />}
+                onRemove={() => changeCreatorFilter('')}
+              />
             )}
             {mine && (
-              <button
-                type="button"
-                onClick={toggleMine}
-                aria-label="Bỏ lọc Lớp của tôi"
-                className="inline-flex h-[34px] shrink-0 items-center gap-2 rounded-full border bg-card px-3 text-[13px] text-foreground"
-              >
-                <UserCheck className="h-[15px] w-[15px] text-muted-foreground" />
-                Lớp của tôi
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
+              <ActiveFilter
+                label="Lớp của tôi"
+                icon={<UserCheck className="h-4 w-4" />}
+                onRemove={toggleMine}
+              />
             )}
           </div>
         )}
-        <p className="text-[13px] text-muted-foreground tabular">{total} lớp</p>
       </div>
 
-      {/* Pipeline status strip */}
-      <div className="mb-4 hidden flex-wrap gap-2 md:flex">
-        {CUSTOMER_STATUSES.map((st) => {
-          const active = statusFilter === st;
-          return (
-            <button
-              key={st}
-              type="button"
-              onClick={() => changeStatusFilter(active ? '' : st)}
-              aria-pressed={active}
-              className={cn(
-                'rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                active
-                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                  : statusFilter
-                    ? 'opacity-60 hover:opacity-100'
-                    : 'hover:opacity-80',
-              )}
-            >
-              <Badge variant={CUSTOMER_STATUS_VARIANT[st]} dot className="py-1 text-[12.5px]">
-                {CUSTOMER_STATUS_LABELS[st]}
-                <span className="font-bold tabular">{counts ? (counts[st] ?? 0) : '–'}</span>
-              </Badge>
-            </button>
-          );
-        })}
+      {/* Mục lục trạng thái (desktop) */}
+      <div
+        role="group"
+        aria-label="Lọc theo trạng thái"
+        className="mb-3 hidden flex-wrap gap-1.5 md:flex"
+      >
+        {statusChips}
       </div>
 
-      <div className="mb-4 hidden flex-wrap items-center gap-3 md:flex">
+      <div className="mb-4 hidden flex-wrap items-center gap-2 md:flex">
         <SearchInput
-          className="flex-1 sm:max-w-md"
-          placeholder="Tìm kiếm lớp, trường…"
+          className="flex-1 sm:max-w-sm"
+          placeholder="Tìm lớp, trường…"
           value={search}
           onChange={setSearch}
           onSearch={runSearch}
@@ -551,7 +629,7 @@ const CustomersPage = () => {
           allLabel="Tất cả trường"
           value={schoolFilter}
           onChange={changeSchoolFilter}
-          className="h-[38px] w-[220px] rounded-[10px] border-border bg-card shadow-none"
+          className="h-10 w-[220px] rounded-md border-input bg-card shadow-none"
         />
         <Combobox
           options={creatorOptions}
@@ -559,7 +637,7 @@ const CustomersPage = () => {
           onChange={changeCreatorFilter}
           placeholder="Tất cả người tạo"
           searchPlaceholder="Tìm người tạo…"
-          className="h-[38px] w-[200px] rounded-[10px] border-border bg-card shadow-none"
+          className="h-10 w-[200px] rounded-md border-input bg-card shadow-none"
         />
         <Button
           type="button"
@@ -567,489 +645,319 @@ const CustomersPage = () => {
           aria-pressed={mine}
           onClick={toggleMine}
           className={cn(
+            'h-10',
             mine &&
-              'border-primary/60 bg-primary/10 text-primary-700 hover:bg-primary/15 dark:text-primary',
+              'border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background',
           )}
         >
           <UserCheck />
           Lớp của tôi
         </Button>
-        <span className="ml-auto text-sm text-muted-foreground tabular">{total} lớp</span>
+        {anyFilter && (
+          <Button variant="link" className="px-2" onClick={resetAllFilters}>
+            Xoá bộ lọc
+          </Button>
+        )}
       </div>
 
-      {loading ? (
-        <TableSkeleton cols={6} />
-      ) : (
-        <>
-          {/* Desktop table */}
-          <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
-            <DataTable<Customer>
-              fill
-              className="flex-1"
-              data={customers}
-              keyExtractor={(c) => c._id}
-              emptyTitle="Chưa có dữ liệu"
-              onRowClick={(c) => navigate(`/customers/${c._id}`)}
-              pagination={{
-                serverSide: true,
-                page,
-                pageSize,
-                total,
-                onPageChange: setPage,
-                onPageSizeChange: (size: number) => {
-                  setPageSize(size);
-                  setPage(1);
-                },
-              }}
-              columns={[
-                {
-                  key: 'className',
-                  header: 'Lớp',
-                  render: (c) => (
-                    <div className="min-w-0">
+      {/* Bảng (desktop) */}
+      <div className="hidden md:flex md:min-h-0 md:flex-1 md:flex-col">
+        <DataTable<Customer>
+          fill
+          className="flex-1"
+          loading={loading}
+          error={loadError ? 'Kiểm tra kết nối mạng rồi thử lại.' : undefined}
+          onRetry={reloadList}
+          data={customers}
+          keyExtractor={(c) => c._id}
+          emptyTitle={
+            anyFilter || appliedSearch
+              ? 'Không có lớp nào khớp'
+              : selectedSeasonId
+                ? 'Chưa có lớp nào trong mùa này'
+                : 'Chưa có lớp nào'
+          }
+          emptyAction={
+            anyFilter || appliedSearch ? (
+              <Button variant="outline" size="sm" onClick={resetAllFilters}>
+                Xoá bộ lọc
+              </Button>
+            ) : (
+              <Button size="sm" onClick={openCreate}>
+                <Plus /> Thêm lớp
+              </Button>
+            )
+          }
+          onRowClick={(c) => navigate(`/customers/${c._id}`)}
+          pagination={{
+            serverSide: true,
+            page,
+            pageSize,
+            total,
+            onPageChange: setPage,
+            onPageSizeChange: (size: number) => {
+              setPageSize(size);
+              setPage(1);
+            },
+          }}
+          columns={[
+            {
+              key: 'className',
+              header: 'Lớp',
+              className: 'min-w-[200px] max-w-[280px]',
+              render: (c) => <Caption c={c} />,
+            },
+            {
+              key: 'status',
+              header: 'Trạng thái',
+              render: (c) => (
+                <div>
+                  <StatusBadge customer={c} />
+                  {c.expectedShootDate && (
+                    <span
+                      className="tabular mt-1 flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+                      title="Ngày dự kiến chụp"
+                    >
+                      <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                      Dự kiến {formatDate(c.expectedShootDate)}
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+            {
+              key: 'contact',
+              header: 'Liên hệ',
+              render: (c) => (
+                <div className="min-w-0">
+                  <span className="block truncate font-medium text-foreground">
+                    {c.contactName || '—'}
+                  </span>
+                  {c.contactPhone && (
+                    <span className="tabular block text-[13px] text-muted-foreground">
+                      {c.contactPhone}
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+            {
+              key: 'contactAddress',
+              header: 'Địa chỉ',
+              className: 'max-2xl:hidden',
+              render: (c) =>
+                c.contactAddress ? (
+                  <span className="block max-w-[220px] truncate" title={c.contactAddress}>
+                    {c.contactAddress}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
+            },
+            {
+              key: 'total',
+              header: 'Sĩ số',
+              render: (c) => <Headcount c={c} />,
+            },
+            {
+              key: 'createdBy',
+              header: 'Người tạo',
+              className: 'max-lg:hidden',
+              render: (c) => {
+                const name = getUserRefName(c.createdBy);
+                return name ? (
+                  <span className="whitespace-nowrap text-foreground">{name}</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                );
+              },
+            },
+            {
+              key: 'notes',
+              header: 'Ghi chú',
+              className: 'max-xl:hidden',
+              render: (c) =>
+                c.notes ? (
+                  <span
+                    className="block max-w-[220px] truncate text-muted-foreground"
+                    title={c.notes}
+                  >
+                    {c.notes}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
+            },
+            {
+              key: 'actions',
+              header: <span className="sr-only">Thao tác</span>,
+              align: 'right',
+              className: 'w-24',
+              render: rowActions,
+            } satisfies Column<Customer>,
+          ]}
+        />
+      </div>
+
+      {/* Danh sách thẻ (mobile) */}
+      <div className="md:hidden">
+        {loading && !loadingMore ? (
+          <TableSkeleton rows={5} cols={2} />
+        ) : loadError ? (
+          <div
+            role="alert"
+            className="flex flex-col items-center gap-3 rounded-lg border bg-card px-6 py-12 text-center"
+          >
+            <p className="text-sm font-semibold text-foreground">Không tải được danh sách lớp</p>
+            <p className="text-sm text-muted-foreground">Kiểm tra kết nối mạng rồi thử lại.</p>
+            <Button variant="outline" size="sm" onClick={reloadList}>
+              Thử lại
+            </Button>
+          </div>
+        ) : mobileList.length === 0 ? (
+          <EmptyState
+            className="rounded-lg border bg-card"
+            title={
+              anyFilter || appliedSearch
+                ? 'Không có lớp nào khớp'
+                : selectedSeasonId
+                  ? 'Chưa có lớp nào trong mùa này'
+                  : 'Chưa có lớp nào'
+            }
+            action={
+              anyFilter || appliedSearch ? (
+                <Button variant="outline" size="sm" onClick={resetAllFilters}>
+                  Xoá bộ lọc
+                </Button>
+              ) : (
+                <Button size="sm" onClick={openCreate}>
+                  <Plus /> Thêm lớp
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+              {mobileList.map((c) => (
+                <li key={c._id} className="relative px-4 py-3.5 active:bg-muted/60">
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
                       <Link
                         to={`/customers/${c._id}`}
-                        className="block font-semibold text-foreground hover:text-primary-700 dark:hover:text-primary"
+                        className="block truncate font-display text-[17px] font-bold leading-tight text-foreground after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
                       >
                         {c.className}
                       </Link>
                       {getSchoolName(c) && (
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-xs font-medium uppercase tracking-[0.05em] text-muted-foreground">
                           {getSchoolName(c)}
                         </span>
                       )}
                     </div>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Trạng thái',
-                  render: (c) => (
-                    <div>
-                      <StatusBadge customer={c} />
-                      {c.expectedShootDate && (
-                        <span
-                          className="mt-1 flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground tabular"
-                          title="Ngày dự kiến chụp"
-                        >
-                          <CalendarClock className="h-3 w-3 shrink-0" />
-                          Dự kiến {formatDate(c.expectedShootDate)}
-                        </span>
-                      )}
-                    </div>
-                  ),
-                },
-                {
-                  key: 'createdBy',
-                  header: 'Người tạo',
-                  render: (c) => {
-                    const name = getUserRefName(c.createdBy);
-                    return name ? (
-                      <span className="whitespace-nowrap text-foreground">{name}</span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    );
-                  },
-                },
-                {
-                  key: 'contact',
-                  header: 'Liên hệ',
-                  render: (c) => (
-                    <div>
-                      <span className="block font-semibold text-foreground">{c.contactName}</span>
-                      <span className="block text-xs text-muted-foreground tabular">
-                        {c.contactPhone}
-                      </span>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'contactAddress',
-                  header: 'Địa chỉ',
-                  render: (c) => <span>{c.contactAddress}</span>,
-                },
-                {
-                  key: 'total',
-                  header: 'Sĩ số',
-                  render: (c) => {
-                    const male = c.totalMale ?? 0;
-                    const female = c.totalFemale ?? 0;
-                    const sum = male + female;
-                    return (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground tabular">{c.total}</span>
-                          {sum > 0 && (
-                            <span className="flex h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                              <span
-                                className="bg-blue-400"
-                                style={{ width: `${(male / sum) * 100}%` }}
-                              />
-                              <span
-                                className="bg-pink-400"
-                                style={{ width: `${(female / sum) * 100}%` }}
-                              />
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground tabular">
-                          ♂ {male} · ♀ {female}
-                        </span>
-                      </div>
-                    );
-                  },
-                },
-                {
-                  key: 'notes',
-                  header: 'Ghi chú',
-                  render: (c) => (
-                    <span
-                      className="block max-w-[240px] truncate text-muted-foreground"
-                      title={c.notes || ''}
-                    >
-                      {c.notes || '—'}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'actions',
-                  header: '',
-                  align: 'right',
-                  className: 'whitespace-nowrap',
-                  render: (c) => (
-                    <span className="inline-flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-muted-foreground"
-                        title="Sửa"
-                        aria-label="Sửa"
-                        onClick={() => openEdit(c)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] text-rose-600 hover:text-rose-700 dark:text-rose-400"
-                        title="Xoá"
-                        aria-label="Xoá"
-                        onClick={() => setConfirmId(c._id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </span>
-                  ),
-                } satisfies Column<Customer>,
-              ]}
-            />
-          </div>
-
-          {/* Mobile cards */}
-          <div className="space-y-2.5 md:hidden">
-            {mobileList.map((c) => {
-              const male = c.totalMale ?? 0;
-              const female = c.totalFemale ?? 0;
-              const sum = male + female;
-              const code = classCode(c.className);
-              const creator = getUserRefName(c.createdBy);
-              return (
-                <div
-                  key={c._id}
-                  className="relative rounded-[14px] border bg-card p-3.5 transition-colors active:bg-muted/40"
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        'flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-100 px-1 font-bold text-primary-700 dark:bg-primary/15 dark:text-primary',
-                        code.length > 4 ? 'text-[12px]' : 'text-[14px]',
-                      )}
-                    >
-                      <span className="truncate">{code}</span>
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-[3px]">
-                      <Link
-                        to={`/customers/${c._id}`}
-                        className="block truncate text-[15px] font-semibold text-foreground after:absolute after:inset-0 after:rounded-[14px] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-                      >
-                        Lớp {code}
-                      </Link>
-                      {getSchoolName(c) && (
-                        <span className="block truncate text-[12.5px] text-muted-foreground">
-                          {getSchoolName(c)}
-                        </span>
-                      )}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1">
-                        <StatusBadge customer={c} />
-                        {creator && (
-                          <span className="text-xs text-muted-foreground">Tạo bởi: {creator}</span>
-                        )}
-                        {c.expectedShootDate && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground tabular">
-                            <CalendarClock className="h-3 w-3 shrink-0" />
-                            Dự kiến {formatDate(c.expectedShootDate)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="relative z-10 -mr-1 -mt-1 flex shrink-0 gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] rounded-lg text-muted-foreground [&_svg]:size-[15px]"
-                        title="Sửa"
-                        aria-label="Sửa"
-                        onClick={() => openEdit(c)}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-[30px] w-[30px] rounded-lg text-rose-600 hover:text-rose-700 dark:text-rose-400 [&_svg]:size-[15px]"
-                        title="Xoá"
-                        aria-label="Xoá"
-                        onClick={() => setConfirmId(c._id)}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
+                    <div className="relative z-10 -mr-2 -mt-1">{rowActions(c)}</div>
                   </div>
-
-                  {(c.contactName || c.contactPhone || c.contactAddress || c.notes) && (
-                    <div className="mt-3 space-y-[7px] border-t pt-3 text-[13px]">
-                      {(c.contactName || c.contactPhone) && (
-                        <div className="flex items-start gap-2 text-foreground">
-                          <UserRound className="mt-[3px] h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="min-w-0">
-                            {c.contactName}
-                            {c.contactName && c.contactPhone && ' · '}
-                            {c.contactPhone && (
-                              <a
-                                href={`tel:${c.contactPhone}`}
-                                className="relative z-10 tabular hover:text-primary-700 dark:hover:text-primary"
-                              >
-                                {c.contactPhone}
-                              </a>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {c.contactAddress && (
-                        <div className="flex items-start gap-2 text-muted-foreground">
-                          <MapPin className="mt-[3px] h-3.5 w-3.5 shrink-0" />
-                          <span className="min-w-0">{c.contactAddress}</span>
-                        </div>
-                      )}
-                      {c.notes && (
-                        <div className="flex items-start gap-2 text-muted-foreground">
-                          <StickyNote className="mt-[3px] h-3.5 w-3.5 shrink-0" />
-                          <span className="min-w-0">{c.notes}</span>
-                        </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
+                    <StatusBadge customer={c} />
+                    <Headcount c={c} />
+                    {c.expectedShootDate && (
+                      <span className="tabular inline-flex items-center gap-1 text-muted-foreground">
+                        <CalendarClock className="h-3.5 w-3.5" />
+                        {formatDate(c.expectedShootDate)}
+                      </span>
+                    )}
+                  </div>
+                  {(c.contactName || c.contactPhone) && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                      <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <span className="truncate">{c.contactName}</span>
+                      {c.contactPhone && (
+                        <a
+                          href={`tel:${c.contactPhone}`}
+                          className="tabular relative z-10 shrink-0 text-foreground underline decoration-border underline-offset-4"
+                        >
+                          {c.contactPhone}
+                        </a>
                       )}
                     </div>
                   )}
-
-                  {c.total != null && (
-                    <div className="mt-3 flex items-center gap-2.5 rounded-[10px] bg-muted px-3 py-[9px]">
-                      <span className="text-xs text-muted-foreground">Sĩ số</span>
-                      <span className="text-[13.5px] font-semibold text-foreground tabular">
-                        {c.total}
-                      </span>
-                      {sum > 0 && (
-                        <span className="flex h-1.5 w-16 overflow-hidden rounded-full bg-background">
-                          <span
-                            className="bg-blue-400"
-                            style={{ width: `${(male / sum) * 100}%` }}
-                          />
-                          <span
-                            className="bg-pink-400"
-                            style={{ width: `${(female / sum) * 100}%` }}
-                          />
-                        </span>
-                      )}
-                      <span className="ml-auto text-[11.5px] text-muted-foreground tabular">
-                        ♂ {male}&nbsp;&nbsp;♀ {female}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {mobileList.length === 0 ? (
-              <div className="rounded-[14px] border bg-card py-10 text-center text-muted-foreground">
-                Chưa có dữ liệu
-              </div>
-            ) : (
-              <div className="space-y-2.5 pt-1 text-center">
-                <p className="text-[12.5px] text-muted-foreground tabular">
-                  Hiển thị {mobileStart + 1}–{mobileStart + mobileList.length} trong {total} lớp
-                </p>
-                {hasMore && (
-                  <Button
-                    variant="outline"
-                    className="w-full shadow-none"
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? <Spinner size="sm" /> : <ChevronsDown />}
-                    Tải thêm lớp
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
-        <DialogContent
-          aria-describedby={undefined}
-          className="inset-x-0 bottom-0 left-0 top-auto max-h-[calc(100dvh-2rem)] max-w-none translate-x-0 translate-y-0 gap-4 overflow-y-auto rounded-none rounded-t-[24px] border-0 bg-card px-4 pb-[calc(30px+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-12px_40px_rgba(15,23,42,0.18)] duration-300 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-bottom-full data-[state=closed]:!zoom-out-100 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-bottom-full data-[state=open]:!zoom-in-100 sm:rounded-none sm:rounded-t-[24px] [&>button:last-child]:hidden"
-        >
-          <div className="flex justify-center" aria-hidden>
-            <span className="h-1 w-10 rounded-full bg-border" />
-          </div>
-          <div className="flex items-center">
-            <DialogTitle className="flex-1 text-[17px]">Bộ lọc</DialogTitle>
-            <DialogClose
-              aria-label="Đóng"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <X className="h-4 w-4" />
-            </DialogClose>
-          </div>
-          <span
-            id="customer-filter-status-label"
-            className="block text-[11px] font-bold uppercase tracking-[0.8px] text-muted-foreground"
-          >
-            Trạng thái
-          </span>
-          <div
-            role="group"
-            aria-labelledby="customer-filter-status-label"
-            className="flex flex-wrap gap-2"
-          >
-            <button
-              type="button"
-              onClick={() => changeStatusFilter('')}
-              aria-pressed={!statusFilter}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-transparent px-[10.5px] py-[4.5px] text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                !statusFilter ? 'bg-foreground text-card' : 'bg-muted text-muted-foreground',
-              )}
-            >
-              Tất cả
-              <span className="font-bold tabular">
-                {counts ? CUSTOMER_STATUSES.reduce((sum, st) => sum + (counts[st] ?? 0), 0) : '–'}
-              </span>
-            </button>
-            {CUSTOMER_STATUSES.map((st) => {
-              const active = statusFilter === st;
-              return (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => changeStatusFilter(active ? '' : st)}
-                  aria-pressed={active}
-                  className={cn(
-                    badgeVariants({ variant: CUSTOMER_STATUS_VARIANT[st] }),
-                    'gap-1.5 border-[1.5px] px-[10.5px] py-[4.5px] text-[12.5px] focus:ring-offset-0',
-                    active ? 'border-current' : 'border-transparent',
-                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="space-y-2.5 pt-3 text-center">
+              <p className="tabular text-[13px] text-muted-foreground">
+                Hiển thị {mobileStart + 1}–{mobileStart + mobileList.length} trong {total} lớp
+              </p>
+              {hasMore && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={loadMore}
+                  disabled={loadingMore}
                 >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-                  {CUSTOMER_STATUS_LABELS[st]}
-                  <span className="font-bold tabular">{counts ? (counts[st] ?? 0) : '–'}</span>
-                </button>
-              );
-            })}
+                  {loadingMore ? <Spinner size="sm" /> : <ChevronsDown />}
+                  Tải thêm lớp
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <FilterSheet
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        onReset={resetAllFilters}
+        canReset={anyFilter}
+        total={total}
+        unit="lớp"
+        loading={loading}
+      >
+        <FilterSection label="Trạng thái">
+          <div role="group" aria-label="Trạng thái" className="flex flex-wrap gap-2">
+            {statusChips}
           </div>
-          <div className="h-px bg-border" />
-          <span className="block text-[11px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-            Trường
-          </span>
+        </FilterSection>
+        <FilterSection label="Trường">
           <SchoolCombobox
             allLabel="Tất cả trường"
             value={schoolFilter}
             onChange={changeSchoolFilter}
-            className="h-[42px] rounded-[10px] bg-card shadow-none"
+            className={SHEET_CONTROL_CLS}
           />
-          <div className="h-px bg-border" />
-          <span className="block text-[11px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-            Người tạo
-          </span>
+        </FilterSection>
+        <FilterSection label="Người tạo">
           <Combobox
             options={creatorOptions}
             value={creatorFilter}
             onChange={changeCreatorFilter}
             placeholder="Tất cả người tạo"
             searchPlaceholder="Tìm người tạo…"
-            className="h-[42px] rounded-[10px] bg-card shadow-none"
+            className={SHEET_CONTROL_CLS}
           />
-          <div className="h-px bg-border" />
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary/15 text-primary-700 dark:text-primary">
-              <UserCheck className="h-[17px] w-[17px]" />
+        </FilterSection>
+        <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">Lớp của tôi</span>
+            <span className="block text-[13px] text-muted-foreground">
+              Chỉ hiện lớp bạn phụ trách
             </span>
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <p id="customer-filter-mine-label" className="text-sm font-semibold text-foreground">
-                Lớp của tôi
-              </p>
-              <p id="customer-filter-mine-desc" className="text-xs text-muted-foreground">
-                Chỉ hiện lớp bạn phụ trách
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={mine}
-              aria-labelledby="customer-filter-mine-label"
-              aria-describedby="customer-filter-mine-desc"
-              onClick={toggleMine}
-              className={cn(
-                'relative inline-flex h-6 w-10 shrink-0 items-center rounded-full p-[3px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card',
-                mine ? 'bg-primary' : 'bg-muted-foreground/30',
-              )}
-            >
-              <span
-                className={cn(
-                  'h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform',
-                  mine ? 'translate-x-4' : 'translate-x-0',
-                )}
-              />
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 pt-1.5">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-[42px]"
-              disabled={!statusFilter && !mine && !schoolFilter && !creatorFilter}
-              onClick={() => {
-                setPage(1);
-                setStatusFilter('');
-                setMine(false);
-                setSchoolFilter(null);
-                setCreatorFilter('');
-              }}
-            >
-              <RotateCcw />
-              Xoá bộ lọc
-            </Button>
-            <Button type="button" className="h-[42px]" onClick={() => setFilterOpen(false)}>
-              {loading ? <Spinner size="sm" /> : <Check />}
-              {loading ? 'Xem kết quả' : `Xem ${total} lớp`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={mine}
+            onChange={toggleMine}
+            className="h-5 w-5 accent-[hsl(var(--primary))]"
+          />
+        </label>
+      </FilterSheet>
 
       <ConfirmDialog
         open={!!confirmId}
         onOpenChange={(o) => !o && setConfirmId(null)}
-        title="Xác nhận xoá"
-        message="Bạn có chắc muốn xoá lớp này?"
+        title="Xoá lớp này?"
+        message="Lớp sẽ bị xoá khỏi danh sách. Hãy chắc chắn lớp không còn lịch chụp hay giao dịch cần giữ."
         onConfirm={doDelete}
       />
 

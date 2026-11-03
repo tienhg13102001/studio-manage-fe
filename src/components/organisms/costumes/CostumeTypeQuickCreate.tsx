@@ -75,8 +75,7 @@ const CostumeTypeQuickCreate = ({
             aria-invalid={!!error}
             className={cn(
               'h-9 pl-9 max-sm:h-10',
-              error &&
-                'border-rose-500 focus-visible:border-rose-500 focus-visible:ring-rose-500/20',
+              error && 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20',
             )}
           />
         </div>
@@ -103,7 +102,7 @@ const CostumeTypeQuickCreate = ({
         </Button>
       </div>
       {error ? (
-        <p className="flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
           <CircleAlert className="h-[13px] w-[13px] shrink-0" />
           {error}
         </p>

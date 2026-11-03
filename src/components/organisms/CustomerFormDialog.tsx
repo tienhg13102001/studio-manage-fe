@@ -57,10 +57,10 @@ const sheetCls =
 const fieldCls =
   'max-md:space-y-[7px] max-md:[&>label]:text-[12.5px] max-md:[&>label]:font-semibold max-md:[&>label]:text-[var(--text-muted)]';
 const sectionCls =
-  'col-span-3 md:hidden text-[11px] font-bold uppercase tracking-[0.8px] text-[var(--text-faint)]';
+  'col-span-3 md:hidden text-xs font-bold uppercase tracking-[0.05em] text-[var(--text-faint)]';
 const iconInputCls = 'max-md:pl-9';
-const triggerCls = 'max-md:h-10 max-md:rounded-[10px] max-md:bg-card max-md:pl-9 max-md:text-base';
-const dateCls = 'max-md:h-10 max-md:rounded-[10px] max-md:bg-card max-md:text-base';
+const triggerCls = 'max-md:h-10 max-md:rounded-md max-md:bg-card max-md:pl-9 max-md:text-base';
+const dateCls = 'max-md:h-10 max-md:rounded-md max-md:bg-card max-md:text-base';
 
 /** Leading icon shown inside an input on mobile only. */
 const WithIcon = ({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) => (
@@ -164,6 +164,7 @@ const CustomerFormDialog = ({
       title={title}
       headerClassName="max-md:hidden"
       contentClassName={sheetCls}
+      mobileSheet={false}
       className="max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col"
     >
       <form
@@ -176,7 +177,7 @@ const CustomerFormDialog = ({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border text-foreground"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-foreground"
             >
               <X className="h-[18px] w-[18px]" />
               <span className="sr-only">Đóng</span>
@@ -434,7 +435,7 @@ const CustomerFormDialog = ({
 
             {/* "new" is the schema default status for a created class (backend Customer model). */}
             {!isEdit && (
-              <div className="col-span-3 flex items-start gap-2 rounded-[10px] bg-blue-100 px-3 py-2.5 text-xs text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 md:hidden">
+              <div className="col-span-3 flex items-start gap-2 rounded-md bg-muted px-3 py-2.5 text-xs text-muted-foreground md:hidden">
                 <Info className="mt-px h-[15px] w-[15px] shrink-0" />
                 <span>Lớp mới sẽ bắt đầu ở bước “Chưa làm việc” trong quy trình chăm sóc.</span>
               </div>

@@ -12,8 +12,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['"Space Grotesk"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Be Vietnam Pro"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Literata', 'Georgia', 'serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -51,6 +51,13 @@ export default {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+        book: {
+          DEFAULT: 'hsl(var(--cover))',
+          foreground: 'hsl(var(--cover-foreground))',
+          muted: 'hsl(var(--cover-muted))',
+          line: 'hsl(var(--cover-line))',
+        },
+        foil: 'hsl(var(--foil))',
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',

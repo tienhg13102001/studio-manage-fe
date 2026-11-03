@@ -163,7 +163,7 @@ const QuickStatusBody = ({
               disabled={!allowed}
               onClick={() => setPicked(st)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-[10px] px-2.5 py-2 text-left text-sm transition-colors',
+                'flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm transition-colors',
                 selected ? 'bg-muted' : allowed && 'hover:bg-muted/60',
                 !allowed && !isCurrent && 'cursor-not-allowed',
               )}
@@ -197,7 +197,7 @@ const QuickStatusBody = ({
                   Hiện tại <Check className="h-3.5 w-3.5 text-emerald-600" />
                 </span>
               ) : selected ? (
-                <span className="rounded-full bg-primary-100 px-2 py-px text-[11px] font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
+                <span className="rounded-full bg-primary-100 px-2 py-px text-xs font-semibold text-primary-700 dark:bg-primary/15 dark:text-primary">
                   Mới
                 </span>
               ) : !allowed ? (
@@ -244,7 +244,7 @@ const QuickStatusBody = ({
       ) : (
         role === 'photographer' && (
           <div className="px-2 pb-2">
-            <div className="flex gap-2 rounded-[10px] bg-blue-500/10 px-3 py-2.5 text-[13px] text-blue-700 dark:text-blue-300">
+            <div className="flex gap-2 rounded-md bg-blue-500/10 px-3 py-2.5 text-[13px] text-blue-700 dark:text-blue-300">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Thợ chụp chỉ có thể chuyển Chưa chụp → Đã chụp. Liên hệ quản lý để đổi trạng thái
@@ -331,7 +331,7 @@ const QuickStatusPicker = ({
           align="start"
           collisionPadding={12}
           aria-label="Đổi trạng thái"
-          className="w-[304px] overflow-hidden rounded-[14px] p-0"
+          className="w-[304px] overflow-hidden rounded-lg p-0"
         >
           {body(false)}
         </PopoverContent>

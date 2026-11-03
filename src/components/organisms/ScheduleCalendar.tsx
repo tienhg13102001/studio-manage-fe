@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getInitial } from './schedules/scheduleHelpers';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '../../utils/format';
 import {
   CUSTOMER_STATUSES,
   CUSTOMER_STATUS_LABELS,
@@ -74,16 +75,16 @@ type StatusStyle = { chip: string; bar: string; dot: string; badge: string };
 /** Colors per Badge variant, so calendar chips match the class status badges. */
 const VARIANT_STYLE: Record<(typeof CUSTOMER_STATUS_VARIANT)[CustomerStatus], StatusStyle> = {
   neutral: {
-    chip: 'bg-slate-500/10 text-slate-700 dark:text-slate-200',
-    bar: 'bg-slate-400',
-    dot: 'bg-slate-400',
-    badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
+    chip: 'bg-stone-500/10 text-stone-700 dark:text-stone-200',
+    bar: 'bg-stone-400',
+    dot: 'bg-stone-400',
+    badge: 'bg-stone-500/10 text-stone-700 dark:text-stone-300',
   },
   info: {
-    chip: 'bg-blue-500/10 text-blue-800 dark:text-blue-200',
-    bar: 'bg-blue-500',
-    dot: 'bg-blue-500',
-    badge: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+    chip: 'bg-sky-700/10 text-sky-900 dark:text-sky-100',
+    bar: 'bg-sky-700 dark:bg-sky-400',
+    dot: 'bg-sky-700 dark:bg-sky-400',
+    badge: 'bg-sky-700/15 text-sky-900 dark:text-sky-200',
   },
   violet: {
     chip: 'bg-violet-500/10 text-violet-800 dark:text-violet-200',
@@ -92,9 +93,9 @@ const VARIANT_STYLE: Record<(typeof CUSTOMER_STATUS_VARIANT)[CustomerStatus], St
     badge: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
   },
   warning: {
-    chip: 'bg-amber-500/10 text-amber-800 dark:text-amber-200',
-    bar: 'bg-amber-500',
-    dot: 'bg-amber-500',
+    chip: 'bg-amber-600/10 text-amber-900 dark:text-amber-100',
+    bar: 'bg-amber-600',
+    dot: 'bg-amber-600',
     badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
   },
   cyan: {
@@ -116,16 +117,16 @@ const VARIANT_STYLE: Record<(typeof CUSTOMER_STATUS_VARIANT)[CustomerStatus], St
     badge: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
   },
   success: {
-    chip: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
-    bar: 'bg-emerald-500',
-    dot: 'bg-emerald-500',
-    badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    chip: 'bg-emerald-600/10 text-emerald-900 dark:text-emerald-100',
+    bar: 'bg-emerald-600',
+    dot: 'bg-emerald-600',
+    badge: 'bg-emerald-600/15 text-emerald-800 dark:text-emerald-300',
   },
   danger: {
-    chip: 'bg-rose-500/10 text-rose-800 dark:text-rose-200',
-    bar: 'bg-rose-500',
-    dot: 'bg-rose-500',
-    badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+    chip: 'bg-red-600/10 text-red-800 dark:text-red-200',
+    bar: 'bg-red-600',
+    dot: 'bg-red-600',
+    badge: 'bg-red-500/15 text-red-700 dark:text-red-300',
   },
 };
 
@@ -133,7 +134,7 @@ const CANCELLED_STYLE: StatusStyle = {
   chip: 'bg-muted text-muted-foreground line-through',
   bar: 'bg-muted-foreground/40',
   dot: 'bg-muted-foreground/40',
-  badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+  badge: 'bg-red-500/15 text-red-700 dark:text-red-300',
 };
 
 type StatusItem = Pick<CalendarScheduleItem, 'status' | 'shootStatus' | 'cancelled'>;
@@ -273,10 +274,10 @@ const ScheduleCalendar = ({
   };
 
   const navBtn =
-    'inline-flex h-[34px] items-center justify-center rounded-[9px] border bg-card text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5';
+    'inline-flex h-[34px] items-center justify-center rounded-md border bg-card text-sm font-semibold text-foreground transition-colors hover:border-foreground/30 hover:bg-muted';
 
   const grid = (
-    <div className="overflow-hidden rounded-[14px] border bg-card">
+    <div className="overflow-hidden rounded-lg border bg-card">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
         <span className="font-display text-lg font-bold tracking-tight text-foreground">
@@ -326,7 +327,7 @@ const ScheduleCalendar = ({
         {DOW_VN.map((d) => (
           <div
             key={d}
-            className="px-2 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground sm:px-3"
+            className="px-2 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground sm:px-3"
           >
             {d}
           </div>
@@ -345,26 +346,39 @@ const ScheduleCalendar = ({
           return (
             <div
               key={key}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              aria-label={`${dayNum} tháng ${parseInt(key.slice(5, 7))}${isToday ? ', hôm nay' : ''}, ${
+                dayItems.length ? `${dayItems.length} lịch` : 'không có lịch'
+              }`}
               onClick={() => selectDay(key)}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  selectDay(key);
+                }
+              }}
               className={cn(
-                'relative min-h-[4.5rem] cursor-pointer border-b p-1 transition-colors sm:min-h-[6.5rem] sm:p-2',
+                'relative min-h-[3.25rem] cursor-pointer focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring border-b p-1 transition-colors sm:min-h-[6.5rem] sm:p-2',
                 !isLastCol && 'border-r',
                 isSelected
-                  ? 'bg-primary-100/70 dark:bg-primary/10'
+                  ? 'bg-muted dark:bg-muted/70'
                   : inMonth
                     ? 'hover:bg-muted/50'
                     : 'bg-muted/40 hover:bg-muted/60',
               )}
             >
-              {isSelected && <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" />}
+              {isSelected && <span className="absolute inset-x-0 top-0 h-[2px] bg-foreground" />}
               <div className="mb-1 flex">
                 <span
                   className={cn(
-                    'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular',
+                    'flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold tabular',
                     isToday
-                      ? 'bg-foreground text-background'
+                      ? 'font-bold text-foreground ring-2 ring-primary'
                       : isSelected
-                        ? 'text-primary-700 dark:text-primary'
+                        ? 'font-bold text-foreground'
                         : inMonth
                           ? 'text-foreground'
                           : 'text-muted-foreground/70',
@@ -373,12 +387,27 @@ const ScheduleCalendar = ({
                   {dayNum}
                 </span>
               </div>
-              <div className="space-y-1">
+              {/* Mobile: chấm trạng thái (ô quá hẹp cho chữ); chọn ngày để xem danh sách bên dưới. */}
+              {dayItems.length > 0 && (
+                <div className="flex flex-wrap gap-1 px-0.5 sm:hidden" aria-hidden>
+                  {dayItems.slice(0, 4).map((s) => (
+                    <span key={s._id} className={cn('h-1.5 w-1.5 rounded-full', getStyle(s).dot)} />
+                  ))}
+                  {dayItems.length > 4 && (
+                    <span className="text-xs font-semibold leading-none text-muted-foreground">
+                      +{dayItems.length - 4}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="hidden space-y-1 sm:block">
                 {dayItems.slice(0, maxBadges).map((s) => {
                   const st = getStyle(s);
                   return (
                     <div
                       key={s._id}
+                      role={onOpen ? 'button' : undefined}
+                      tabIndex={onOpen ? 0 : undefined}
                       onClick={
                         onOpen
                           ? (e) => {
@@ -387,11 +416,23 @@ const ScheduleCalendar = ({
                             }
                           : undefined
                       }
+                      onKeyDown={
+                        onOpen
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onOpen(s._id);
+                              }
+                            }
+                          : undefined
+                      }
                       className={cn(
-                        'relative truncate rounded-[5px] py-0.5 pl-2 pr-1 text-[10px] font-medium leading-tight sm:text-[11px]',
+                        'relative truncate rounded-[4px] py-0.5 pl-2 pr-1 text-xs font-medium leading-tight',
                         st.chip,
                         !inMonth && 'opacity-70',
-                        onOpen && 'hover:brightness-95',
+                        onOpen &&
+                          'hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       )}
                       title={[s.startTime, s.className, s.school].filter(Boolean).join(' ')}
                     >
@@ -426,7 +467,7 @@ const ScheduleCalendar = ({
                   );
                 })}
                 {dayItems.length > maxBadges && (
-                  <div className="pl-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                  <div className="pl-1 text-xs text-muted-foreground">
                     +{dayItems.length - maxBadges} lịch nữa
                   </div>
                 )}
@@ -439,13 +480,10 @@ const ScheduleCalendar = ({
   );
 
   const actionBtn =
-    'inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-[10px] border bg-card text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5';
+    'inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-md border bg-card text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/30 hover:bg-muted';
 
   const renderEventCard = (s: CalendarScheduleItem) => (
-    <div
-      key={s._id}
-      className={cn('rounded-[14px] border bg-card p-4', s.cancelled && 'opacity-60')}
-    >
+    <div key={s._id} className={cn('rounded-lg border bg-card p-4', s.cancelled && 'opacity-60')}>
       <div className="flex items-center justify-between gap-2">
         {s.startTime || s.endTime ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground tabular">
@@ -473,8 +511,7 @@ const ScheduleCalendar = ({
       {s.packageName && (
         <div className="mt-0.5 text-xs text-muted-foreground">
           {s.packageName}
-          {typeof s.packagePrice === 'number' &&
-            ` · ${s.packagePrice.toLocaleString('vi-VN')}₫/thành viên`}
+          {typeof s.packagePrice === 'number' && ` · ${formatCurrency(s.packagePrice)}/thành viên`}
         </div>
       )}
       <dl className="mt-3 space-y-2 text-[13px]">
@@ -520,7 +557,7 @@ const ScheduleCalendar = ({
                 href={s.driveFolderUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline dark:text-blue-400"
+                className="inline-flex items-center gap-1 font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4 hover:decoration-foreground"
               >
                 Mở trên Google Drive <ExternalLink className="h-3 w-3" />
               </a>
@@ -529,7 +566,7 @@ const ScheduleCalendar = ({
         )}
       </dl>
       {s.notes && (
-        <div className="mt-3 whitespace-pre-line rounded-[10px] bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+        <div className="mt-3 whitespace-pre-line rounded-md border-l-2 border-foreground/40 bg-muted px-3 py-2 text-[13px] text-foreground">
           {s.notes}
         </div>
       )}
@@ -549,9 +586,9 @@ const ScheduleCalendar = ({
             <button
               type="button"
               onClick={() => onDelete(s._id)}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border bg-card text-rose-600 transition-colors hover:bg-rose-500/10"
-              title="Xoá"
-              aria-label="Xoá"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-card text-destructive transition-colors hover:bg-destructive/10"
+              title="Xoá lịch"
+              aria-label={`Xoá lịch ${s.className}`}
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -569,13 +606,10 @@ const ScheduleCalendar = ({
         {grid}
         <div className="space-y-3">
           {selDate && (
-            <div className="rounded-[14px] border bg-card px-5 py-4">
-              <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary-700 dark:text-primary">
-                {DOW_LONG[selDate.getDay()]}
-              </div>
-              <div className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground">
-                {selDate.getDate()} tháng {selDate.getMonth() + 1}, {selDate.getFullYear()}
-              </div>
+            <div className="border-b border-foreground/80 px-1 pb-3">
+              <h3 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                {DOW_LONG[selDate.getDay()]}, {selDate.getDate()} tháng {selDate.getMonth() + 1}
+              </h3>
               <div className="mt-0.5 text-sm text-muted-foreground">
                 {selectedItems.length} lịch chụp
                 {studentTotal > 0 && ` · ${studentTotal} học sinh`}
@@ -585,15 +619,15 @@ const ScheduleCalendar = ({
           {selectedItems.length > 0 ? (
             selectedItems.map(renderEventCard)
           ) : (
-            <div className="rounded-[14px] border border-dashed bg-card py-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-lg border border-dashed bg-card py-8 text-center text-sm text-muted-foreground">
               Không có lịch ngày này
             </div>
           )}
           {upcoming.length > 0 && (
             <div className="pt-2">
-              <div className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              <h4 className="mb-2 px-1 text-[13px] font-semibold text-muted-foreground">
                 Tiếp theo
-              </div>
+              </h4>
               <div className="space-y-2">
                 {upcoming.map((s) => {
                   const key = s.shootDate.slice(0, 10);
@@ -606,9 +640,9 @@ const ScheduleCalendar = ({
                         setCalendarDate({ year: d.getFullYear(), month: d.getMonth() });
                         setSelectedDay(key);
                       }}
-                      className="flex w-full items-center gap-3 rounded-[12px] border bg-card px-3.5 py-2.5 text-left text-sm transition-colors hover:border-primary/40"
+                      className="flex w-full items-center gap-3 rounded-lg border bg-card px-3.5 py-2.5 text-left text-sm transition-colors hover:border-foreground/30"
                     >
-                      <span className="font-semibold text-primary-700 tabular dark:text-primary">
+                      <span className="font-semibold text-foreground tabular">
                         {key.slice(8, 10)}/{key.slice(5, 7)}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-foreground">
@@ -632,16 +666,19 @@ const ScheduleCalendar = ({
       {grid}
       {selectedDay && (
         <div className="mt-3">
-          <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-            {parseInt(selectedDay.slice(8))} tháng {parseInt(selectedDay.slice(5, 7))},{' '}
-            {selectedDay.slice(0, 4)}
-          </p>
+          <h3 className="mb-2 border-b border-foreground/80 px-1 pb-2 font-display text-lg font-bold text-foreground">
+            {DOW_LONG[parseKey(selectedDay).getDay()]}, {parseInt(selectedDay.slice(8))} tháng{' '}
+            {parseInt(selectedDay.slice(5, 7))}
+            <span className="ml-2 font-sans text-sm font-normal text-muted-foreground">
+              {selectedItems.length} lịch
+            </span>
+          </h3>
           {selectedItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {selectedItems.map(renderEventCard)}
             </div>
           ) : (
-            <div className="rounded-[14px] border border-dashed bg-card py-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-lg border border-dashed bg-card py-6 text-center text-sm text-muted-foreground">
               Không có lịch ngày này
             </div>
           )}

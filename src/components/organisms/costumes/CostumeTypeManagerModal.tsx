@@ -216,7 +216,7 @@ const CostumeTypeManagerModal = ({
         isMobile
           ? 'space-y-3.5'
           : 'space-y-3 rounded-xl border-[1.5px] border-primary bg-muted/40 p-3.5',
-        !isMobile && nameError && 'border-rose-500',
+        !isMobile && nameError && 'border-red-500',
       )}
     >
       {!isMobile && (
@@ -249,11 +249,11 @@ const CostumeTypeManagerModal = ({
           className={cn(
             isMobile ? 'h-11' : 'md:text-[13.5px]',
             nameError &&
-              'border-rose-500 focus-visible:border-rose-500 focus-visible:ring-rose-500/20',
+              'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20',
           )}
         />
         {nameError && (
-          <p className="flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
             <CircleAlert className="h-[13px] w-[13px] shrink-0" />
             {nameError}
           </p>
@@ -366,12 +366,12 @@ const CostumeTypeManagerModal = ({
                       className={cn(
                         'flex items-center gap-3 py-3 pl-3.5 pr-3 transition-colors max-sm:gap-2.5 max-sm:py-[11px] max-sm:pl-3 max-sm:pr-2',
                         blocked?.id === t._id && 'bg-amber-500/10',
-                        confirmType?._id === t._id && 'bg-rose-500/10',
+                        confirmType?._id === t._id && 'bg-red-500/10',
                       )}
                     >
                       <span
                         className={cn(
-                          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]',
+                          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
                           classes,
                         )}
                       >
@@ -411,7 +411,7 @@ const CostumeTypeManagerModal = ({
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-[30px] w-[30px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 max-sm:h-[34px] max-sm:w-[34px]"
+                          className="h-[30px] w-[30px] text-red-600 hover:bg-red-500/10 dark:text-red-400 max-sm:h-[34px] max-sm:w-[34px]"
                           onClick={() => void requestDelete(t)}
                           disabled={busy}
                           title="Xoá"
@@ -437,7 +437,7 @@ const CostumeTypeManagerModal = ({
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 w-full rounded-[10px] border-[1.5px] text-[13px] font-semibold text-muted-foreground [&_svg]:size-[15px] max-sm:h-11 max-sm:text-[14px] max-sm:[&_svg]:size-4"
+                className="h-10 w-full rounded-md border-[1.5px] text-[13px] font-semibold text-muted-foreground [&_svg]:size-[15px] max-sm:h-11 max-sm:text-[14px] max-sm:[&_svg]:size-4"
                 onClick={() => openEditor({ mode: 'add' })}
                 disabled={busy}
               >
@@ -455,15 +455,15 @@ const CostumeTypeManagerModal = ({
         title="Xoá loại trang phục?"
         message={`Bạn có chắc muốn xoá loại “${confirmType?.name ?? ''}”? Hành động này không thể hoàn tác.`}
         icon={<Trash2 />}
-        iconClassName="bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400"
+        iconClassName="bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400"
         confirmIcon={<Trash2 />}
-        confirmClassName="dark:bg-rose-400 dark:text-[#14151F] dark:hover:bg-rose-400/90"
-        contentClassName="sm:max-w-[420px] sm:rounded-2xl [&>button:last-child]:hidden max-sm:max-w-[calc(100%-32px)] max-sm:rounded-[18px]"
+        confirmClassName="dark:bg-red-400 dark:text-background dark:hover:bg-red-400/90"
+        contentClassName="sm:max-w-[420px] sm:rounded-2xl [&>button:last-child]:hidden max-sm:max-w-[calc(100%-32px)] max-sm:rounded-lg"
         onConfirm={() => void doDelete()}
       />
 
       <Dialog open={!!blocked} onOpenChange={(o) => !o && setBlocked(null)}>
-        <DialogContent className="grid-cols-[minmax(0,1fr)] sm:max-w-[420px] sm:rounded-2xl [&>button:last-child]:hidden max-sm:max-w-[calc(100%-32px)] max-sm:rounded-[18px]">
+        <DialogContent className="grid-cols-[minmax(0,1fr)] sm:max-w-[420px] sm:rounded-2xl [&>button:last-child]:hidden max-sm:max-w-[calc(100%-32px)] max-sm:rounded-lg">
           {blocked && (
             <div className="space-y-4">
               <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
@@ -475,7 +475,7 @@ const CostumeTypeManagerModal = ({
                   {blockedMessage(blocked)}
                 </DialogDescription>
               </div>
-              <div className="space-y-1.5 rounded-[10px] bg-muted/60 px-3 py-2.5 text-[12.5px] text-muted-foreground">
+              <div className="space-y-1.5 rounded-md bg-muted/60 px-3 py-2.5 text-[12.5px] text-muted-foreground">
                 {blocked.usage.costumeCount > 0 && (
                   <p className="flex items-start gap-2">
                     <Shirt className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--text-faint)]" />

@@ -59,7 +59,7 @@ const ScheduleRowMenu = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-[220px] rounded-[12px] p-1.5"
+        className="w-[220px] rounded-lg p-1.5"
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <DropdownMenuItem className={itemCls} onSelect={later(onEdit)}>
@@ -92,7 +92,7 @@ const ScheduleRowMenu = ({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className={cn(itemCls, 'text-rose-600 focus:text-rose-600 dark:text-rose-400')}
+          className={cn(itemCls, 'text-red-600 focus:text-red-600 dark:text-red-400')}
           onSelect={later(onDelete)}
         >
           <Trash2 /> Xoá lịch

@@ -26,21 +26,28 @@ export const CrewFlags = ({
   ).length;
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
-      {cancelled || needed === null ? (
+      {!cancelled &&
+      assigned === 0 &&
+      !schedule.customer?.total &&
+      schedule.customer?.contract?.crewCount == null ? (
+        <span className={cn(flagCls, 'bg-muted text-muted-foreground')}>
+          <Users /> Chưa có sĩ số
+        </span>
+      ) : cancelled || needed === null ? (
         <span className={cn(flagCls, 'bg-muted text-muted-foreground')}>
           <Users /> {assigned} thợ
         </span>
       ) : missing > 0 ? (
-        <span className={cn(flagCls, 'bg-rose-500/10 text-rose-700 dark:text-rose-300')}>
+        <span className={cn(flagCls, 'bg-red-600/10 text-red-800 dark:text-red-300')}>
           <UserX /> Thiếu {missing} thợ
         </span>
       ) : (
-        <span className={cn(flagCls, 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300')}>
+        <span className={cn(flagCls, 'bg-emerald-600/10 text-emerald-800 dark:text-emerald-300')}>
           <Users /> {assigned}/{needed} thợ
         </span>
       )}
       {!cancelled && videoMissing > 0 && (
-        <span className={cn(flagCls, 'bg-rose-500/10 text-rose-700 dark:text-rose-300')}>
+        <span className={cn(flagCls, 'bg-red-600/10 text-red-800 dark:text-red-300')}>
           <Video /> Thiếu thợ quay
         </span>
       )}
@@ -51,7 +58,7 @@ export const CrewFlags = ({
               tabIndex={0}
               className={cn(
                 flagCls,
-                'cursor-default bg-amber-500/10 text-amber-800 dark:text-amber-300',
+                'hatch-conflict cursor-default border border-red-700/40 text-red-800 dark:border-red-400/40 dark:text-red-300',
               )}
             >
               <CalendarClock /> Trùng lịch · {names.join(', ')}
@@ -137,7 +144,7 @@ const CrewCell = ({
       className={cn(
         'inline-flex shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground',
         card
-          ? 'h-8 w-8 rounded-[9px] border bg-card hover:bg-muted'
+          ? 'h-8 w-8 rounded-md border bg-card hover:bg-muted'
           : 'h-[26px] w-[26px] rounded-full hover:bg-muted',
       )}
     >
