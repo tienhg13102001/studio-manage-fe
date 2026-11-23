@@ -45,6 +45,7 @@ import {
   Button,
   Combobox,
   ConfirmDialog,
+  CurrencyInput,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -229,11 +230,13 @@ const CostItemsEditor = ({
             <X className="h-4 w-4" />
           </Button>
           <div className="col-span-3 grid grid-cols-[minmax(0,1fr)_64px_auto] items-center gap-2 lg:contents">
-            <AmountInput
+            <CurrencyInput
               aria-label="Đơn giá"
               value={it.unitPrice}
-              onChange={(v) => patch(i, { unitPrice: v })}
-              suffix="đ"
+              onValueChange={(v) => patch(i, { unitPrice: v ?? 0 })}
+              zeroAsEmpty
+              placeholder="0"
+              className="h-10"
             />
             <AmountInput
               aria-label="Số lượng"
@@ -831,11 +834,13 @@ const PackageProfitPage = () => {
               </Field>
               <div className="grid grid-cols-2 gap-3 md:contents">
                 <Field label="Giá / học sinh" htmlFor="pp-price">
-                  <AmountInput
+                  <CurrencyInput
                     id="pp-price"
                     value={form.pricePerMember}
-                    onChange={(v) => set('pricePerMember', v)}
-                    suffix="đ"
+                    onValueChange={(v) => set('pricePerMember', v ?? 0)}
+                    zeroAsEmpty
+                    placeholder="0"
+                    className="h-10"
                   />
                 </Field>
                 <Field label="Sĩ số" htmlFor="pp-students">
@@ -877,19 +882,23 @@ const PackageProfitPage = () => {
                 />
               </Field>
               <Field label="Công / thợ lead" htmlFor="pp-lead-rate">
-                <AmountInput
+                <CurrencyInput
                   id="pp-lead-rate"
                   value={form.leadRate}
-                  onChange={(v) => set('leadRate', v)}
-                  suffix="đ"
+                  onValueChange={(v) => set('leadRate', v ?? 0)}
+                  zeroAsEmpty
+                  placeholder="0"
+                  className="h-10"
                 />
               </Field>
               <Field label="Công / thợ support" htmlFor="pp-rate">
-                <AmountInput
+                <CurrencyInput
                   id="pp-rate"
                   value={form.crewRate}
-                  onChange={(v) => set('crewRate', v)}
-                  suffix="đ"
+                  onValueChange={(v) => set('crewRate', v ?? 0)}
+                  zeroAsEmpty
+                  placeholder="0"
+                  className="h-10"
                 />
               </Field>
             </div>
@@ -942,11 +951,13 @@ const PackageProfitPage = () => {
                     />
                   </Field>
                   <Field label="Tiền công / thợ quay" htmlFor="pp-video-rate">
-                    <AmountInput
+                    <CurrencyInput
                       id="pp-video-rate"
                       value={form.videoCrewRate}
-                      onChange={(v) => set('videoCrewRate', v)}
-                      suffix="đ"
+                      onValueChange={(v) => set('videoCrewRate', v ?? 0)}
+                      zeroAsEmpty
+                      placeholder="0"
+                      className="h-10"
                     />
                   </Field>
                 </div>
@@ -1063,12 +1074,13 @@ const PackageProfitPage = () => {
                   value={c.label}
                   onChange={(e) => setOther(i, { label: e.target.value })}
                 />
-                <AmountInput
-                  className="w-[124px] shrink-0 md:w-[180px]"
+                <CurrencyInput
+                  className="h-10 w-[124px] shrink-0 md:w-[180px]"
                   aria-label="Số tiền"
                   value={c.amount}
-                  onChange={(v) => setOther(i, { amount: v })}
-                  suffix="đ"
+                  onValueChange={(v) => setOther(i, { amount: v ?? 0 })}
+                  zeroAsEmpty
+                  placeholder="0"
                 />
                 <Button
                   variant="ghost"

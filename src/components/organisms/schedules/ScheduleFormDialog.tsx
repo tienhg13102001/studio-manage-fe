@@ -1,6 +1,7 @@
 import {
   Button,
   Combobox,
+  CurrencyInput,
   DatePicker,
   Dialog,
   DialogContent,
@@ -1048,13 +1049,18 @@ const ScheduleFormDialog = ({
                               />
                             </td>
                             <td className="px-3 py-2">
-                              <Input
-                                {...register(`extraServices.${idx}.unitPrice`, {
-                                  valueAsNumber: true,
-                                })}
-                                type="number"
-                                min={0}
-                                className="h-9 tabular"
+                              <Controller
+                                name={`extraServices.${idx}.unitPrice`}
+                                control={control}
+                                render={({ field: priceField }) => (
+                                  <CurrencyInput
+                                    ref={priceField.ref}
+                                    value={priceField.value}
+                                    onValueChange={priceField.onChange}
+                                    onBlur={priceField.onBlur}
+                                    className="h-9"
+                                  />
+                                )}
                               />
                             </td>
                             <td className="whitespace-nowrap px-3 py-2 font-semibold text-foreground tabular">

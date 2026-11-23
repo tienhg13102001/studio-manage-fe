@@ -12,6 +12,7 @@ import {
   Button,
   Checkbox,
   ConfirmDialog,
+  CurrencyInput,
   FormField,
   Input,
   Label,
@@ -71,7 +72,7 @@ const PackagesPage = () => {
     handleSubmit,
     reset,
     control,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<PackageFormValues>();
 
   useEffect(() => {
@@ -299,13 +300,31 @@ const PackagesPage = () => {
                 {...register('name', { required: true })}
               />
             </FormField>
-            <FormField label="Giá/thành viên (₫)" required htmlFor="price">
-              <Input
-                id="price"
-                type="number"
-                min={0}
-                placeholder="VD: 150000"
-                {...register('pricePerMember', { required: true, valueAsNumber: true })}
+            <FormField
+              label="Giá/thành viên (₫)"
+              required
+              htmlFor="price"
+              error={errors.pricePerMember?.message}
+            >
+              <Controller
+                name="pricePerMember"
+                control={control}
+                rules={{
+                  validate: (v) =>
+                    (typeof v === 'number' && Number.isFinite(v) && v >= 0) ||
+                    'Vui lòng nhập giá hợp lệ',
+                }}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id="price"
+                    ref={field.ref}
+                    placeholder="VD: 150.000đ"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={!!errors.pricePerMember}
+                  />
+                )}
               />
             </FormField>
             <FormField label="Thời gian">

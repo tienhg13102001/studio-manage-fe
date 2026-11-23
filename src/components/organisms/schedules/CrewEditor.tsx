@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import {
   Button,
+  CurrencyInput,
   Dialog,
   DialogClose,
   DialogContent,
@@ -103,7 +104,7 @@ const CrewEditorBody = ({
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickName, setQuickName] = useState('');
   const [quickPhone, setQuickPhone] = useState('');
-  const [quickFee, setQuickFee] = useState('');
+  const [quickFee, setQuickFee] = useState<number | undefined>(undefined);
   const [creatingExternal, setCreatingExternal] = useState(false);
 
   useEffect(() => {
@@ -272,7 +273,7 @@ const CrewEditorBody = ({
 
   const createExternal = async () => {
     const name = quickName.trim();
-    const fee = quickFee.trim() === '' ? null : Number(quickFee);
+    const fee = quickFee ?? null;
     if (!name) {
       toast.error('Vui lòng nhập tên thợ ngoài.');
       return;
@@ -297,7 +298,7 @@ const CrewEditorBody = ({
       setSearch('');
       setQuickName('');
       setQuickPhone('');
-      setQuickFee('');
+      setQuickFee(undefined);
       setQuickAddOpen(false);
       toast.success('Đã thêm thợ ngoài. Bấm Lưu để phân công vào lịch.');
     } catch (error) {
@@ -735,11 +736,9 @@ const CrewEditorBody = ({
                   placeholder="Số điện thoại"
                   aria-label="Số điện thoại thợ ngoài"
                 />
-                <Input
+                <CurrencyInput
                   value={quickFee}
-                  onChange={(event) => setQuickFee(event.target.value)}
-                  type="number"
-                  min={0}
+                  onValueChange={setQuickFee}
                   placeholder="Chi phí/buổi"
                   aria-label="Chi phí mặc định mỗi buổi"
                 />

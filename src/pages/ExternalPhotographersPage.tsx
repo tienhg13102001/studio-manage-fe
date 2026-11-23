@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Pencil, Phone, Plus, Search, UserCheck, UserX, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
   Badge,
   Button,
+  CurrencyInput,
   DataTable,
   FormField,
   Input,
@@ -22,7 +23,7 @@ import type { ExternalPhotographer } from '../types';
 interface FormValues {
   name: string;
   phone: string;
-  defaultFee: string;
+  defaultFee: number | '';
   notes: string;
   isActive: boolean;
 }
@@ -50,6 +51,7 @@ const ExternalPhotographersPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting, errors, isDirty },
   } = useForm<FormValues>();
 
@@ -71,7 +73,7 @@ const ExternalPhotographersPage = () => {
     reset({
       name: person?.name ?? '',
       phone: person?.phone ?? '',
-      defaultFee: person?.defaultFee == null ? '' : String(person.defaultFee),
+      defaultFee: person?.defaultFee ?? '',
       notes: person?.notes ?? '',
       isActive: person?.isActive ?? true,
     });
@@ -365,17 +367,23 @@ const ExternalPhotographersPage = () => {
             htmlFor="external-fee"
             error={errors.defaultFee?.message}
           >
-            <Input
-              id="external-fee"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1000}
-              placeholder="Bỏ trống nếu tuỳ buổi"
-              aria-invalid={!!errors.defaultFee}
-              {...register('defaultFee', {
+            <Controller
+              name="defaultFee"
+              control={control}
+              rules={{
                 validate: (v) => v === '' || Number(v) >= 0 || 'Chi phí không được âm',
-              })}
+              }}
+              render={({ field }) => (
+                <CurrencyInput
+                  id="external-fee"
+                  ref={field.ref}
+                  placeholder="Bỏ trống nếu tuỳ buổi"
+                  aria-invalid={!!errors.defaultFee}
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v ?? '')}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </FormField>
           <FormField label="Ghi chú" htmlFor="external-notes">

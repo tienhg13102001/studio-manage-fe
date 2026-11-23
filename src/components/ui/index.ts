@@ -9,6 +9,7 @@ export * from './checkbox';
 export * from './combobox';
 export * from './command';
 export * from './confirm-dialog';
+export * from './currency-input';
 export * from './data-table';
 export * from './dialog';
 export * from './dropdown-menu';
