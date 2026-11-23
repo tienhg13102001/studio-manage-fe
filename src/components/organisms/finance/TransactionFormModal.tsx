@@ -6,9 +6,9 @@ import {
   Button,
   Checkbox,
   Combobox,
+  CurrencyInput,
   DatePicker,
   FormField,
-  Input,
   Label,
   Modal,
   Select,
@@ -70,7 +70,7 @@ const TransactionFormModal = ({
     reset,
     watch,
     control,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<Partial<Transaction>>();
 
   const selectedType = watch('type');
@@ -163,11 +163,25 @@ const TransactionFormModal = ({
               }}
             />
           </FormField>
-          <FormField label="Số tiền" required htmlFor="amount">
-            <Input
-              id="amount"
-              type="number"
-              {...register('amount', { required: true, valueAsNumber: true, min: 0 })}
+          <FormField label="Số tiền" required htmlFor="amount" error={errors.amount?.message}>
+            <Controller
+              name="amount"
+              control={control}
+              rules={{
+                validate: (v) =>
+                  (typeof v === 'number' && Number.isFinite(v) && v >= 0) ||
+                  'Vui lòng nhập số tiền',
+              }}
+              render={({ field }) => (
+                <CurrencyInput
+                  id="amount"
+                  ref={field.ref}
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v ?? '')}
+                  onBlur={field.onBlur}
+                  aria-invalid={!!errors.amount}
+                />
+              )}
             />
           </FormField>
           <FormField label="Ngày" required htmlFor="date">

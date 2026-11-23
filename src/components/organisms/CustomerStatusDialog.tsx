@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  CurrencyInput,
   DatePicker,
   Dialog,
   DialogContent,
@@ -33,7 +34,6 @@ import {
   getUserRefId,
   getSchoolName,
 } from '../../types';
-import { formatCurrency } from '../../utils/format';
 
 const NONE = '__none__';
 const fieldCls = 'h-10 rounded-md';
@@ -127,7 +127,6 @@ const CustomerStatusDialog = ({
     });
   }, [target, customer, currentSaleId, reset]);
 
-  const depositAmount = watch('depositAmount');
   const createSchedule = watch('createSchedule');
 
   const onSubmit = async (v: FormValues) => {
@@ -222,22 +221,23 @@ const CustomerStatusDialog = ({
                       required
                       htmlFor="depositAmount"
                       error={errors.depositAmount?.message}
-                      hint={
-                        Number(depositAmount) > 0
-                          ? formatCurrency(Number(depositAmount))
-                          : undefined
-                      }
                     >
-                      <Input
-                        id="depositAmount"
-                        type="number"
-                        min={0}
-                        step="any"
-                        className="tabular"
-                        {...register('depositAmount', {
-                          valueAsNumber: true,
+                      <Controller
+                        name="depositAmount"
+                        control={control}
+                        rules={{
                           validate: (v) => (Number(v) > 0 ? true : 'Số tiền cọc phải lớn hơn 0'),
-                        })}
+                        }}
+                        render={({ field }) => (
+                          <CurrencyInput
+                            id="depositAmount"
+                            ref={field.ref}
+                            value={field.value}
+                            onValueChange={(v) => field.onChange(v ?? '')}
+                            onBlur={field.onBlur}
+                            aria-invalid={!!errors.depositAmount}
+                          />
+                        )}
                       />
                     </FormField>
                     <FormField label="Ngày cọc" required error={errors.depositDate?.message}>

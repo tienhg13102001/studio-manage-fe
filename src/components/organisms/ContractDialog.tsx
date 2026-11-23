@@ -25,6 +25,7 @@ import {
 import {
   Button,
   Combobox,
+  CurrencyInput,
   DatePicker,
   Dialog,
   DialogContent,
@@ -456,22 +457,26 @@ const ContractForm = (props: ContractFormProps) => {
             <FormField
               label="Giá / thành viên"
               required
+              htmlFor="contract-pricePerMember"
               error={errors.pricePerMember ? 'Nhập giá ≥ 0' : undefined}
             >
-              <div className="relative">
-                <Input
-                  type="number"
-                  min={0}
-                  className="pr-8 tabular"
-                  {...register('pricePerMember', {
-                    valueAsNumber: true,
-                    validate: (v) => (Number.isFinite(v) && v >= 0) || false,
-                  })}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  ₫
-                </span>
-              </div>
+              <Controller
+                name="pricePerMember"
+                control={control}
+                rules={{
+                  validate: (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0) || false,
+                }}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id="contract-pricePerMember"
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v ?? '')}
+                    onBlur={field.onBlur}
+                    aria-invalid={!!errors.pricePerMember}
+                  />
+                )}
+              />
             </FormField>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2">
@@ -612,20 +617,24 @@ const ContractForm = (props: ContractFormProps) => {
                           />
                         </td>
                         <td className="px-3 py-2">
-                          <Input
-                            {...register(`extraServices.${idx}.unitPrice`, {
-                              valueAsNumber: true,
+                          <Controller
+                            name={`extraServices.${idx}.unitPrice`}
+                            control={control}
+                            rules={{
                               validate: (v, form) =>
                                 !form.extraServices[idx]?.name?.trim() ||
                                 isNonNegative(v) ||
                                 'Đơn giá ≥ 0',
-                            })}
-                            type="number"
-                            min={0}
-                            aria-invalid={!!rowErrors?.unitPrice || undefined}
-                            className={cn(
-                              'h-9 tabular',
-                              rowErrors?.unitPrice && 'border-destructive',
+                            }}
+                            render={({ field: priceField }) => (
+                              <CurrencyInput
+                                ref={priceField.ref}
+                                value={priceField.value}
+                                onValueChange={(v) => priceField.onChange(v ?? '')}
+                                onBlur={priceField.onBlur}
+                                aria-invalid={!!rowErrors?.unitPrice || undefined}
+                                className={cn('h-9', rowErrors?.unitPrice && 'border-destructive')}
+                              />
                             )}
                           />
                         </td>
