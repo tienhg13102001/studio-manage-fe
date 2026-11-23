@@ -30,21 +30,35 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       className,
       inputMode = 'numeric',
       autoComplete = 'off',
+      onBeforeInput,
+      onFocus,
       onKeyDown,
-      onMouseUp,
       onKeyUp,
+      onMouseUp,
+      onPaste,
+      onSelect,
       ...props
     },
     forwardedRef,
   ) => {
-    const { inputRef, displayValue, handleChange, handleKeyDown, handleMouseUp, handleKeyUp } =
-      useCurrencyInput({
-        value,
-        onValueChange,
-        suffix,
-        maxDigits,
-        zeroAsEmpty,
-      });
+    const {
+      inputRef,
+      displayValue,
+      handleBeforeInput,
+      handleChange,
+      handleFocus,
+      handleKeyDown,
+      handleKeyUp,
+      handleMouseUp,
+      handlePaste,
+      handleSelect,
+    } = useCurrencyInput({
+      value,
+      onValueChange,
+      suffix,
+      maxDigits,
+      zeroAsEmpty,
+    });
 
     const setRefs = React.useCallback(
       (node: HTMLInputElement | null) => {
@@ -62,18 +76,34 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         inputMode={inputMode}
         autoComplete={autoComplete}
         value={displayValue}
+        onBeforeInput={(e) => {
+          handleBeforeInput(e);
+          onBeforeInput?.(e);
+        }}
         onChange={handleChange}
+        onFocus={(e) => {
+          handleFocus(e);
+          onFocus?.(e);
+        }}
         onKeyDown={(e) => {
           handleKeyDown(e);
           onKeyDown?.(e);
+        }}
+        onKeyUp={(e) => {
+          handleKeyUp(e);
+          onKeyUp?.(e);
         }}
         onMouseUp={(e) => {
           handleMouseUp(e);
           onMouseUp?.(e);
         }}
-        onKeyUp={(e) => {
-          handleKeyUp(e);
-          onKeyUp?.(e);
+        onPaste={(e) => {
+          handlePaste(e);
+          onPaste?.(e);
+        }}
+        onSelect={(e) => {
+          handleSelect(e);
+          onSelect?.(e);
         }}
         className={cn('tabular', className)}
         {...props}

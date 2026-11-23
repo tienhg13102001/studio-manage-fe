@@ -471,7 +471,7 @@ const ContractForm = (props: ContractFormProps) => {
                     id="contract-pricePerMember"
                     ref={field.ref}
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(v) => field.onChange(v ?? '')}
                     onBlur={field.onBlur}
                     aria-invalid={!!errors.pricePerMember}
                   />
@@ -630,7 +630,7 @@ const ContractForm = (props: ContractFormProps) => {
                               <CurrencyInput
                                 ref={priceField.ref}
                                 value={priceField.value}
-                                onValueChange={priceField.onChange}
+                                onValueChange={(v) => priceField.onChange(v ?? '')}
                                 onBlur={priceField.onBlur}
                                 aria-invalid={!!rowErrors?.unitPrice || undefined}
                                 className={cn('h-9', rowErrors?.unitPrice && 'border-destructive')}

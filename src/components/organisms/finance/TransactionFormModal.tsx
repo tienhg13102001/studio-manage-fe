@@ -177,7 +177,7 @@ const TransactionFormModal = ({
                   id="amount"
                   ref={field.ref}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onValueChange={(v) => field.onChange(v ?? '')}
                   onBlur={field.onBlur}
                   aria-invalid={!!errors.amount}
                 />

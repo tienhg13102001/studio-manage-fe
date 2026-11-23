@@ -320,7 +320,7 @@ const PackagesPage = () => {
                     ref={field.ref}
                     placeholder="VD: 150.000đ"
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(v) => field.onChange(v ?? '')}
                     onBlur={field.onBlur}
                     aria-invalid={!!errors.pricePerMember}
                   />

@@ -106,8 +106,9 @@ function buildResultFromDigits(
 
 /**
  * Compute next numeric value, formatted display text, and caret position after a change event.
- * Handles typing/deleting digits anywhere, pasting formatted/unformatted strings, and fallback
- * deletion of formatting chars (`.` or `đ`).
+ * Handles typing/deleting digits anywhere, pasting formatted/unformatted strings, replacing
+ * a selection (without mistaking same-value replacement for Backspace), replacing initial `0`,
+ * and fallback deletion of single formatting chars (`.` or `đ`).
  */
 export function applyCurrencyChange(params: {
   prevText: string;
@@ -116,6 +117,10 @@ export function applyCurrencyChange(params: {
   maxDigits?: number;
   suffix?: string;
   zeroAsEmpty?: boolean;
+  /** True when the change replaced a non-empty selection range. */
+  hadSelection?: boolean;
+  /** Native InputEvent.inputType when available (e.g. 'insertFromPaste', 'insertText'). */
+  inputType?: string;
 }): CurrencyEditResult {
   const {
     prevText,
@@ -124,23 +129,52 @@ export function applyCurrencyChange(params: {
     maxDigits = DEFAULT_MAX_DIGITS,
     suffix = DEFAULT_SUFFIX,
     zeroAsEmpty = false,
+    hadSelection = false,
+    inputType,
   } = params;
   const options: CurrencyEditOptions = { maxDigits, suffix, zeroAsEmpty };
 
   const prevDigits = prevText.replace(/\D/g, '');
   const nextDigitsAll = nextRaw.replace(/\D/g, '');
+  const isInsertInput = !!inputType && inputType.startsWith('insert');
+  const isDeleteInput = !!inputType && inputType.startsWith('delete');
 
-  // If only a formatting character ('.' or trailing suffix) was deleted without changing digits,
-  // delete the adjacent digit so Backspace never gets stuck on dots or 'đ'.
-  if (nextRaw.length < prevText.length && nextDigitsAll === prevDigits && prevDigits.length > 0) {
-    if (suffix && prevText.endsWith(suffix) && !nextRaw.endsWith(suffix)) {
+  // When the current value is 0 (displaying "0đ") and the user inserts digits before "0"
+  // (e.g. caret at start: "|0đ" -> type "7" -> "70đ"), replace the 0 instead of appending it.
+  if (
+    prevDigits === '0' &&
+    !hadSelection &&
+    !isDeleteInput &&
+    prevText === `0${suffix}` &&
+    nextRaw.length > prevText.length &&
+    nextRaw.slice(rawCaret) === prevText
+  ) {
+    const insertedDigits = nextRaw.slice(0, rawCaret).replace(/\D/g, '');
+    if (insertedDigits !== '') {
+      return buildResultFromDigits(insertedDigits, insertedDigits.length, options);
+    }
+  }
+
+  // Only treat as a single formatting-character deletion (e.g. mobile IME Backspace without
+  // keyDown) when there was NO selection, it's NOT an insert/paste, and exactly 1 char was removed.
+  if (
+    !hadSelection &&
+    !isInsertInput &&
+    prevText.length - nextRaw.length === 1 &&
+    nextDigitsAll === prevDigits &&
+    prevDigits.length > 0
+  ) {
+    if (suffix && prevText.endsWith(suffix) && nextRaw === prevText.slice(0, -1)) {
       const shortened = prevDigits.slice(0, -1);
       return buildResultFromDigits(shortened, shortened.length, options);
     }
-    const digitsBefore = countDigitsBefore(nextRaw, rawCaret);
-    if (digitsBefore > 0) {
-      const removed = nextDigitsAll.slice(0, digitsBefore - 1) + nextDigitsAll.slice(digitsBefore);
-      return buildResultFromDigits(removed, digitsBefore - 1, options);
+    if (prevText[rawCaret] === '.') {
+      const digitsBefore = countDigitsBefore(nextRaw, rawCaret);
+      if (digitsBefore > 0) {
+        const removed =
+          nextDigitsAll.slice(0, digitsBefore - 1) + nextDigitsAll.slice(digitsBefore);
+        return buildResultFromDigits(removed, digitsBefore - 1, options);
+      }
     }
   }
 

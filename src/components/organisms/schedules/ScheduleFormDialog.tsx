@@ -1056,7 +1056,7 @@ const ScheduleFormDialog = ({
                                   <CurrencyInput
                                     ref={priceField.ref}
                                     value={priceField.value}
-                                    onValueChange={priceField.onChange}
+                                    onValueChange={(v) => priceField.onChange(v ?? '')}
                                     onBlur={priceField.onBlur}
                                     className="h-9"
                                   />
